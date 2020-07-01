@@ -142,7 +142,7 @@ This dashboard provides information on COVID-19 in Cox's Bazar, Bangladesh.
 Column 
 -----------------------------------------------------------------------
 
-### Tested (24 hours & Total)
+### Tested Host (24 hours & Total)
 
 ```{r test}
 
@@ -252,17 +252,25 @@ column {data-width=400}
 
 ### Links to documents
 
+* Link to Important Documents
+  + Surveillance and Epidemiology
+  + Case Management
+  + Coordination
+  + Logistic
+  + DRU
+
 ```{r}
+
 
 ```
 
 
 ### Partners
 
-```{r partners, echo=FALSE, fig.cap="A caption", out.width = '50%'}
+```{r} 
 
-knitr::include_graphics(c("bgd_logo.png","who_bgd_logo.png"))
-
+#knitr::include_graphics(c(here("'data','bgd_logo.png'","data/who_bgd_logo.png"))
+knitr::include_graphics(here('data', 'who_logo.png'))
 
 ```
 
@@ -642,7 +650,7 @@ case_shp_host <- summaryTable_df %>%
 
 map_host  <- tm_shape(case_shp_host) + 
   tm_polygons("confirmed", title="Confirmed COVID-19 cases", palette='YlOrRd') +   
-  tm_text("upazilla", root=5, size = 1/2) +
+  tm_text("upazilla", root=5) +
   tm_legend(text.size=1,
             title.size=1.2,
             position = c("left","bottom"), 
@@ -859,7 +867,7 @@ map_fdmn <- case_shp_fdmn %>%
   mutate(camp=gsub('Camp', '', new_camp_n)) %>% 
   tm_shape(.) + 
   tm_polygons("confirmed", title="Confirmed COVID-19 cases", palette='YlOrRd') +   
-  tm_text("camp", root=5, size = 1/2) +
+  tm_text("camp", root=5) +
   tm_legend(text.size=1,
             title.size=1.2,
             position = c("left","bottom"), 
@@ -867,8 +875,8 @@ map_fdmn <- case_shp_fdmn %>%
             bg.alpha=.2, 
             width=.8,
             frame="white", 
-            height=.6) +
-  tm_facets("upazila", ncol=1)
+            height=.6) 
+  #tm_facets("upazila", ncol=1)
 tmap_leaflet(map_fdmn)
 
 ```
