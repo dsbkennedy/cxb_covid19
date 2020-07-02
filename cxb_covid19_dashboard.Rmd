@@ -1140,8 +1140,8 @@ godata_clean <- godata_wide %>%
   #Age
   mutate(age_years = case_when(
     is.na(age_years) && !is.na(age_months) ~  as.integer(age_months / 12),
-    is.na(age_years) && is.na(age_months) ~  NA_integer_,
-    TRUE ~ age_years)) %>%
+    #is.na(age_years) && is.na(age_months) ~  NA_integer_,
+    TRUE ~ as.integer(age_years))) %>%
   #Age group
   mutate(age_group=cut(age_years,breaks = c(seq(0, 70, by = 10), Inf), labels = age_labs, right = FALSE)) %>%
   mutate(age_group=fct_explicit_na(age_group, na_level = "(missing)")) %>% 
@@ -1209,7 +1209,7 @@ godata_clean <- godata_wide %>%
   mutate(sore_throat=case_when(grepl('Sore throat',questionnaire_answers_symptoms_value,ignore.case=TRUE)~1,
                                    grepl('yes', questionnaire_answers_sore_throat,ignore.case=TRUE)~1)) %>% 
   #Diarrhoea
-    mutate(sore_throat=case_when(grepl('Diarrhoea',questionnaire_answers_symptoms_value,ignore.case=TRUE)~1,
+    mutate(diarrhoea=case_when(grepl('Diarrhoea',questionnaire_answers_symptoms_value,ignore.case=TRUE)~1,
                                    grepl('yes', questionnaire_answers_diarrhoea,ignore.case=TRUE)~1)) %>% 
   #Pre-existing conditions
   #Hypertension
