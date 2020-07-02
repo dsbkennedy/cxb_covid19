@@ -418,7 +418,7 @@ comp_table <- tests_per_million %>%
 comp_table %>% 
   ungroup() %>% 
   gt(rowname_col = "population_group") %>% 
-  tab_stubhead(label = "Population_group") %>% 
+  tab_stubhead(label = "Population group") %>% 
   tab_header(
     title = "Comparing COVID-19 indicators",
     subtitle = "All figures are standardised to per million people"
@@ -518,19 +518,15 @@ ggarrange(test_growth_gph, case_growth_gph, ncol=2, common.legend = TRUE, legend
 Row {data-height=250}
 -------------------------------------
 
-### Links to documents
+### Useful documents
 
-* Link to Important Documents
 
-  + Surveillance and Epidemiology
+  + [SOPs](https://ln2.sync.com/dl/f29c53860/2hqhzj3x-q476hijz-sf8admz2-9b8793y9) 
   
-  + Case Management
+  + [Field manuals](https://ln2.sync.com/dl/77f93df70/czt8mutv-8rcug6ge-erffrmd5-5s9i76c3)
   
-  + Coordination
+  + [Infographics](https://ln2.sync.com/dl/8da6ec810/f8q6b3c7-vgnyxh76-cepdkgqu-e2q4d9na)
   
-  + Logistics
-  
-  + DRU
 
 ```{r}
 
@@ -1120,7 +1116,8 @@ godata_wide <- cases %>%
     # questionnaireAnswers.numeroIDcasIndex,
     # questionnaireanswers_liendeparente
   ),
-  keep_empty = TRUE, names_sep = "_")
+  keep_empty = TRUE, names_sep = "_") %>% 
+    remove_empty(c("rows", "cols")) 
 
 
 godata_clean <- godata_wide %>% 
@@ -1144,7 +1141,7 @@ godata_clean <- godata_wide %>%
     TRUE ~ as.integer(age_years))) %>%
   #Age group
   mutate(age_group=cut(age_years,breaks = c(seq(0, 70, by = 10), Inf), labels = age_labs, right = FALSE)) %>%
-  mutate(age_group=fct_explicit_na(age_group, na_level = "(missing)")) %>% 
+  mutate(age_group=fct_explicit_na(age_group, na_level = "(outcome missing)")) %>% 
   #Classification
   filter(classification != "lng_reference_data_category_case_classification_not_a_case_discarded") %>%
   mutate(classification = case_when(
@@ -1165,6 +1162,7 @@ godata_clean <- godata_wide %>%
             grepl('recovered', outcome_id, ignore.case=TRUE) ~ "recovered",
             grepl('death', questionnaire_answers_outcome, ignore.case=TRUE) ~ "dead"
   )) %>%
+        mutate(outcome=fct_explicit_na(outcome, na_level = "(missing)"))  %>% 
   #Risk level
   mutate(risk_level = case_when(
             grepl('low', risk_level, ignore.case=TRUE) ~ "low",
@@ -1214,7 +1212,30 @@ godata_clean <- godata_wide %>%
   #Pre-existing conditions
   #Hypertension
   mutate(htn=case_when(grepl('hypertension',questionnaire_answers_select_pre_existing_medical_condition,ignore.case=TRUE)~1,
-                         grepl('yes', questionnaire_answers_hypertension,ignore.case=TRUE)~1)) 
+                         grepl('yes', questionnaire_answers_hypertension,ignore.case=TRUE)~1)) %>% 
+  #Pre-existing conditions
+  #Hypertension
+  mutate(htn=case_when(grepl('hypertension',questionnaire_answers_select_pre_existing_medical_condition,ignore.case=TRUE)~1,
+                       grepl('yes', questionnaire_answers_hypertension,ignore.case=TRUE)~1)) %>% 
+  #Cardiovascular
+  mutate(cardiovascular=case_when(grepl('cardiovascular',questionnaire_answers_select_pre_existing_medical_condition,ignore.case=TRUE)~1,
+                       grepl('yes', questionnaire_answers_cardiovascular_disease,ignore.case=TRUE)~1)) %>% 
+  #Diabetes
+  mutate(diabetes=case_when(grepl('diabetes',questionnaire_answers_select_pre_existing_medical_condition,ignore.case=TRUE)~1,
+                       grepl('yes', questionnaire_answers_diabetes,ignore.case=TRUE)~1)) %>% 
+  #Lung disease
+  mutate(lung_disease=case_when(grepl('chronic lung',questionnaire_answers_select_pre_existing_medical_condition,ignore.case=TRUE)~1,
+                       grepl('yes', questionnaire_answers_chronic_lung_disease,ignore.case=TRUE)~1)) %>% 
+  #Time intervals
+   unnest(questionnaire_answers_date_sample_collected,   keep_empty = TRUE, names_sep = "_") %>% 
+  #Date of onset
+  mutate(date_symptom_onset_final=ymd(date_of_onset)) %>% 
+  #Date sample collected
+  mutate(date_sample_collected=ymd_hms(questionnaire_answers_date_sample_collected_value)) %>% 
+  mutate(date_sample_collected=as.Date(date_sample_collected)) %>% 
+  mutate(onset_sample=as.integer(date_sample_collected-date_symptom_onset_final))
+
+  
 
 
 ```
@@ -1263,6 +1284,7 @@ death_age_sex_gph <- ggplot(death_age_sex,
                      labels = abs(seq(-max_case, max_case, 2))) +
   labs(x = "Age", y = "Number of deaths", fill = '') +
   theme_minimal()
+
 ```
 
 
@@ -1279,26 +1301,44 @@ ggarrange(case_age_sex_gph, death_age_sex_gph, ncol=2, common.legend = TRUE, leg
 
 
 
-### Epicurves {data-height=350}
+### Cases by date and sex {data-height=350}
+
+```{r}
+
+godata_clean %>% 
+  #filter(classification=='confirmed') %>% 
+  count(date_symptom_onset_final, sex) %>% 
+  ggplot(.) +
+  geom_col(aes(x = date_symptom_onset_final, y = n, fill=sex)) +
+  scale_x_date(date_breaks = '7 day', date_minor_breaks = '1 day', 
+               date_labels = '%d %m') +
+  theme_minimal() +
+  #plot_settings +
+  labs(x = "Reporting date",
+       y = "Number of cases")
 
 
-#### To be added 
+```
+
+
 
 
 Column 
 -------------------------------------
 
-### Descriptive table
+### Cases by outcome 
 
 ```{r}
 label(godata_clean$age_years) <- "Age"
 label(godata_clean$sex) <- "Sex"
 label(godata_clean$outcome) <- "Outcome"
 label(godata_clean$questionnaire_answers_travel_outside_camps) <- "Travel outside camp (last 14 days)"
- label(godata_clean$status) <- "Status"
- label(godata_clean$risk_level) <- "Risk level"
+label(godata_clean$status) <- "Status"
+label(godata_clean$risk_level) <- "Risk level"
+label(godata_clean$onset_sample) <- "Symptom onest to sample taken (days)"
 
-table1(~ age_years + sex + outcome + risk_level , data=godata_clean, topclass="Rtable1-zebra",footnote="Data source: GoData") 
+table1(~ age_years  + sex + risk_level +onset_sample | outcome , data=godata_clean, topclass="Rtable1-zebra",footnote="Data source: GoData") 
+
 ```
 
 
@@ -1306,11 +1346,19 @@ table1(~ age_years + sex + outcome + risk_level , data=godata_clean, topclass="R
 
 ```{r symptoms}
 
-godata_clean %>% 
-    #filter(population_group=='Rohingya refugee/FDMN') %>% 
-    #filter(test_result=='Positive') %>% 
-    select(id, cough, rapid_breathing, resp_distress, runny_nose, fever) %>% 
+ godata_clean %>% 
+    select(id, cough, rapid_breathing, resp_distress, runny_nose, fever,loss_smell, fatigue, loss_appetite, sore_throat,diarrhoea) %>% 
     pivot_longer(-id) %>% 
+    mutate(name = case_when(name=='cough' ~ 'Cough',
+                            name=='rapid_breathing' ~ 'Rapid breathing',
+                            name=='resp_distress' ~ 'Respiratory distress',
+                            name=='runny_nose' ~ 'Runny nose',
+                            name=='fever' ~ 'Fever',
+                            name=='loss_smell' ~ 'Loss of smell',
+                            name=='fatigue' ~ 'Fatigue',
+                            name=='loss_appetite' ~ 'Loss of appetite',
+                            name=='sore_throat' ~ 'Sore throat',
+                            name=='diarrhoea' ~ 'Diarrhoea')) %>%
     filter(value==1) %>% 
     arrange(id, name) %>% 
     select(-value) %>% 
@@ -1321,15 +1369,14 @@ godata_clean %>%
     theme_bw() +
     labs(x = "",
          y = "Number of cases",
-         title="Distribution of symptoms at presentation",
+         #title="Distribution of symptoms at presentation",
          caption="Data source: GoData") +
-    scale_x_upset(n_intersections = 20)
-
+    scale_x_upset( n_intersections = 5) 
 
 ```
 
 
-SARI ITC  {data-orientation=rows data-navmenu="Facility monitoring" data-icon="fa-list"}
+SARI ITC & Isolation  {data-orientation=rows data-navmenu="Healthcare facility monitoring" data-icon="fa-list"}
 =====================================  
 
 
@@ -1340,7 +1387,7 @@ SARI ITC  {data-orientation=rows data-navmenu="Facility monitoring" data-icon="f
 ```
 
 
-Isolation  {data-orientation=rows data-navmenu="Facility monitoring" data-icon="fa-list"}
+Quarantine   {data-orientation=rows data-navmenu="Healthcare facility monitoring" data-icon="fa-list"}
 =====================================  
 
 
