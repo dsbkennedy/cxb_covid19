@@ -875,7 +875,7 @@ tmap_leaflet(map_host)
 
  
  
-FDMN/Rohynga community {data-orientation=columns}
+FDMN/Rohingya community {data-orientation=columns}
 =====================================  
 
 Row 
@@ -1095,7 +1095,7 @@ tmap_leaflet(map_fdmn)
 Epidemiology {data-orientation=columns}
 =====================================  
 
-This tab shows information from GoData. The data are only from the FDMN/Rohynga population. 
+This tab shows information from GoData. The data are only from the FDMN/Rohingya population. 
 
 
 
@@ -1305,7 +1305,7 @@ ggarrange(case_age_sex_gph, death_age_sex_gph, ncol=2, common.legend = TRUE, leg
 
 ```{r}
 
-godata_clean %>% 
+epi_curve <- godata_clean %>% 
   #filter(classification=='confirmed') %>% 
   count(date_symptom_onset_final, sex) %>% 
   ggplot(.) +
@@ -1314,9 +1314,10 @@ godata_clean %>%
                date_labels = '%d %m') +
   theme_minimal() +
   #plot_settings +
-  labs(x = "Reporting date",
+  labs(x = "Date of symptom onset",
        y = "Number of cases")
 
+ggplotly(epi_curve)
 
 ```
 
