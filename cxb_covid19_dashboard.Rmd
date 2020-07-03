@@ -94,6 +94,8 @@ all_cases_linelist <- all_cases_raw %>% clean_dates( force_Date  = all_date_cols
   mutate(camp=as.numeric(camp_of_residence)) %>% 
   mutate(population_group=case_when(nationality=='FDMN' ~ 'Rohingya refugee/FDMN',
                                     nationality=='Host' ~ 'Host community')) %>% 
+    mutate(upazilla=case_when(upazilla=='CXB Sadar' ~ 'Sadar', 
+                            TRUE~upazilla)) %>% 
   filter(!(is.na(population_group))) 
   
 
@@ -148,6 +150,30 @@ fdmn_population <-  859205
 
 Landing page
 =====================================  
+
+
+Row {data-height=400}
+-------------------------------------
+
+### Background 
+
+An estimated 745,000 Rohingya people have crossed from Myanmar into Cox’s Bazar, Bangladesh since August 2017, joining approximately 212,000 others who had fled in earlier waves of displacement. The living conditions of the refugee population remain extremely vulnerable. This is explained by many factors including the clustering of populations in hastily constructed settlements clinging to steep, rapidly deforested hillsides. Overcrowding, insufficient food, and poor water, sanitation and hygiene (WASH) present serious health threats. Since 2017 there have been multiple outbreaks of epidemic-prone diseases including cholera, diphtheria and measles that highlight the vulnerability of the Rohingya population.  
+
+### Situation Report
+
+
+
+### How to use this resource
+
+Data have been brought together from numerous sources to build up a picture of COVID-19 in Cox's Bazar.
+
+This is the landing page and it contains a summary of essential information on COVID-19. Additional resources can be fouund in the box on the bottom left portion of this page. 
+
+There are individual tabs for the "Host Community" & the "FDMN/Rohinyga Community". These tabs contain indicators which may be useful for understanding how COVID-19 is developing.   
+
+In the "Epidemiology" tab, data collected using GoData is presented to gain further insight into how COVID-19 is presenting in the Rohinyga population. 
+
+The final tab contains data on healthcare facility capacity for both SARI-ITC & Quarantine facilities. 
 
 
 ```{r test, eval=FALSE, include=FALSE}
@@ -249,191 +275,113 @@ flexdashboard::valueBox(
 
 
 
-Row {data-height=750}
+Row {data-height=350}
 -------------------------------------
 
 ### Table
 
 ```{r}
 
-# bgd_data <- fread('https://covid.ourworldindata.org/data/owid-covid-data.csv') %>% 
-#   filter(iso_code=='BGD') %>%        
-#   mutate(date_format=ymd(date))  %>% 
-#   mutate(case_growth=ifelse(lag(total_cases,7)>10,
-#                             ((total_cases/lag(total_cases,7))^(1/7))-1,NA),
-#          case_doubling=ifelse(case_growth>0,log(2)/case_growth,NA),
-#          case_doubling=ifelse(case_doubling>100,100,case_doubling)) 
-#   #select(date=date_format, name=iso_code, case_growth, case_doubling, total_cases)
-# 
-# 
-#   cxb_data <- tests_data %>%  
-#     select(date, fdmn_positive, host_positive) %>% 
-#     filter(!date %in% c('NULL', 'Total')) %>% 
-#     pivot_longer(-date) %>% 
-#     mutate(date_format=excel_numeric_to_date(as.numeric(date)))  %>% 
-#     arrange(date_format,name) %>% 
-#     group_by(name) %>% 
-#     mutate(total_cases=cumsum(value)) %>% 
-#     mutate(case_growth=ifelse(lag(total_cases,7)>10,
-#                               ((total_cases/lag(total_cases,7))^(1/7))-1,NA),
-#            case_doubling=ifelse(case_growth>0,log(2)/case_growth,NA),
-#            case_doubling=ifelse(case_doubling>100,100,case_doubling))  %>% 
-#     arrange(name, date_format) %>% 
-#     select(date=date_format, name, case_growth, case_doubling, total_cases)
-#   
-#   bgd_cxb_data_gph <- bgd_data %>% 
-#   bind_rows(cxb_data) %>% 
-#   ggplot(., aes(x=date, y=total_cases, color=name)) +
-#   geom_line() +
-#   labs(caption="Data source:Our World In Data (Bangladesh data), Lab linelist",
-#            x = "Date",
-#            y = "Total cases",
-#            fill="") +
-#       theme_tufte() +
-#       theme(legend.position="top") +
-#       scale_x_date(date_breaks = '7 day', date_minor_breaks = '1 day',
-#                    date_labels = '%d-%m') +
-#      scale_y_continuous(trans = 'log10') 
-# 
-#   
-# # bgd_cxb_data_gph <- bgd_data %>% 
-# #   bind_rows(cxb_data) %>% 
-# #   ggplot(., aes(x=date, y=case_doubling, color=name)) +
-# #   geom_line() +
-# #   labs(caption="Data source:Our World In Data (Bangladesh data), Lab linelist",
-# #            x = "Date",
-# #            y = "Case doubling time (days)",
-# #            fill="") +
-# #       theme_tufte() +
-# #       theme(legend.position="top") +
-# #       scale_x_date(date_breaks = '7 day', date_minor_breaks = '1 day',
-# #                    date_labels = '%d-%m')
-# 
-# ggplotly(bgd_cxb_data_gph)
-
-cxb_data <- tests_data %>%  
-  filter(!date %in% c('NULL', 'Total')) %>% 
-  mutate(date_format=excel_numeric_to_date(as.numeric(date)))  %>% 
-  select(date=date_format, fdmn,fdmn_positive, host,host_positive) %>% 
-  pivot_longer(-date) %>% 
-  mutate(indicator=case_when(grepl('positive', name) ~ 'Case', 
-                             TRUE ~ 'Test')) %>% 
-  mutate(population_group=case_when(grepl('fdmn', name) ~ 'Rohingya refugee/FDMN',
-                                    TRUE ~ 'Host community')) %>% 
-  select(-name) %>% 
-  pivot_wider(names_from = 'indicator') %>% 
-  select(date,new_tests=Test,new_cases=Case, population_group) %>% 
-  mutate(population=case_when(population_group=='Rohingya refugee/FDMN' ~ fdmn_population, 
-                              TRUE ~ host_population))
-
-# bgd_data <- fread('https://covid.ourworldindata.org/data/owid-covid-data.csv') %>% 
-#   filter(iso_code=='BGD') %>%        
-#   mutate(date_format=ymd(date)) %>% 
-#   select(date=date_format, new_tests,new_cases,population) %>% 
-#   mutate(population_group='Bangladesh')
-# 
-# cxb_bgd_data <- bgd_data %>% 
-#   bind_rows(cxb_data)
-# 
-# 
-# tests_per_million <- cxb_bgd_data %>% 
-#   group_by(population_group,population) %>% 
-#   summarise(total_tests= sum(new_tests, na.rm=TRUE)) %>% 
-#   mutate(tests_per_million=(total_tests/population)*1000000) %>% 
-#   mutate(tests_per_million=round(tests_per_million,0)) %>% 
-#   select(population_group, tests_per_million)
-# 
-# cases_per_million <- cxb_bgd_data %>% 
-#   group_by(population_group,population) %>% 
-#   summarise(total_cases= sum(new_cases, na.rm=TRUE)) %>% 
-#   mutate(cases_per_million=(total_cases/population)*1000000) %>% 
-#   mutate(cases_per_million=round(cases_per_million,0)) %>% 
-#   select(population_group, cases_per_million)
 
 host_population <-  2805491
 fdmn_population <-  859205 
 
 
-cxb_data <- tests_data %>%  
+#Cases
+cxb_cases <- all_cases_linelist %>% 
+  group_by(population_group,date_of_case_detection) %>% 
+  summarise(n = n(),.groups = 'drop') %>% 
+  select(date=date_of_case_detection, population_group, new_cases=n)
+
+#Deaths
+cxb_deaths <- all_cases_linelist %>% 
+  filter(x30_day_outcome=='Death') %>% 
+  group_by(population_group,date_of_case_detection) %>% 
+  summarise(n = n(),.groups = 'drop') %>% 
+  select(date=date_of_case_detection, population_group, new_deaths=n)
+
+#Tests
+cxb_tests <- tests_data %>%  
   filter(!date %in% c('NULL', 'Total')) %>% 
   mutate(date_format=excel_numeric_to_date(as.numeric(date)))  %>% 
-  select(date=date_format, fdmn,fdmn_positive, host,host_positive) %>% 
+  select(date=date_format, fdmn, host,) %>% 
   pivot_longer(-date) %>% 
-  mutate(indicator=case_when(grepl('positive', name) ~ 'Case', 
-                             TRUE ~ 'Test')) %>% 
-  mutate(population_group=case_when(grepl('fdmn', name) ~ 'Rohingya refugee/FDMN',
-                                    TRUE ~ 'Host community')) %>% 
-  select(-name) %>% 
-  pivot_wider(names_from = 'indicator') %>% 
-  select(date,new_tests=Test,new_cases=Case, population_group) %>% 
-  mutate(population=case_when(population_group=='Rohingya refugee/FDMN' ~ fdmn_population, 
-                              TRUE ~ host_population))
-
+  select(date, population_group=name, new_tests=value) %>% 
+  mutate(population_group=case_when(grepl('fdmn', population_group) ~ 'Rohingya refugee/FDMN',
+                                    TRUE ~ 'Host community')) 
+#Bangladesh data
 bgd_data <- fread('https://covid.ourworldindata.org/data/owid-covid-data.csv') %>% 
   filter(iso_code=='BGD') %>%        
   mutate(date_format=ymd(date)) %>% 
-  select(date=date_format, new_tests,new_cases,total_deaths, total_deaths_per_million,population) %>% 
+  select(date=date_format, new_tests,new_cases,new_deaths,population) %>% 
   mutate(population_group='Bangladesh')
 
-cxb_bgd_data <- bgd_data %>% 
-  bind_rows(cxb_data)
+first_date <- min(bgd_data$date)
+last_date <- today()
+
+#Combine CXB data
+
+cxb_table_data <- cxb_tests %>% 
+  full_join(cxb_cases, by=c('population_group', 'date')) %>% 
+  full_join(cxb_deaths, by=c('population_group', 'date')) %>% 
+  mutate(population=case_when(population_group=='Rohingya refugee/FDMN' ~ fdmn_population, 
+                              TRUE ~ host_population)) 
+rm(cxb_cases, cxb_deaths,cxb_tests)
 
 
-tests_per_million <- cxb_bgd_data %>% 
-  group_by(population_group,population) %>% 
-  summarise(total_tests= sum(new_tests, na.rm=TRUE),
-            today_tests=last(na.omit(new_tests))) %>% 
-  mutate(tests_per_million=(total_tests/population)*1000000) %>% 
-  mutate(tests_per_million=round(tests_per_million,0)) %>% 
-  select(population_group, total_tests, tests_per_million,today_tests)
+#Combine Bangaladesh and CXB data
+table_final_df <- bgd_data %>% 
+  bind_rows(cxb_table_data) %>% 
+  arrange(date, population_group) 
 
-cases_per_million <- cxb_bgd_data %>% 
-  group_by(population_group,population) %>% 
-  summarise(total_cases= sum(new_cases, na.rm=TRUE),
-            today_cases=last(na.omit(new_cases))) %>% 
-  mutate(cases_per_million=(total_cases/population)*1000000) %>% 
-  mutate(cases_per_million=round(cases_per_million,0)) %>% 
-  select(population_group, total_cases, cases_per_million,today_cases)
+rm(bgd_data, cxb_table_data)
+#Totals
+table_totals <- table_final_df %>% 
+  ungroup() %>% 
+  group_by(population_group, population) %>% 
+  summarise(total_tests=sum(new_tests, na.rm=TRUE),
+            total_cases=sum(new_cases, na.rm=TRUE),
+            total_deaths=sum(new_deaths, na.rm=TRUE)) %>% 
+  mutate(total_tests_pm=(total_tests/population)*1*10E5,
+         total_cases_pm=(total_cases/population)*1*10E5,
+         total_deaths_pm=(total_deaths/population)*1*10E5) %>% 
+  select(-population)
 
-case_growth_rate <- cxb_bgd_data %>% 
+#7-day
+table_7day <- table_final_df %>% 
+  ungroup() %>% 
+  filter(date > today() -7) %>% 
+  group_by(population_group, population) %>% 
+  summarise(total_tests_7day=sum(new_tests, na.rm=TRUE),
+            total_cases_7day=sum(new_cases, na.rm=TRUE),
+            total_deaths_7day=sum(new_deaths, na.rm=TRUE)) %>% 
+  mutate(total_tests_pm_7day=(total_tests_7day/population)*1*10E5,
+         total_cases_pm_7day=(total_cases_7day/population)*1*10E5,
+         total_deaths_pm_7day=(total_deaths_7day/population)*1*10E5)%>% 
+  select(-population)
+
+#Growth rate
+
+growth_rate <- table_final_df %>% 
   group_by(population_group) %>% 
   mutate(new_cases=coalesce(new_cases,0)) %>% 
-  mutate(cumulative_cases=cumsum(new_cases)) %>% 
-  select(date,population_group, cumulative_cases) %>% 
-  mutate(case_growth=ifelse(lag(cumulative_cases,7)>10,
-                            ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>% 
-  summarise(case_growth=last(case_growth))
+  mutate(cumulative_cases=cumsum(new_cases)) %>%
+  mutate(case_growth=ifelse(lag(cumulative_cases,7)>10, 
+                            ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>%
+                              summarise(case_growth=last(case_growth))
 
-cxb_deaths_per_million <- all_cases_linelist %>% 
-  filter(x30_day_outcome=='Death') %>% 
-  group_by(population_group) %>% 
-  summarise(n = n(),.groups = 'drop') %>% 
-  mutate(population=case_when(population_group=='Rohingya refugee/FDMN' ~ fdmn_population, 
-                              TRUE ~ host_population)) %>% 
-  mutate(deaths_per_million=(n/population)*1000000) %>% 
-  mutate(deaths_per_million=round(deaths_per_million,0)) %>% 
-  select(population_group, total_deaths=n, deaths_per_million)
+#Final calculations
+table_calc_comb <- table_totals %>% 
+  left_join(table_7day, by='population_group') %>% 
+  left_join(growth_rate, by='population_group') %>% 
+  mutate(test_pos=total_cases/total_tests, 
+         cfr=total_deaths/total_cases)
 
-deaths_per_million <- bgd_data %>% 
-  select(date, total_deaths, total_deaths_per_million) %>% 
-  summarise(total_deaths=last(total_deaths),
-    deaths_per_million=last(total_deaths_per_million)) %>% 
-  mutate(population_group='Bangladesh',
-         deaths_per_million=round(deaths_per_million,0)) %>% 
-  bind_rows(cxb_deaths_per_million)
+rm(table_totals,table_7day,growth_rate)
 
 
-
-comp_table <- tests_per_million %>% 
-  left_join(cases_per_million, by='population_group') %>% 
-    left_join(case_growth_rate, by='population_group') %>% 
-  left_join(deaths_per_million, by='population_group')
-
-comp_table %>% 
+table_calc_comb %>% 
   ungroup() %>%
-  select(population_group, total_cases, cases_per_million,case_growth, today_cases, total_deaths, deaths_per_million, total_tests, tests_per_million, today_tests) %>% 
-  mutate(cfr=total_deaths/total_cases) %>% 
-  mutate(test_positivity=total_cases/total_tests) %>% 
   gt(rowname_col = "population_group") %>% 
   tab_stubhead(label = "Population group") %>% 
   tab_header(
@@ -444,26 +392,30 @@ comp_table %>%
     total_tests = "Total",
     total_cases = "Total",
     total_deaths = "Total",
-    tests_per_million = "Per million",
-    cases_per_million = "Per million",
-    deaths_per_million = "Per million", 
-    today_cases = "Last 24 hours", 
-    today_tests = "Last 24 hours",
+    total_tests_pm = "Per million",
+    total_cases_pm = "Per million",
+    total_deaths_pm = "Per million", 
+    total_tests_7day = "Last 7 days", 
+    total_cases_7day = "Last 7 days",
+    total_deaths_7day = "Last 7 days",
+    total_tests_pm_7day   = "Per million",
+    total_cases_pm_7day   = "Per million",
+    total_deaths_pm_7day  = "Per million", 
     cfr = "Case Fatality Ratio", 
-    test_positivity = "Test positivity", 
+    test_pos = "Test positivity", 
     case_growth = "Growth rate"
   ) %>% 
   tab_spanner(
     label = "Cases",
-    columns = vars(total_cases, cases_per_million,today_cases,case_growth)
+    columns = vars(total_cases, total_cases_pm,total_cases_7day,total_cases_pm_7day,case_growth)
   ) %>% 
   tab_spanner(
     label = "Deaths",
-    columns = vars(total_deaths, deaths_per_million, cfr)
+    columns = vars(total_deaths, total_deaths_pm,total_deaths_7day,total_deaths_pm_7day, cfr)
   ) %>% 
   tab_spanner(
     label = "Tests",
-    columns = vars(total_tests, tests_per_million,today_tests,test_positivity)
+    columns = vars(total_tests, total_tests_pm,total_tests_7day,total_tests_pm_7day,test_pos)
   ) %>% 
   tab_style(
     style = list(
@@ -484,9 +436,13 @@ comp_table %>%
     columns = gt::everything()
   ) %>% 
   fmt_percent(
-    columns = vars(case_growth, cfr,test_positivity),
+    columns = vars(case_growth, cfr,test_pos),
     decimals = 1
-  ) 
+  ) %>% 
+  fmt_number(
+    columns=vars(total_cases_pm, total_cases_pm_7day, total_deaths_pm,total_deaths_pm_7day, total_tests_pm,total_tests_pm_7day),
+    decimals = 1
+  )
 
 
 ```
@@ -555,14 +511,18 @@ ggarrange(test_growth_gph, case_growth_gph, ncol=2, common.legend = TRUE, legend
 Row {data-height=250}
 -------------------------------------
 
-### Useful documents
+### Additional Resources
 
+
+  + [WHO Bangaladesh Rohingya Crisis](https://www.who.int/bangladesh/emergencies/Rohingyacrisis/bulletin-and-reports) 
 
   + [SOPs](https://ln2.sync.com/dl/f29c53860/2hqhzj3x-q476hijz-sf8admz2-9b8793y9) 
   
   + [Field manuals](https://ln2.sync.com/dl/77f93df70/czt8mutv-8rcug6ge-erffrmd5-5s9i76c3)
   
   + [Infographics](https://ln2.sync.com/dl/8da6ec810/f8q6b3c7-vgnyxh76-cepdkgqu-e2q4d9na)
+  
+  + [Healthcare facility monitoring (Live Dashboard)](https://worldhealthorg.shinyapps.io/cxb_dru_dashboard)
   
 
 ```{r}
@@ -583,73 +543,76 @@ knitr::include_graphics(here('data', 'who_logo.png'), dpi = 100)
 ```
 
 
+### Contact details
+
+If you have any questions contact -----
+
 
 ```{r data_formatting}
 
-#Total cases by camp
-cases_total <- all_cases_linelist %>% 
-  #filter(nationality!='Nationality') %>% 
-  mutate(upazilla=case_when(upazilla=='CXB Sadar' ~ 'Sadar', 
-                            TRUE~upazilla)) %>% 
-  count(population_group, upazilla, camp) %>% 
-  rename(confirmed=n) 
+#Cases
+cxb_cases_subloc <- all_cases_linelist %>% 
+  group_by(population_group,date_of_case_detection,upazilla, camp) %>% 
+  summarise(n = n(),.groups = 'drop') %>% 
+  select(date=date_of_case_detection, population_group,upazilla, camp, new_cases=n)
 
+#Deaths
+cxb_deaths_subloc <- all_cases_linelist %>% 
+  filter(x30_day_outcome=='Death') %>% 
+  group_by(population_group,date_of_case_detection,upazilla, camp) %>% 
+  summarise(n = n(),.groups = 'drop') %>% 
+  select(date=date_of_case_detection, population_group,upazilla, camp, new_deaths=n)
 
-fdmn_total <- cases_total %>% 
-  filter(population_group=='Rohingya refugee/FDMN')
-
-week_start <- today()-7
-
-#Cases in last days by camp
-cases_7days <- all_cases_linelist %>%
-  count(population_group, upazilla, camp,date_of_case_detection) %>% 
-  filter(date_of_case_detection>=week_start) %>% 
-  group_by(population_group, upazilla, camp) %>% 
-  slice(tail(row_number(), 7)) %>% 
-  mutate(sevenday_sum=sum(n)) %>% 
-  slice(tail(row_number(), 1)) %>% 
-  select(population_group, upazilla, camp,sevenday_sum)
-
-#Total in isolation
-isolation_total <- all_cases_linelist %>% 
-  filter(grepl('isolation', last_status_of_patient)) %>% 
-  count(population_group, upazilla, camp) %>% 
-  rename(isolation=n)
-
-#Total recovered
-recovered_total <- all_cases_linelist %>% 
-  filter(grepl('^Reco', x30_day_outcome)) %>% 
-  count(population_group, upazilla, camp) %>% 
-  rename(recovered=n)
-
-#Total deceased
-dead_total <-  all_cases_linelist %>%  
-  filter(grepl('Dea', x30_day_outcome)) %>% 
-  count(population_group, upazilla, camp) %>% 
-  rename(dead=n)
-
-#Camp population 
-# camp_population <- population %>% 
-#   filter(population_group=='fdmn') %>% 
-#   mutate(camp=as.numeric(str_extract_all(location, "[0-9]+")[[1]]))
-
-
-#library(stringr)
-
-
-#Formatted data table
-summaryTable_df <- cases_total %>% 
-  left_join(., cases_7days, by=c('population_group', 'upazilla', 'camp')) %>%
-  left_join(., recovered_total, by=c('population_group', 'upazilla', 'camp')) %>%
-  left_join(., dead_total, by=c('population_group', 'upazilla', 'camp'))  %>% 
+cxb_cases_deaths_subloc <- cxb_cases_subloc %>% 
+  full_join(cxb_deaths_subloc, by=c('population_group', 'date', 'upazilla', 'camp')) %>% 
   mutate(location=coalesce(as.character(camp),upazilla)) %>% 
-  left_join(., population, by='location') %>% 
-  mutate(prop_recovered=recovered/confirmed) %>% 
-  mutate(prop_dead=dead/confirmed) %>% 
-  mutate(attack_rate=confirmed/population*10000) %>% 
-  mutate(attack_rate=round(attack_rate,2)) %>% 
-  select(-c(population,location)) %>% 
-  arrange(camp)
+  full_join(., population, by='location') %>% 
+  filter(!is.na(population_group))
+
+rm(cxb_cases_subloc, cxb_deaths_subloc)
+
+#Totals
+table_totals_subloc <- cxb_cases_deaths_subloc %>% 
+  ungroup() %>% 
+  group_by(population_group, population, location) %>% 
+  summarise(total_cases=sum(new_cases, na.rm=TRUE),
+            total_deaths=sum(new_deaths, na.rm=TRUE)) %>% 
+  mutate(total_cases_pm=(total_cases/population)*1*10E5,
+         total_deaths_pm=(total_deaths/population)*1*10E5) %>% 
+    ungroup() %>% 
+  select(-population)
+
+#7-day
+table_7day_subloc <- cxb_cases_deaths_subloc %>% 
+  ungroup() %>% 
+  filter(date > today() -7) %>% 
+  group_by(population_group, population, location) %>% 
+  summarise(total_cases_7day=sum(new_cases, na.rm=TRUE),
+            total_deaths_7day=sum(new_deaths, na.rm=TRUE)) %>% 
+  mutate(total_cases_pm_7day=(total_cases_7day/population)*1*10E5,
+         total_deaths_pm_7day=(total_deaths_7day/population)*1*10E5)%>% 
+  ungroup() %>% 
+  select(-population)
+
+
+#Growth rate
+##Growth rate needs values larger than 10 so FDMN communities don't reach this criteria
+growth_rate_subloc <- cxb_cases_deaths_subloc %>% 
+  group_by(population_group,location) %>% 
+  mutate(new_cases=coalesce(new_cases,0)) %>% 
+  mutate(cumulative_cases=cumsum(new_cases)) %>%
+  mutate(case_growth=ifelse(lag(cumulative_cases,7)>10, 
+                            ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>%
+  summarise(case_growth=last(case_growth)) 
+
+
+#Final calculations
+table_calc_comb_subloc <- table_totals_subloc %>% 
+  left_join(table_7day_subloc, by=c('population_group','location')) %>% 
+  left_join(growth_rate_subloc, by=c('population_group','location')) %>% 
+  mutate( cfr=total_deaths/total_cases)
+
+rm(table_totals_subloc, table_7day_subloc,growth_rate_subloc)
 
 
 ```
@@ -667,59 +630,44 @@ Row
 
 
 ```{r}
-summaryTable_host <- 
-  summaryTable_df %>%  
-  filter(population_group=='Host community') %>% 
-  select(-c("recovered","prop_recovered","population_group","camp")) %>% 
+host_table_data <- table_calc_comb %>% 
+  filter(grepl('host', population_group, ignore.case = T)) %>% 
+  mutate(location="Total") %>% 
+  select(c(population_group,location,total_cases,total_deaths,total_cases_pm,total_deaths_pm,total_cases_7day,total_deaths_7day,   
+ total_cases_pm_7day,total_deaths_pm_7day,case_growth,cfr)) 
+
+#Host 
+summaryTable_host <- table_calc_comb_subloc %>% 
+  ungroup() %>%
+  filter(grepl('host', population_group, ignore.case=T)) %>% 
+  bind_rows(host_table_data) %>% 
+  select(-population_group) %>% 
   gt() %>% 
-  opt_row_striping(., row_striping = TRUE) %>% 
-  tab_spanner(
-    label = "Cases",
-    columns = vars(confirmed, sevenday_sum, attack_rate)
-  ) %>% 
-  tab_spanner(
-    label = "Dead",
-    columns = vars(dead, prop_dead)
-  ) %>% 
-  fmt_percent(
-    columns = vars(prop_dead),
-    decimals = 1
-  ) %>% 
-  fmt_missing(
-    columns = 2:5,
-    missing_text = ""
+    tab_header(
+    title = "Host Community Summary",
+    subtitle = ""
   ) %>% 
   cols_label(
-    #population_group = "Population group",
-    upazilla = "Upazilla",
-    #camp = "Camp",
-    confirmed = "Total",
-    sevenday_sum = "Last 7 days",
-  attack_rate = "Attack Rate",
-    #recovered = "(n)",
-    dead = "(n)",
-    #prop_recovered = "(%)",
-    prop_dead = "CFR"
+    location = "Upazilla",
+    total_cases = "Total",
+    total_deaths = "Total",
+    total_cases_pm = "Per million",
+    total_deaths_pm = "Per million", 
+    total_cases_7day = "Last 7 days",
+    total_deaths_7day = "Last 7 days",
+    total_cases_pm_7day   = "Per million",
+    total_deaths_pm_7day  = "Per million", 
+    cfr = "Case Fatality Ratio", 
+    case_growth = "Growth rate"
   ) %>% 
-grand_summary_rows(
-  columns = c("confirmed","sevenday_sum","dead"),
-  fns = list(
-    "Total" = ~sum(.,na.rm = TRUE)),
-  formatter = fmt_number,
-  decimals=0,
-  use_seps = FALSE
-)  %>% 
-  (function(x) {
-    res <- function() x$`_data` %>% 
-      dplyr::summarize(prop_dead = sum(dead, na.rm=TRUE) / sum(confirmed, na.rm=TRUE)) %>% 
-      dplyr::pull(.data$prop_dead)
-    
-    grand_summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_dead),
-                       formatter = fmt_percent,
-                       decimals = 1,
-                       use_seps = TRUE)
-  }) %>% 
-  tab_source_note("Data Source: FDMN/Host Linelist") %>% 
+  tab_spanner(
+    label = "Cases",
+    columns = vars(total_cases, total_cases_pm,total_cases_7day,total_cases_pm_7day,case_growth)
+  ) %>% 
+  tab_spanner(
+    label = "Deaths",
+    columns = vars(total_deaths, total_deaths_pm,total_deaths_7day,total_deaths_pm_7day, cfr)
+  ) %>% 
   tab_style(
     style = list(
       cell_borders(
@@ -738,6 +686,15 @@ grand_summary_rows(
     align = "center",
     columns = gt::everything()
   ) %>% 
+  fmt_percent(
+    columns = vars(case_growth, cfr),
+    decimals = 1
+  ) %>% 
+  fmt_number(
+    columns=vars(total_cases_pm, total_cases_pm_7day, total_deaths_pm,total_deaths_pm_7day),
+    decimals = 1
+  ) %>% 
+  tab_source_note("Data Source: FDMN/Host Linelist") %>% 
   tab_options(
     container.overflow.x = TRUE,
     container.overflow.y = TRUE,
@@ -780,116 +737,20 @@ Column
 
 ```{r host_map}
 
-# shp_file_host<- read_sf(list.files(here('data','shapefiles'), 
-#                                pattern='districe.shp$', 
-#                                full.names = T))  %>% 
-#   clean_names() %>% 
-#   mutate(upazilla=case_when(grepl('sadar', adm3_en, ignore.case=TRUE) ~ 'Sadar',
-#                             grepl('Maheshkhali', adm3_en, ignore.case=TRUE) ~ 'Moheshkhali',
-#                             grepl('Chakaria', adm3_en, ignore.case=TRUE) ~ 'Chokoria',
-#                            TRUE ~ adm3_en))
-
-# case_shp_host <- summaryTable_df %>% 
-#   filter(population_group=='Host community') %>% 
-#   #mutate(code=(camp)) %>% 
-#   select(upazilla,confirmed) %>% 
-#   #filter(!is.na(upazilla)) %>% 
-#   left_join(shp_file_host,.,by=c('upazilla'='upazilla'))
-# 
-# 
-# 
-# pal_host <- colorNumeric(
-#   palette = "YlOrRd",
-#   domain = case_shp_host$confirmed)
-# 
-# labels_host<- sprintf(
-#   "<strong>%s</strong><br/>%g cases",
-#   case_shp_host$adm3_en, case_shp_host$confirmed) %>% 
-#   lapply(htmltools::HTML)
-# 
-# 
-# 
-# map_fdmn <- leaflet(case_shp_host) %>% 
-#   #addBingTiles(apikey = "AnaeBcYpazAbocaXxVvcxxKJZj9w9nRH0UGTuix0FZ8HQjE6R-31VwpZlGAD6Fei") %>%
-#   addProviderTiles("OpenStreetMap") %>% 
-#   addPolygons(fillColor = ~pal_host(confirmed),
-#               weight = 2,
-#               opacity = 1,
-#               color = "white",
-#               dashArray = "3",
-#               fillOpacity = 0.7,
-#               label = labels_host,
-#               labelOptions = labelOptions(
-#                 style = list("font-weight" = "normal", padding = "3px 8px"),
-#                 textsize = "15px",
-#                 direction = "auto")) %>%
-#   addLegend(pal = pal_host, 
-#             values = ~confirmed, opacity = 0.7,
-#             position = "bottomright", title="Confirmed cases (n)")
-# map_fdmn
-
-
 
 shp_file_host <- read_sf(here('data', 'shapefiles', 'cxb_shp.shp'))
 
-case_shp_host <- summaryTable_df %>% 
+
+case_shp_host <- table_calc_comb_subloc %>% 
   filter(population_group=='Host community') %>% 
-  #mutate(code=(camp)) %>% 
-  select(upazilla,confirmed) %>% 
-  #filter(!is.na(upazilla)) %>% 
-  left_join(shp_file_host,.,by=c('upazilla'='upazilla'))
+  #mutate(code=location) %>% 
+  rename(upazilla = location) %>% 
+  select(upazilla,total_cases) %>% 
+  left_join(shp_file_host,.,by='upazilla')
 
-
-
-# pal_host <- colorNumeric(
-#   palette = "YlOrRd",
-#   domain = case_shp_host$confirmed)
-# 
-# labels_host<- sprintf(
-#   "<strong>%s</strong><br/>%g cases",
-#   case_shp_host$upazilla, case_shp_host$confirmed) %>%
-#   lapply(htmltools::HTML)
-# 
-# 
-# 
-# leaflet(case_shp_host) %>%
-#   addProviderTiles("OpenStreetMap") %>%
-#   addPolygons(fillColor = ~pal_host(confirmed),
-#               weight = 2,
-#               opacity = 1,
-#               color = "white",
-#               dashArray = "3",
-#               fillOpacity = 0.7,
-#               label = labels_host,
-#               labelOptions = labelOptions(
-#                 style = list("font-weight" = "normal", padding = "3px 8px"),
-#                 textsize = "15px",
-#                 direction = "auto")) %>%
-#   addLegend(pal = pal_host,
-#             values = ~confirmed, opacity = 0.7,
-#             position = "bottomright", title="Confirmed cases (n)")
-#
-# 
-# ggplot(data = case_shp_host) +
-#   geom_sf(aes(fill = confirmed)) +
-#   scale_fill_viridis_c() 
-
-#tmap_mode("plot")
-
-# tm_shape(case_shp_host) + 
-#   tm_polygons("confirmed", title="Confirmed COVID-19 cases", palette='YlOrRd') +   
-#   tm_text("upazilla", root=5) +
-#   tm_legend(text.size=1,
-#             title.size=1.2,
-#             position = c("left","bottom"), 
-#             bg.color = "white", 
-#             bg.alpha=.2, 
-#             width=.8,
-#             frame="white", 
-#             height=.6)
 
 map_host  <- tm_shape(case_shp_host) + 
-  tm_polygons("confirmed", 
+  tm_polygons("total_cases", 
               style = "fixed",
               breaks = c(0, 100, 250, 500,1000,2000),
               title="Confirmed COVID-19 cases", 
@@ -922,103 +783,198 @@ Row
     
 ```{r}
 
-summaryTable_fdmn <- summaryTable_df %>%  
-      filter(population_group=='Rohingya refugee/FDMN') %>% 
-      mutate(camp=factor(camp)) %>% 
-      mutate(camp=fct_explicit_na(camp, na_level = "(missing)"))  %>% 
-      group_by(camp) %>% 
-      summarise(confirmed=sum(confirmed, na.rm=TRUE),
-                sevenday_sum=sum(sevenday_sum, na.rm=TRUE),
-                dead=sum(dead, na.rm=TRUE),
-                attack_rate=sum(attack_rate, na.rm=TRUE)) %>% 
-  #select(-upazilla) %>% 
-    #select(-c("recovered","prop_recovered","population_group","")) %>% 
-  mutate(prop_dead=dead/confirmed) %>% 
-    #filter(nationality==input$nationality1) %>% 
-    #gt() %>% 
-  gt(
-   # groupname_col = "population_group"
+# summaryTable_fdmn <- summaryTable_df %>%  
+#       filter(population_group=='Rohingya refugee/FDMN') %>% 
+#       mutate(camp=factor(camp)) %>% 
+#       mutate(camp=fct_explicit_na(camp, na_level = "(missing)"))  %>% 
+#       group_by(camp) %>% 
+#       summarise(confirmed=sum(confirmed, na.rm=TRUE),
+#                 sevenday_sum=sum(sevenday_sum, na.rm=TRUE),
+#                 dead=sum(dead, na.rm=TRUE),
+#                 attack_rate=sum(attack_rate, na.rm=TRUE)) %>% 
+#   #select(-upazilla) %>% 
+#     #select(-c("recovered","prop_recovered","population_group","")) %>% 
+#   mutate(prop_dead=dead/confirmed) %>% 
+#     #filter(nationality==input$nationality1) %>% 
+#     #gt() %>% 
+#   gt(
+#    # groupname_col = "population_group"
+#   ) %>% 
+#     opt_row_striping(., row_striping = TRUE) %>% 
+#     tab_spanner(
+#       label = "Cases",
+#       columns = vars(confirmed, sevenday_sum,attack_rate)
+#     ) %>% 
+#     # tab_spanner(
+#     #   label = "Recovered",
+#     #   columns = vars(recovered, prop_recovered)
+#     # ) %>% 
+#     tab_spanner(
+#       label = "Dead",
+#       columns = vars(dead, prop_dead)
+#     ) %>% 
+#     fmt_percent(
+#       columns = vars(prop_dead),
+#       decimals = 1
+#     ) %>% 
+#     fmt_missing(
+#       columns = 2:5,
+#       missing_text = ""
+#     ) %>% 
+#     cols_label(
+#       #population_group = "Population group",
+#       #upazilla = "Upazilla",
+#       camp = "Camp",
+#       confirmed = "Total",
+#       sevenday_sum = "Last 7 days",
+#       attack_rate = "Attack Rate",
+#       #recovered = "(n)",
+#       dead = "(n)",
+#       #prop_recovered = "(%)",
+#       prop_dead = "CFR"
+#     ) %>% 
+#     grand_summary_rows(
+#       columns = c("confirmed","sevenday_sum","dead"),
+#       fns = list(
+#         "Total" = ~sum(.,na.rm = TRUE)),
+#       formatter = fmt_number,
+#       decimals=0,
+#       use_seps = FALSE
+#     )  %>% 
+#     (function(x) {
+#       res <- function() x$`_data` %>% 
+#         dplyr::summarize(prop_dead = sum(dead, na.rm=TRUE) / sum(confirmed, na.rm=TRUE)) %>% 
+#         dplyr::pull(.data$prop_dead)
+#       
+#       grand_summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_dead),
+#                    formatter = fmt_percent,
+#                    decimals = 1,
+#                    use_seps = TRUE)
+#     }) %>% 
+#     tab_source_note("Data Source: FDMN/Host Linelist") %>% 
+#     tab_style(
+#       style = list(
+#         cell_borders(
+#           sides = "bottom",
+#           color = "black",
+#           weight = px(3)
+#         )
+#       ),
+#       locations = list(
+#         cells_column_labels(
+#           columns = gt::everything()
+#         )
+#       )
+#     ) %>% 
+#     cols_align(
+#       align = "center",
+#       columns = gt::everything()
+#     ) %>% 
+#   tab_options(
+#     container.overflow.x = TRUE,
+#     container.overflow.y = TRUE,
+#     grand_summary_row.background.color = "lightblue")
+
+
+
+fdmn_table_data <- table_calc_comb %>% 
+  filter(grepl('fdmn', population_group, ignore.case = T)) %>% 
+  mutate(location="Total") %>% 
+  select(c(population_group,location,total_cases,total_deaths,total_cases_pm,total_deaths_pm,total_cases_7day,total_deaths_7day,   
+           total_cases_pm_7day,total_deaths_pm_7day,case_growth,cfr)) 
+
+#FDMN 
+summaryTable_fdmn <- table_calc_comb_subloc %>% 
+  ungroup() %>%
+  filter(grepl('fdmn', population_group, ignore.case=T)) %>% 
+  bind_rows(fdmn_table_data) %>% 
+  mutate(location=case_when(grepl('ukhia', location, ignore.case=T)~'Camp missing (Ukhia)',
+                            grepl('teknaf', location, ignore.case=T)~'Camp missing (Teknaf)',
+                            TRUE ~ location)) %>% 
+  #mutate(total_cases_pm=ifelse())
+  mutate(total_cases_pm=ifelse(grepl('ukhia', location, ignore.case=T),NA, 
+                                ifelse(grepl('teknaf', location, ignore.case=T), NA, total_cases_pm))) %>% 
+  mutate(total_deaths_pm=ifelse(grepl('ukhia', location, ignore.case=T),NA, 
+                               ifelse(grepl('teknaf', location, ignore.case=T), NA, total_deaths_pm))) %>% 
+  mutate(total_cases_pm_7day=ifelse(grepl('ukhia', location, ignore.case=T),NA, 
+                               ifelse(grepl('teknaf', location, ignore.case=T), NA, total_cases_pm_7day))) %>% 
+  mutate(total_deaths_pm_7day=ifelse(grepl('ukhia', location, ignore.case=T),NA, 
+                               ifelse(grepl('teknaf', location, ignore.case=T), NA, total_deaths_pm_7day))) %>% 
+  select(-population_group) %>% 
+  gt() %>% 
+  tab_header(
+    title = "Rohingya refugee/FDMN Summary",
+    subtitle = ""
   ) %>% 
-    opt_row_striping(., row_striping = TRUE) %>% 
-    tab_spanner(
-      label = "Cases",
-      columns = vars(confirmed, sevenday_sum,attack_rate)
-    ) %>% 
-    # tab_spanner(
-    #   label = "Recovered",
-    #   columns = vars(recovered, prop_recovered)
-    # ) %>% 
-    tab_spanner(
-      label = "Dead",
-      columns = vars(dead, prop_dead)
-    ) %>% 
-    fmt_percent(
-      columns = vars(prop_dead),
-      decimals = 1
-    ) %>% 
-    fmt_missing(
-      columns = 2:5,
-      missing_text = ""
-    ) %>% 
-    cols_label(
-      #population_group = "Population group",
-      #upazilla = "Upazilla",
-      camp = "Camp",
-      confirmed = "Total",
-      sevenday_sum = "Last 7 days",
-      attack_rate = "Attack Rate",
-      #recovered = "(n)",
-      dead = "(n)",
-      #prop_recovered = "(%)",
-      prop_dead = "CFR"
-    ) %>% 
-    grand_summary_rows(
-      columns = c("confirmed","sevenday_sum","dead"),
-      fns = list(
-        "Total" = ~sum(.,na.rm = TRUE)),
-      formatter = fmt_number,
-      decimals=0,
-      use_seps = FALSE
-    )  %>% 
-    (function(x) {
-      res <- function() x$`_data` %>% 
-        dplyr::summarize(prop_dead = sum(dead, na.rm=TRUE) / sum(confirmed, na.rm=TRUE)) %>% 
-        dplyr::pull(.data$prop_dead)
-      
-      grand_summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_dead),
-                   formatter = fmt_percent,
-                   decimals = 1,
-                   use_seps = TRUE)
-    }) %>% 
-    tab_source_note("Data Source: FDMN/Host Linelist") %>% 
-    tab_style(
-      style = list(
-        cell_borders(
-          sides = "bottom",
-          color = "black",
-          weight = px(3)
-        )
-      ),
-      locations = list(
-        cells_column_labels(
-          columns = gt::everything()
-        )
+  cols_label(
+    location = "Camp",
+    total_cases = "Total",
+    total_deaths = "Total",
+    total_cases_pm = "Per million",
+    total_deaths_pm = "Per million", 
+    total_cases_7day = "Last 7 days",
+    total_deaths_7day = "Last 7 days",
+    total_cases_pm_7day   = "Per million",
+    total_deaths_pm_7day  = "Per million", 
+    cfr = "Case Fatality Ratio", 
+    case_growth = "Growth rate"
+  ) %>% 
+  tab_spanner(
+    label = "Cases",
+    columns = vars(total_cases, total_cases_pm,total_cases_7day,total_cases_pm_7day,case_growth)
+  ) %>% 
+  tab_spanner(
+    label = "Deaths",
+    columns = vars(total_deaths, total_deaths_pm,total_deaths_7day,total_deaths_pm_7day, cfr)
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "bottom",
+        color = "black",
+        weight = px(3)
       )
-    ) %>% 
-    cols_align(
-      align = "center",
-      columns = gt::everything()
-    ) %>% 
+    ),
+    locations = list(
+      cells_column_labels(
+        columns = gt::everything()
+      )
+    )
+  ) %>% 
+  cols_align(
+    align = "center",
+    columns = gt::everything()
+  ) %>% 
+  fmt_percent(
+    columns = vars(case_growth, cfr),
+    decimals = 1
+  ) %>% 
+  fmt_number(
+    columns=vars(total_cases_pm, total_cases_pm_7day, total_deaths_pm,total_deaths_pm_7day),
+    decimals = 1
+  ) %>% 
+  tab_source_note("Data Source: FDMN/Host Linelist") %>% 
   tab_options(
     container.overflow.x = TRUE,
     container.overflow.y = TRUE,
-    grand_summary_row.background.color = "lightblue")
+    grand_summary_row.background.color = "lightblue") %>% 
+  fmt_missing(
+    columns = 2:10,
+    missing_text = "-"
+  ) %>% 
+  tab_footnote(
+    footnote = "Growth rate can only be calculated when there have been at least 10 cases",
+    locations = cells_column_labels(
+      columns = vars(case_growth))
+  )
+
+
 
 summaryTable_fdmn
 ```
 
 
-### Testing {data-height=350}
+### Tests and cases over time {data-height=350}
 
 ```{r}
 testing_fdmn_gph <-  test_nationality %>% 
@@ -1054,64 +1010,20 @@ shp_file_fdmn <- read_sf(list.files(here('data','shapefiles'),
   clean_names() %>% 
   mutate(code=as.numeric(code))
 
-case_shp_fdmn <- summaryTable_df %>% 
+case_shp_fdmn <- table_calc_comb_subloc %>% 
   filter(population_group=='Rohingya refugee/FDMN') %>% 
-  mutate(code=(camp)) %>% 
-  select(code,confirmed) %>% 
+  filter(location %in% c('Ukhia', 'Teknaf')) %>% 
+  mutate(code=as.numeric(location)) %>% 
+  select(code,total_cases) %>% 
   filter(!is.na(code)) %>% 
   left_join(shp_file_fdmn,.,by='code')
 
 
-# pal_fdmn <- colorNumeric(
-#   palette = "YlOrRd",
-#   domain = case_shp_fdmn$confirmed)
-# 
-# labels_fdmn <- sprintf(
-#   "<strong>%s</strong><br/>%g cases",
-#   case_shp_fdmn$new_camp_n, case_shp_fdmn$confirmed
-# ) %>% lapply(htmltools::HTML)
-# 
-# 
-# 
-# map_fdmn <- leaflet(case_shp_fdmn) %>% 
-#   #addBingTiles(apikey = "AnaeBcYpazAbocaXxVvcxxKJZj9w9nRH0UGTuix0FZ8HQjE6R-31VwpZlGAD6Fei") %>%
-#   addProviderTiles("OpenStreetMap") %>% 
-#   addPolygons(fillColor = ~pal_fdmn(confirmed),
-#               weight = 2,
-#               opacity = 1,
-#               color = "white",
-#               dashArray = "3",
-#               fillOpacity = 0.7,
-#               label = labels_fdmn,
-#               labelOptions = labelOptions(
-#                 style = list("font-weight" = "normal", padding = "3px 8px"),
-#                 textsize = "15px",
-#                 direction = "auto")) %>% 
-#   addLegend(pal = pal_fdmn, 
-#             values = ~confirmed, opacity = 0.7,
-#             position = "bottomright", title="Confirmed cases (n)")
-
-# case_shp_fdmn %>% 
-#   mutate(camp=gsub('Camp', '', new_camp_n)) %>% 
-# tm_shape(.) + 
-#   tm_polygons("confirmed", title="Confirmed COVID-19 cases", palette='YlOrRd') +   
-#   tm_text("camp", root=5, text.size = 0.6) +
-#   tm_legend(text.size=1,
-#             title.size=1.2,
-#             position = c("left","bottom"), 
-#             bg.color = "white", 
-#             bg.alpha=.2, 
-#             width=.8,
-#             frame="white", 
-#             height=.6) +
-#   tm_facets("upazila") 
-
-#map_fdmn
 
 map_fdmn <- case_shp_fdmn %>% 
   mutate(camp=gsub('Camp', '', new_camp_n)) %>% 
   tm_shape(.) + 
-  tm_polygons("confirmed", title="Confirmed COVID-19 cases", palette='YlOrRd', id="confirmed") +   
+  tm_polygons("total_cases", title="Confirmed COVID-19 cases", palette='YlOrRd', id="confirmed") +   
   tm_text("camp", root=5) +
   tm_legend(text.size=1,
             title.size=1.2,
@@ -1134,6 +1046,7 @@ Epidemiology {data-orientation=columns}
 
 This tab shows information from GoData. The data are only from the FDMN/Rohingya population. 
 
+Where there is a discrepancy between the total number of cases in this tab and the Rohingya tab, data have yet to be entered into GoData.
 
 
 ```{r epi_wranging}
