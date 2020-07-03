@@ -372,7 +372,7 @@ cxb_data <- tests_data %>%
 bgd_data <- fread('https://covid.ourworldindata.org/data/owid-covid-data.csv') %>% 
   filter(iso_code=='BGD') %>%        
   mutate(date_format=ymd(date)) %>% 
-  select(date=date_format, new_tests,new_cases,total_deaths_per_million,population) %>% 
+  select(date=date_format, new_tests,new_cases,total_deaths, total_deaths_per_million,population) %>% 
   mutate(population_group='Bangladesh')
 
 cxb_bgd_data <- bgd_data %>% 
@@ -381,17 +381,28 @@ cxb_bgd_data <- bgd_data %>%
 
 tests_per_million <- cxb_bgd_data %>% 
   group_by(population_group,population) %>% 
-  summarise(total_tests= sum(new_tests, na.rm=TRUE)) %>% 
+  summarise(total_tests= sum(new_tests, na.rm=TRUE),
+            today_tests=last(na.omit(new_tests))) %>% 
   mutate(tests_per_million=(total_tests/population)*1000000) %>% 
   mutate(tests_per_million=round(tests_per_million,0)) %>% 
-  select(population_group, tests_per_million)
+  select(population_group, total_tests, tests_per_million,today_tests)
 
 cases_per_million <- cxb_bgd_data %>% 
   group_by(population_group,population) %>% 
-  summarise(total_cases= sum(new_cases, na.rm=TRUE)) %>% 
+  summarise(total_cases= sum(new_cases, na.rm=TRUE),
+            today_cases=last(na.omit(new_cases))) %>% 
   mutate(cases_per_million=(total_cases/population)*1000000) %>% 
   mutate(cases_per_million=round(cases_per_million,0)) %>% 
-  select(population_group, cases_per_million)
+  select(population_group, total_cases, cases_per_million,today_cases)
+
+case_growth_rate <- cxb_bgd_data %>% 
+  group_by(population_group) %>% 
+  mutate(new_cases=coalesce(new_cases,0)) %>% 
+  mutate(cumulative_cases=cumsum(new_cases)) %>% 
+  select(date,population_group, cumulative_cases) %>% 
+  mutate(case_growth=ifelse(lag(cumulative_cases,7)>10,
+                            ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>% 
+  summarise(case_growth=last(case_growth))
 
 cxb_deaths_per_million <- all_cases_linelist %>% 
   filter(x30_day_outcome=='Death') %>% 
@@ -401,32 +412,58 @@ cxb_deaths_per_million <- all_cases_linelist %>%
                               TRUE ~ host_population)) %>% 
   mutate(deaths_per_million=(n/population)*1000000) %>% 
   mutate(deaths_per_million=round(deaths_per_million,0)) %>% 
-  select(population_group, deaths_per_million)
+  select(population_group, total_deaths=n, deaths_per_million)
 
 deaths_per_million <- bgd_data %>% 
-  select(date, total_deaths_per_million) %>% 
-  summarise(deaths_per_million=last(total_deaths_per_million)) %>% 
+  select(date, total_deaths, total_deaths_per_million) %>% 
+  summarise(total_deaths=last(total_deaths),
+    deaths_per_million=last(total_deaths_per_million)) %>% 
   mutate(population_group='Bangladesh',
          deaths_per_million=round(deaths_per_million,0)) %>% 
   bind_rows(cxb_deaths_per_million)
 
 
+
 comp_table <- tests_per_million %>% 
   left_join(cases_per_million, by='population_group') %>% 
+    left_join(case_growth_rate, by='population_group') %>% 
   left_join(deaths_per_million, by='population_group')
 
 comp_table %>% 
-  ungroup() %>% 
+  ungroup() %>%
+  select(population_group, total_cases, cases_per_million,case_growth, today_cases, total_deaths, deaths_per_million, total_tests, tests_per_million, today_tests) %>% 
+  mutate(cfr=total_deaths/total_cases) %>% 
+  mutate(test_positivity=total_cases/total_tests) %>% 
   gt(rowname_col = "population_group") %>% 
   tab_stubhead(label = "Population group") %>% 
   tab_header(
-    title = "Comparing COVID-19 indicators",
-    subtitle = "All figures are standardised to per million people"
+    title = "COVID-19 summary table",
+    subtitle = ""
   ) %>% 
   cols_label(
-    tests_per_million = "Total tests",
-    cases_per_million = "Total cases",
-    deaths_per_million = "Total deaths"
+    total_tests = "Total",
+    total_cases = "Total",
+    total_deaths = "Total",
+    tests_per_million = "Per million",
+    cases_per_million = "Per million",
+    deaths_per_million = "Per million", 
+    today_cases = "Last 24 hours", 
+    today_tests = "Last 24 hours",
+    cfr = "Case Fatality Ratio", 
+    test_positivity = "Test positivity", 
+    case_growth = "Growth rate"
+  ) %>% 
+  tab_spanner(
+    label = "Cases",
+    columns = vars(total_cases, cases_per_million,today_cases,case_growth)
+  ) %>% 
+  tab_spanner(
+    label = "Deaths",
+    columns = vars(total_deaths, deaths_per_million, cfr)
+  ) %>% 
+  tab_spanner(
+    label = "Tests",
+    columns = vars(total_tests, tests_per_million,today_tests,test_positivity)
   ) %>% 
   tab_style(
     style = list(
@@ -445,19 +482,19 @@ comp_table %>%
   cols_align(
     align = "center",
     columns = gt::everything()
+  ) %>% 
+  fmt_percent(
+    columns = vars(case_growth, cfr,test_positivity),
+    decimals = 1
   ) 
 
 
 ```
 
-This table shows that the number of tests per million people is substantially lower for the Rohingya Refugee/FDMN population compared to both the host community and to all of Bangladesh. 
 
 
-This low level of testing may also explain the low number of cases per million people among the Rohingya Refugee/FDMN population compared to the other population groups
-
+```{r eval=FALSE, include=FALSE}
 ### Graph
-
-```{r}
 
 test_growth_rate <- cxb_bgd_data %>% 
   group_by(population_group) %>% 
