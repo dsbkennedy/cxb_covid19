@@ -44,7 +44,7 @@ library(tidyr)
 #library(RcppRoll)
 #library(scales)
 library(sf)
-#library(leaflet)
+library(leaflet)
 #library(patchwork)
 library(flexdashboard)
 #library(linelist)
@@ -514,7 +514,7 @@ Row {data-height=250}
 ### Additional Resources
 
 
-  + [WHO Bangaladesh Rohingya Crisis](https://www.who.int/bangladesh/emergencies/Rohingyacrisis/bulletin-and-reports) 
+  + [WHO Bangaladesh Rohingya Crisis](https://www.who.int/bangladesh/emergencies/Rohingyacrisis/bulletin-and-reports){target="_blank"}
 
   + [SOPs](https://ln2.sync.com/dl/f29c53860/2hqhzj3x-q476hijz-sf8admz2-9b8793y9) 
   
@@ -709,17 +709,18 @@ summaryTable_host
 
 testing_host_gph <-  test_nationality %>% 
       filter(name %in% c('host', 'host_positive')) %>% 
-      ggplot(., aes(x=date_format, y=value, fill=name)) +
-               geom_bar(stat="identity",position ="identity") +
-      scale_fill_manual(values=c("#ED7D31","#4472C4"), labels=c('tests','cases')) +
-      labs(caption="Data source: Lab data",
-           x = "Date",
-           y = "Number of tests",
-           fill="") +
-      theme_tufte() +
-      theme(legend.position="top") +
-      scale_x_date(date_breaks = '7 day', date_minor_breaks = '1 day',
-                   date_labels = '%d-%m')
+       mutate(name_fac=factor(name,levels=c('host', 'host_positive'), 
+                         labels=c('Tests', 'Cases'))) %>% 
+  ggplot(., aes(x=date_format, y=value, fill=name_fac)) +
+  geom_bar(stat="identity") +
+    scale_fill_manual(values=c("#ED7D31","#4472C4")) +
+  scale_x_date(date_breaks = '7 day', date_minor_breaks = '1 day',
+               date_labels = '%d-%m') +
+  labs(caption="Data source: Lab data",
+       x = "Date",
+       y = "Count",
+       fill="") +
+  theme_minimal()
 
 ggplotly(testing_host_gph)
 
@@ -736,7 +737,43 @@ Column
 
 
 ```{r host_map}
-
+###Leafelt code
+# leaflet(case_shp_host) %>% 
+#   addProviderTiles("OpenStreetMap") %>% 
+#   addPolygons(fillColor = ~pal_fdmn_case(total_cases),
+#               weight = 2,
+#               opacity = 1,
+#               color = "white",
+#               dashArray = "3",
+#               fillOpacity = 0.7,
+#               label = labels_fdmn_case,
+#               labelOptions = labelOptions(
+#                 style = list("font-weight" = "normal", padding = "3px 8px"),
+#                 textsize = "15px",
+#                 direction = "auto"), 
+#               group="Cases")   %>% 
+#   addLegend(pal = pal_fdmn_case, 
+#             values = ~total_cases, opacity = 0.7,
+#             position = "bottomright", title="Confirmed cases (n)", group="Cases") %>% 
+#   addPolygons(fillColor = ~pal_fdmn_death(total_deaths),
+#               weight = 2,
+#               opacity = 1,
+#               color = "white",
+#               dashArray = "3",
+#               fillOpacity = 0.7,
+#               label = labels_fdmn_death,
+#               labelOptions = labelOptions(
+#                 style = list("font-weight" = "normal", padding = "3px 8px"),
+#                 textsize = "15px",
+#                 direction = "auto"), 
+#               group="Deaths")   %>% 
+#   addLegend(pal = pal_fdmn_death, 
+#             values = ~total_deaths, opacity = 0.7,
+#             position = "bottomright", title="Confirmed deaths (n)", group="Deaths") %>%
+#   addLayersControl(
+#     baseGroups = c("Cases", "Deaths"), 
+#     options = layersControlOptions(collapsed = FALSE))
+###
 
 shp_file_host <- read_sf(here('data', 'shapefiles', 'cxb_shp.shp'))
 
@@ -745,7 +782,7 @@ case_shp_host <- table_calc_comb_subloc %>%
   filter(population_group=='Host community') %>% 
   #mutate(code=location) %>% 
   rename(upazilla = location) %>% 
-  select(upazilla,total_cases) %>% 
+  select(upazilla,total_cases, total_deaths) %>% 
   left_join(shp_file_host,.,by='upazilla')
 
 
@@ -755,7 +792,7 @@ map_host  <- tm_shape(case_shp_host) +
               breaks = c(0, 100, 250, 500,1000,2000),
               title="Confirmed COVID-19 cases", 
               palette='YlOrRd', 
-              id="confirmed") +   
+              id="confirmed", alpha=0.5) +   
   tm_text("upazilla", root=5) +
   tm_legend(text.size=1,
             title.size=1.2,
@@ -782,99 +819,6 @@ Row
 ### Table {data-height=650}
     
 ```{r}
-
-# summaryTable_fdmn <- summaryTable_df %>%  
-#       filter(population_group=='Rohingya refugee/FDMN') %>% 
-#       mutate(camp=factor(camp)) %>% 
-#       mutate(camp=fct_explicit_na(camp, na_level = "(missing)"))  %>% 
-#       group_by(camp) %>% 
-#       summarise(confirmed=sum(confirmed, na.rm=TRUE),
-#                 sevenday_sum=sum(sevenday_sum, na.rm=TRUE),
-#                 dead=sum(dead, na.rm=TRUE),
-#                 attack_rate=sum(attack_rate, na.rm=TRUE)) %>% 
-#   #select(-upazilla) %>% 
-#     #select(-c("recovered","prop_recovered","population_group","")) %>% 
-#   mutate(prop_dead=dead/confirmed) %>% 
-#     #filter(nationality==input$nationality1) %>% 
-#     #gt() %>% 
-#   gt(
-#    # groupname_col = "population_group"
-#   ) %>% 
-#     opt_row_striping(., row_striping = TRUE) %>% 
-#     tab_spanner(
-#       label = "Cases",
-#       columns = vars(confirmed, sevenday_sum,attack_rate)
-#     ) %>% 
-#     # tab_spanner(
-#     #   label = "Recovered",
-#     #   columns = vars(recovered, prop_recovered)
-#     # ) %>% 
-#     tab_spanner(
-#       label = "Dead",
-#       columns = vars(dead, prop_dead)
-#     ) %>% 
-#     fmt_percent(
-#       columns = vars(prop_dead),
-#       decimals = 1
-#     ) %>% 
-#     fmt_missing(
-#       columns = 2:5,
-#       missing_text = ""
-#     ) %>% 
-#     cols_label(
-#       #population_group = "Population group",
-#       #upazilla = "Upazilla",
-#       camp = "Camp",
-#       confirmed = "Total",
-#       sevenday_sum = "Last 7 days",
-#       attack_rate = "Attack Rate",
-#       #recovered = "(n)",
-#       dead = "(n)",
-#       #prop_recovered = "(%)",
-#       prop_dead = "CFR"
-#     ) %>% 
-#     grand_summary_rows(
-#       columns = c("confirmed","sevenday_sum","dead"),
-#       fns = list(
-#         "Total" = ~sum(.,na.rm = TRUE)),
-#       formatter = fmt_number,
-#       decimals=0,
-#       use_seps = FALSE
-#     )  %>% 
-#     (function(x) {
-#       res <- function() x$`_data` %>% 
-#         dplyr::summarize(prop_dead = sum(dead, na.rm=TRUE) / sum(confirmed, na.rm=TRUE)) %>% 
-#         dplyr::pull(.data$prop_dead)
-#       
-#       grand_summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_dead),
-#                    formatter = fmt_percent,
-#                    decimals = 1,
-#                    use_seps = TRUE)
-#     }) %>% 
-#     tab_source_note("Data Source: FDMN/Host Linelist") %>% 
-#     tab_style(
-#       style = list(
-#         cell_borders(
-#           sides = "bottom",
-#           color = "black",
-#           weight = px(3)
-#         )
-#       ),
-#       locations = list(
-#         cells_column_labels(
-#           columns = gt::everything()
-#         )
-#       )
-#     ) %>% 
-#     cols_align(
-#       align = "center",
-#       columns = gt::everything()
-#     ) %>% 
-#   tab_options(
-#     container.overflow.x = TRUE,
-#     container.overflow.y = TRUE,
-#     grand_summary_row.background.color = "lightblue")
-
 
 
 fdmn_table_data <- table_calc_comb %>% 
@@ -977,19 +921,21 @@ summaryTable_fdmn
 ### Tests and cases over time {data-height=350}
 
 ```{r}
-testing_fdmn_gph <-  test_nationality %>% 
-      filter(name %in% c('fdmn', 'fdmn_positive')) %>% 
-      ggplot(., aes(x=date_format, y=value, fill=name)) +
-               geom_bar(stat="identity",position ="identity") +
-      scale_fill_manual(values=c("#ED7D31","#4472C4"), labels=c('tests','cases')) +
-      labs(caption="Data source: Lab data",
-           x = "Date",
-           y = "Number of tests",
-           fill="") +
-      theme_tufte() +
-      theme(legend.position="top") +
-      scale_x_date(date_breaks = '7 day', date_minor_breaks = '1 day',
-                   date_labels = '%d-%m')
+testing_fdmn_gph <-  
+  test_nationality %>% 
+  filter(name %in% c('fdmn', 'fdmn_positive')) %>% 
+  mutate(name_fac=factor(name,levels=c('fdmn', 'fdmn_positive'), 
+                         labels=c('Tests', 'Cases'))) %>% 
+  ggplot(., aes(x=date_format, y=value, fill=name_fac)) +
+  geom_bar(stat="identity") +
+    scale_fill_manual(values=c("#ED7D31","#4472C4")) +
+  scale_x_date(date_breaks = '7 day', date_minor_breaks = '1 day',
+               date_labels = '%d-%m') +
+  labs(caption="Data source: Lab data",
+       x = "Date",
+       y = "Count",
+       fill="") +
+  theme_minimal()
 
 ggplotly(testing_fdmn_gph)
 ```
@@ -1012,27 +958,51 @@ shp_file_fdmn <- read_sf(list.files(here('data','shapefiles'),
 
 case_shp_fdmn <- table_calc_comb_subloc %>% 
   filter(population_group=='Rohingya refugee/FDMN') %>% 
-  filter(location %in% c('Ukhia', 'Teknaf')) %>% 
+  filter(!location %in% c('Ukhia', 'Teknaf')) %>% 
   mutate(code=as.numeric(location)) %>% 
-  select(code,total_cases) %>% 
+  select(code,total_cases, total_deaths) %>% 
   filter(!is.na(code)) %>% 
   left_join(shp_file_fdmn,.,by='code')
 
+pal <- colorNumeric(
+  palette = "YlOrRd",
+  domain = case_shp_fdmn$total_cases)
 
+# leaflet(case_shp_fdmn) %>% 
+#   add_polygons(case_shp_fdmn,
+#                fillColor = ~pal(total_cases))
 
-map_fdmn <- case_shp_fdmn %>% 
-  mutate(camp=gsub('Camp', '', new_camp_n)) %>% 
-  tm_shape(.) + 
-  tm_polygons("total_cases", title="Confirmed COVID-19 cases", palette='YlOrRd', id="confirmed") +   
+# leaflet(case_shp_fdmn) %>% 
+#   #addBingTiles(apikey = "AnaeBcYpazAbocaXxVvcxxKJZj9w9nRH0UGTuix0FZ8HQjE6R-31VwpZlGAD6Fei") %>%
+#   addProviderTiles("OpenStreetMap") %>% 
+#   addPolygons(fillColor = ~pal(total_cases),
+#               weight = 2,
+#               opacity = 1,
+#               color = "white",
+#               dashArray = "3",
+#               fillOpacity = 0.7,
+#               label = labels,
+#               labelOptions = labelOptions(
+#                 style = list("font-weight" = "normal", padding = "3px 8px"),
+#                 textsize = "15px",
+#                 direction = "auto")) %>% 
+#   addLegend(pal = pal, 
+#             values = ~total_cases, opacity = 0.7,
+#             position = "bottomright", title="Confirmed cases (n)")
+
+map_fdmn <- case_shp_fdmn %>%
+  mutate(camp=gsub('Camp', '', new_camp_n)) %>%
+  tm_shape(.) +
+  tm_polygons("total_cases", title="Confirmed COVID-19 cases", palette='YlOrRd', id="confirmed", alpha=0.5, colorNA=NULL) +
   tm_text("camp", root=5) +
   tm_legend(text.size=1,
             title.size=1.2,
-            position = c("left","bottom"), 
-            bg.color = "white", 
-            bg.alpha=.2, 
+            position = c("left","bottom"),
+            bg.color = "white",
+            bg.alpha=.2,
             width=.8,
-            frame="white", 
-            height=.6) 
+            frame="white",
+            height=.6)
   #tm_facets("upazila", ncol=1)
 tmap_leaflet(map_fdmn)
 
@@ -1112,7 +1082,7 @@ godata_clean <- godata_wide %>%
             grepl('recovered', outcome_id, ignore.case=TRUE) ~ "recovered",
             grepl('death', questionnaire_answers_outcome, ignore.case=TRUE) ~ "dead"
   )) %>%
-        mutate(outcome=fct_explicit_na(outcome, na_level = "(missing)"))  %>% 
+        mutate(outcome=fct_explicit_na(outcome, na_level = "(Outcome missing)"))  %>% 
   #Risk level
   mutate(risk_level = case_when(
             grepl('low', risk_level, ignore.case=TRUE) ~ "low",
