@@ -1,5 +1,6 @@
 ---
 title: 'COVID-19  Dashboard: Cox’s Bazar, Bangladesh'
+subtitle: 'This is the subtitle'
 knit: (function(input_file, encoding) {
   out_dir <- 'docs';
   rmarkdown::render(input_file,
@@ -540,12 +541,19 @@ Row {data-height=250}
 #knitr::include_graphics(c(here("'data','bgd_logo.png'","data/who_bgd_logo.png"))
 knitr::include_graphics(here('data', 'who_logo.png'), dpi = 100)
 
+s <- now("UTC-6")
+
 ```
 
 
 ### Contact details
 
 If you have any questions contact -----
+
+
+
+
+Data updated at - "`r s`"
 
 
 ```{r data_formatting}
@@ -1303,7 +1311,187 @@ SARI ITC & Isolation  {data-orientation=rows data-navmenu="Healthcare facility m
 
 ```{r dru_hf}
 
- tables[[1]]
+tableFormat <- gsheet_data$dru %>%
+  clean_names() %>% 
+  select(facility_name, camp, agency_in_charge, currently_accepting_patient_severity, able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply, contains('sari'), contains('isolation')) %>%
+  pivot_longer(-c(facility_name, camp, agency_in_charge, currently_accepting_patient_severity,able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply)) %>%
+  mutate(camp= gsub("Camp", "", camp)) %>%
+  #mutate(fac_type=ifelse(grepl('sari', name) , 'SARI', 'ISOLATION')) %>%
+  mutate(fac_type=case_when(name %like% 'sari_beds|sari_discharges' ~ 'SARI',
+                            name %like% 'isolation_beds|isolation_discharges' ~ 'ISOLATION')) %>%
+  # mutate(fac_type=case_when(grepl('sari_beds', name) ~ 'SARI',
+  #                            grepl('isolation_beds', name) ~ 'ISOLATION')) %>%
+  mutate(activity=ifelse(grepl('functional', name) , 'FUNCTIONAL',
+                         ifelse(grepl('filled',name), 'FILLED', 'DISCHARGES'))) %>%
+  group_by(facility_name,activity) %>%
+  mutate(count_beds=sum(value)) %>%
+  select(facility_name, camp, agency_in_charge, currently_accepting_patient_severity, able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply, count_beds, activity,fac_type,value) %>%
+  pivot_wider(names_from=c(activity,fac_type), values_from=value) %>%
+  ungroup() %>%
+  mutate_if(is.numeric, funs(ifelse(is.na(.), 0, .))) %>%
+  group_by(facility_name)  %>%
+  summarise_all(max) %>%
+  mutate(mild=ifelse(grepl('Mild', currently_accepting_patient_severity) , '+', '')) %>%
+  mutate(moderate=ifelse(grepl('Moderate', currently_accepting_patient_severity) , '+', '')) %>%
+  mutate(severe=ifelse(grepl('Severe', currently_accepting_patient_severity) , '+', '')) %>%
+  mutate(paed=ifelse(grepl('Pead', able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply) , '+', '')) %>%
+  mutate(sam=ifelse(grepl('SAM', able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply) , '+', '')) %>%
+  mutate(preg=ifelse(grepl('Preg', able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply) , '+', '')) %>%
+  mutate(prop_filled_sari=coalesce(FILLED_SARI/FUNCTIONAL_SARI,NA)) %>%
+  mutate(prop_filled_iso=coalesce(FILLED_ISOLATION/FUNCTIONAL_ISOLATION,NA)) %>%
+  select(facility_name, camp,mild:preg, FUNCTIONAL_SARI, FILLED_SARI,prop_filled_sari, DISCHARGES_SARI,
+         FUNCTIONAL_ISOLATION, FILLED_ISOLATION, prop_filled_iso,DISCHARGES_ISOLATION,count_beds)  %>%
+  arrange(as.numeric(camp)) %>%
+  mutate(facility_name=sub("*\\Camp*", "", facility_name)) %>%
+  mutate(facility_name=gsub('[[:digit:]]+', '', facility_name)) %>%
+  mutate(prop_filled_total=((FILLED_ISOLATION + FILLED_SARI)/count_beds))
+
+#Cox's Bazar is 5 hours ahead of UK
+cxb_time <- now("GMT") + lubridate::hours(6)
+
+last_upd <- gsheet_data$dru %>%
+  clean_names() %>% 
+  select(facility_name, timestamp)
+#mutate(time_entry=as.POSIXlt(timestamp,format="%Y-%m-%dT%H:%M:%S")) %>%
+#mutate(time_since_upd=cxb_time-timestamp) %>%
+# mutate(hours_since_upd=round(time_since_upd,0)) %>%
+#select(facility_name,hours_since_upd)
+
+dru_gt_table <- tableFormat %>% 
+  left_join(last_upd, by='facility_name') %>%
+  gt() %>%
+  opt_row_striping(., row_striping = TRUE) %>%
+  tab_spanner(
+    label = "Currently accepting?",
+    columns = vars(mild,moderate,severe)
+  ) %>%
+  tab_spanner(
+    label = "Severe beds",
+    columns = vars(FUNCTIONAL_SARI, FILLED_SARI,prop_filled_sari, DISCHARGES_SARI)
+  ) %>%
+  tab_spanner(
+    label = "Isolation beds",
+    columns = vars(FUNCTIONAL_ISOLATION, FILLED_ISOLATION,prop_filled_iso, DISCHARGES_ISOLATION)
+  ) %>%
+  tab_spanner(
+    label = "Accepting special needs patients?",
+    columns = vars(paed, sam,preg)
+  ) %>%
+  tab_footnote(
+    footnote = "Expected in next 24 hours",
+    locations = cells_column_labels(columns = vars(DISCHARGES_SARI,DISCHARGES_ISOLATION))
+  ) %>%
+  tab_footnote(
+    footnote = "Severe Acute Malnutrition",
+    locations = cells_column_labels(columns = vars(sam))
+  ) %>%
+  tab_footnote(
+    footnote = "Postpartum",
+    locations = cells_column_labels(columns = vars(preg))
+  ) %>%
+  tab_footnote(
+    footnote = "Beds with access to 24/7 oxygen",
+    locations = cells_column_spanners(spanners = "Severe beds")
+  ) %>%
+  summary_rows(fns = list(Total = ~ sum(.)), columns = vars(FUNCTIONAL_SARI, FILLED_SARI, DISCHARGES_SARI,
+                                                            FUNCTIONAL_ISOLATION, FILLED_ISOLATION, DISCHARGES_ISOLATION,
+                                                            count_beds),
+               formatter = fmt_number,
+               decimals = 0,
+               use_seps = TRUE) %>%
+  (function(x) {
+    res <- function() x$`_data` %>%
+      dplyr::summarize(prop_filled_sari = sum(FILLED_SARI) / sum(FUNCTIONAL_SARI)) %>%
+      dplyr::pull(.data$prop_filled_sari)
+    
+    summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_filled_sari),
+                 formatter = fmt_percent,
+                 decimals = 0,
+                 use_seps = TRUE)
+  }) %>%
+  (function(x) {
+    res <- function() x$`_data` %>%
+      dplyr::summarize(prop_filled_iso = sum(FILLED_ISOLATION) / sum(FUNCTIONAL_ISOLATION)) %>%
+      dplyr::pull(.data$prop_filled_iso)
+    
+    summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_filled_iso),
+                 formatter = fmt_percent,
+                 decimals = 0,
+                 use_seps = TRUE)
+  }) %>%
+  (function(x) {
+    res <- function() x$`_data` %>%
+      dplyr::summarize(prop_filled_total = sum(FILLED_ISOLATION + FILLED_SARI) / sum(FUNCTIONAL_ISOLATION + FUNCTIONAL_SARI)) %>%
+      dplyr::pull(.data$prop_filled_total)
+    
+    summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_filled_total),
+                 formatter = fmt_percent,
+                 decimals = 0,
+                 use_seps = TRUE)
+  }) %>%
+  fmt_percent(
+    columns = vars(prop_filled_sari,prop_filled_iso,prop_filled_total),
+    decimals = 0
+  ) %>%
+  fmt_missing(
+    columns = 4:18,
+    missing_text = ""
+  ) %>%
+  cols_label(
+    facility_name = "Facility name",
+    camp = "Camp",
+    mild = "Mild",
+    moderate = "Moderate",
+    severe = "Severe",
+    paed = "Paediatric",
+    sam = "SAM",
+    preg = "Pregnant/PP",
+    FUNCTIONAL_SARI = "Functional (n)",
+    FILLED_SARI = "Filled (n)",
+    prop_filled_sari = "Filled (%)",
+    DISCHARGES_SARI = "Discharges (n)",
+    FUNCTIONAL_ISOLATION = "Functional (n)",
+    FILLED_ISOLATION = "Filled (n)",
+    prop_filled_iso = "Filled (%)",
+    DISCHARGES_ISOLATION = "Discharges (n)",
+    count_beds = "Total beds",
+    prop_filled_total = "Total filled (%)" ,
+    timestamp = "Last updated"
+  ) %>%
+  data_color(
+    columns = vars(prop_filled_sari,prop_filled_iso,prop_filled_total),
+    colors = scales::col_numeric(
+      "Reds",
+      domain = c(0, 1), na.color = "light grey")
+  ) %>%
+  tab_source_note("Data Source: DRU Live Bed monitoring Google Sheet") %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "bottom",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_column_labels(
+        columns = gt::everything()
+      )
+    )
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = gt::everything()
+  ) %>%
+  tab_options(
+    container.overflow.x = TRUE,
+    container.overflow.y = TRUE,
+    grand_summary_row.background.color = "lightblue")
+
+
+ #tables[[1]]
+
+dru_gt_table
  
 ```
 
@@ -1314,96 +1502,98 @@ Quarantine   {data-orientation=rows data-navmenu="Healthcare facility monitoring
 
 ```{r isolation}
 
-# quarantine_table_df <- gsheet_data$quarantine %>%
-#   clean_names() %>% 
-#   #left_join(test, by='facility_name') %>%
-#   filter(!is.na(facility_name)) %>%
-#   select(location_of_facility, facility_name,supporting_agency,
-#          contains("individuals") ,
-#          number_of_rooms_shelters_currently_functional,number_of_rooms_shelters_currently_filled, timestamp) %>%
-#   mutate(prop_occupancy=number_of_rooms_shelters_currently_filled/number_of_rooms_shelters_currently_functional)
-# 
-#   quarantine_table <- quarantine_table_df %>%
-#     gt() %>%
-#   opt_row_striping(., row_striping = TRUE) %>%
-#   tab_spanner(
-#     label = "Individuals",
-#     columns = vars(new_admissions_in_the_last_24_hours_individuals ,current_occupancy_individuals,
-#                    cumulative_contacts_individuals,cumulative_new_arrivals_travellers_individuals)
-#   ) %>%
-#   tab_spanner(
-#     label = "Shelters",
-#     columns = vars(number_of_rooms_shelters_currently_functional,number_of_rooms_shelters_currently_filled,prop_occupancy)
-#   ) %>%
-#   cols_label(
-#     location_of_facility = "Location",
-#     facility_name = "Facility name",
-#     supporting_agency = "Supporting agency",
-#     new_admissions_in_the_last_24_hours_individuals="New admissions (n)",
-#     current_occupancy_individuals="Current occupancy (n)",
-#     cumulative_contacts_individuals="Cumulative contacts (n)",
-#     cumulative_new_arrivals_travellers_individuals="Cumulative new arrivals (n)",
-#     number_of_rooms_shelters_currently_functional = "Functional (n)",
-#     number_of_rooms_shelters_currently_filled = "Filled (n)",
-#     prop_occupancy = "Filled (%)",
-#     timestamp="Last updated") %>%
-#   summary_rows(fns = list(Total = ~ sum(.)), columns = vars(new_admissions_in_the_last_24_hours_individuals,current_occupancy_individuals,
-#                                                             cumulative_contacts_individuals,cumulative_new_arrivals_travellers_individuals,
-#                                                             number_of_rooms_shelters_currently_filled, number_of_rooms_shelters_currently_functional),
-#                formatter = fmt_number,
-#                decimals = 0,
-#                use_seps = TRUE) %>%
-#   (function(x) {
-#     res <- function() x$`_data` %>%
-#       dplyr::summarize(prop_occupancy = sum(number_of_rooms_shelters_currently_filled) / sum(number_of_rooms_shelters_currently_functional)) %>%
-#       dplyr::pull(.data$prop_occupancy)
-# 
-#     summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_occupancy),
-#                  formatter = fmt_percent,
-#                  decimals = 1,
-#                  use_seps = TRUE)
-#   }) %>%
-#   fmt_percent(
-#     columns = vars(prop_occupancy),
-#     decimals = 1
-#   ) %>%
-#   tab_footnote(
-#     footnote = "In last 24 hours",
-#     locations = cells_column_labels(columns = vars(new_admissions_in_the_last_24_hours_individuals))
-#   ) %>%
-#   data_color(
-#     columns = vars(prop_occupancy),
-#     colors = scales::col_numeric(
-#       "Reds",
-#       domain = c(0, 1), na.color = "light grey")
-#   ) %>%
-#   tab_source_note("Data Source: Quarantine monitoring Google Sheet") %>%
-#   tab_style(
-#     style = list(
-#       cell_borders(
-#         sides = "bottom",
-#         color = "black",
-#         weight = px(3)
-#       )
-#     ),
-#     locations = list(
-#       cells_column_labels(
-#         columns = gt::everything()
-#       )
-#     )
-#   ) %>%
-#   cols_align(
-#     align = "center",
-#     columns = gt::everything()
-#   ) %>%
-#   tab_options(
-#     container.overflow.x = TRUE,
-#     container.overflow.y = TRUE,
-#     grand_summary_row.background.color = "lightblue")
+quarantine_table_df <- gsheet_data$quarantine %>%
+  clean_names() %>% 
+  #left_join(test, by='facility_name') %>%
+  filter(!is.na(facility_name)) %>%
+  select(location_of_facility, facility_name,supporting_agency,
+         contains("individuals") ,
+         number_of_rooms_shelters_currently_functional,number_of_rooms_shelters_currently_filled, timestamp) %>%
+  mutate(prop_occupancy=number_of_rooms_shelters_currently_filled/number_of_rooms_shelters_currently_functional)
 
-#quarantine_table
+quarantine_table <- quarantine_table_df %>%
+  gt() %>%
+  opt_row_striping(., row_striping = TRUE) %>%
+  tab_spanner(
+    label = "Individuals",
+    columns = vars(new_admissions_in_the_last_24_hours_individuals ,current_occupancy_individuals,
+                   cumulative_contacts_individuals,cumulative_new_arrivals_travellers_individuals)
+  ) %>%
+  tab_spanner(
+    label = "Shelters",
+    columns = vars(number_of_rooms_shelters_currently_functional,number_of_rooms_shelters_currently_filled,prop_occupancy)
+  ) %>%
+  cols_label(
+    location_of_facility = "Location",
+    facility_name = "Facility name",
+    supporting_agency = "Supporting agency",
+    new_admissions_in_the_last_24_hours_individuals="New admissions (n)",
+    current_occupancy_individuals="Current occupancy (n)",
+    cumulative_contacts_individuals="Cumulative contacts (n)",
+    cumulative_new_arrivals_travellers_individuals="Cumulative new arrivals (n)",
+    number_of_rooms_shelters_currently_functional = "Functional (n)",
+    number_of_rooms_shelters_currently_filled = "Filled (n)",
+    prop_occupancy = "Filled (%)",
+    timestamp="Last updated") %>%
+  summary_rows(fns = list(Total = ~ sum(.)), columns = vars(new_admissions_in_the_last_24_hours_individuals,current_occupancy_individuals,
+                                                            cumulative_contacts_individuals,cumulative_new_arrivals_travellers_individuals,
+                                                            number_of_rooms_shelters_currently_filled, number_of_rooms_shelters_currently_functional),
+               formatter = fmt_number,
+               decimals = 0,
+               use_seps = TRUE) %>%
+  (function(x) {
+    res <- function() x$`_data` %>%
+      dplyr::summarize(prop_occupancy = sum(number_of_rooms_shelters_currently_filled) / sum(number_of_rooms_shelters_currently_functional)) %>%
+      dplyr::pull(.data$prop_occupancy)
+    
+    summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_occupancy),
+                 formatter = fmt_percent,
+                 decimals = 0,
+                 use_seps = TRUE)
+  }) %>%
+  fmt_percent(
+    columns = vars(prop_occupancy),
+    decimals = 0
+  ) %>%
+  tab_footnote(
+    footnote = "In last 24 hours",
+    locations = cells_column_labels(columns = vars(new_admissions_in_the_last_24_hours_individuals))
+  ) %>%
+  data_color(
+    columns = vars(prop_occupancy),
+    colors = scales::col_numeric(
+      "Reds",
+      domain = c(0, 1), na.color = "light grey")
+  ) %>%
+  tab_source_note("Data Source: Quarantine monitoring Google Sheet") %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "bottom",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_column_labels(
+        columns = gt::everything()
+      )
+    )
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = gt::everything()
+  ) %>%
+  tab_options(
+    container.overflow.x = TRUE,
+    container.overflow.y = TRUE,
+    grand_summary_row.background.color = "lightblue")
 
-tables[[2]]
+
+
+quarantine_table
+
+#tables[[2]]
 
 ```
 
