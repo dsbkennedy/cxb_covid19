@@ -115,6 +115,11 @@ test_nationality <- tests_data %>%
   mutate(population_group=case_when(name=='fdmn' ~ 'Rohingya refugee/FDMN',
                                     name=='host' ~ 'Host community')) 
 
+##DRU data
+dru_raw <- gsheet_data$dru %>% clean_names() %>%   mutate(facility_name=gsub(":([[:alpha:]])", ": \\1", facility_name)) 
+quarantine_raw <- gsheet_data$quarantine %>% clean_names() %>% filter(!is.na(facility_name))
+
+
 ### Camp population
 
 # camp_population <- read.csv(here('data', 'camp_population.csv')) %>% 
@@ -147,13 +152,235 @@ fdmn_population <-  859205
 
 ```
 
+```{r table_wranging}
+
+host_population <-  2805491
+fdmn_population <-  859205 
+
+
+#Cases
+cxb_cases <- all_cases_linelist %>% 
+  group_by(population_group,date_of_case_detection) %>% 
+  summarise(n = n(),.groups = 'drop') %>% 
+  select(date=date_of_case_detection, population_group, new_cases=n)
+
+#Deaths
+cxb_deaths <- all_cases_linelist %>% 
+  filter(x30_day_outcome=='Death') %>% 
+  group_by(population_group,date_of_case_detection) %>% 
+  summarise(n = n(),.groups = 'drop') %>% 
+  select(date=date_of_case_detection, population_group, new_deaths=n)
+
+#Tests
+cxb_tests <- tests_data %>%  
+  filter(!date %in% c('NULL', 'Total')) %>% 
+  mutate(date_format=excel_numeric_to_date(as.numeric(date)))  %>% 
+  select(date=date_format, fdmn, host,) %>% 
+  pivot_longer(-date) %>% 
+  select(date, population_group=name, new_tests=value) %>% 
+  mutate(population_group=case_when(grepl('fdmn', population_group) ~ 'Rohingya refugee/FDMN',
+                                    TRUE ~ 'Host community')) 
+#Bangladesh data
+bgd_data <- fread('https://covid.ourworldindata.org/data/owid-covid-data.csv') %>% 
+  filter(iso_code=='BGD') %>%        
+  mutate(date_format=ymd(date)) %>% 
+  select(date=date_format, new_tests,new_cases,new_deaths,population) %>% 
+  mutate(population_group='Bangladesh')
+
+first_date <- min(bgd_data$date)
+last_date <- today()
+
+#Combine CXB data
+
+cxb_table_data <- cxb_tests %>% 
+  full_join(cxb_cases, by=c('population_group', 'date')) %>% 
+  full_join(cxb_deaths, by=c('population_group', 'date')) %>% 
+  mutate(population=case_when(population_group=='Rohingya refugee/FDMN' ~ fdmn_population, 
+                              TRUE ~ host_population)) 
+rm(cxb_cases, cxb_deaths,cxb_tests)
+
+
+#Combine Bangaladesh and CXB data
+table_final_df <- bgd_data %>% 
+  bind_rows(cxb_table_data) %>% 
+  arrange(date, population_group) 
+
+rm(bgd_data, cxb_table_data)
+#Totals
+table_totals <- table_final_df %>% 
+  ungroup() %>% 
+  group_by(population_group, population) %>% 
+  summarise(total_tests=sum(new_tests, na.rm=TRUE),
+            total_cases=sum(new_cases, na.rm=TRUE),
+            total_deaths=sum(new_deaths, na.rm=TRUE)) %>% 
+  mutate(total_tests_pm=(total_tests/population)*1*10E5,
+         total_cases_pm=(total_cases/population)*1*10E5,
+         total_deaths_pm=(total_deaths/population)*1*10E5) %>% 
+  select(-population)
+
+#7-day
+table_7day <- table_final_df %>% 
+  ungroup() %>% 
+  filter(date > today() -7) %>% 
+  group_by(population_group, population) %>% 
+  summarise(total_tests_7day=sum(new_tests, na.rm=TRUE),
+            total_cases_7day=sum(new_cases, na.rm=TRUE),
+            total_deaths_7day=sum(new_deaths, na.rm=TRUE)) %>% 
+  mutate(total_tests_pm_7day=(total_tests_7day/population)*1*10E5,
+         total_cases_pm_7day=(total_cases_7day/population)*1*10E5,
+         total_deaths_pm_7day=(total_deaths_7day/population)*1*10E5)%>% 
+  select(-population)
+
+#Growth rate
+
+growth_rate <- table_final_df %>% 
+  group_by(population_group) %>% 
+  mutate(new_cases=coalesce(new_cases,0)) %>% 
+  mutate(cumulative_cases=cumsum(new_cases)) %>%
+  mutate(case_growth=ifelse(lag(cumulative_cases,7)>10, 
+                            ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>%
+                              summarise(case_growth=last(case_growth))
+
+#Final calculations
+table_calc_comb <- table_totals %>% 
+  left_join(table_7day, by='population_group') %>% 
+  left_join(growth_rate, by='population_group') %>% 
+  mutate(test_pos=total_cases/total_tests, 
+         cfr=total_deaths/total_cases)
+
+rm(table_totals,table_7day,growth_rate)
+
+```
 
 
 Landing page
 =====================================  
 
 
-Row {data-height=400}
+Row {data-height=50}
+-------------------------------------
+
+### 
+
+```{r}
+
+ valueBox(
+  format(paste0('Host community'), big.mark = ","),
+  icon= "",
+  color= "#ED7D31"
+)
+
+```
+
+
+### Tests: Total (Last 7 days)
+
+```{r}
+
+host_tests <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_tests)
+host_tests_7day <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_tests_7day)
+               
+ valueBox(
+  format(paste0(host_tests,' (', host_tests_7day, ')'), big.mark = ","),
+  icon= "fas fa-vials",
+  color= "#ED7D31"
+)
+
+```
+
+### Cases: Total (Last 7 days)
+
+```{r}
+host_cases <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_cases)
+host_cases_7day <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_cases_7day)
+               
+ valueBox(
+  format(paste0(host_cases,' (', host_cases_7day, ')'), big.mark = ","),
+  icon = "fas fa-user-md",
+  color= "#ED7D31"
+)
+
+```
+
+### Deaths: Total (Last 7 days)
+
+```{r}
+host_deaths <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_deaths)
+host_deaths_7day <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_deaths_7day)
+               
+ valueBox(
+  format(paste0(host_deaths,' (', host_deaths_7day, ')'), big.mark = ","),
+  icon = "fas fa-procedures",
+  color= "#ED7D31"
+)
+
+
+```
+
+Row {data-height=50}
+-------------------------------------
+
+### 
+
+```{r}
+
+ valueBox(
+  format(paste0('Rohingya refugee/FDMN'), big.mark = ","),
+  icon= "",
+  color= "#4472C4"
+)
+
+```
+
+
+
+### Tests: Total (Last 7 days)
+
+```{r}
+
+fdmn_tests <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_tests)
+fdmn_tests_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_tests_7day)
+               
+ valueBox(
+  format(paste0(fdmn_tests,' (', fdmn_tests_7day, ')'), big.mark = ","),
+  icon= "fas fa-vials",
+  color= "#4472C4"
+)
+
+```
+
+### Cases: Total (Last 7 days)
+
+```{r}
+fdmn_cases <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_cases)
+fdmn_cases_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_cases_7day)
+               
+ valueBox(
+  format(paste0(fdmn_cases,' (', fdmn_cases_7day, ')'), big.mark = ","),
+  icon = "fas fa-user-md",
+  color= "#4472C4"
+)
+
+```
+
+### Deaths: Total (Last 7 days)
+
+```{r}
+fdmn_deaths <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_deaths)
+fdmn_deaths_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_deaths_7day)
+               
+ valueBox(
+  format(paste(fdmn_deaths,' (', fdmn_deaths_7day, ')'), big.mark = ","),
+  icon = "fas fa-procedures",
+  color= "#4472C4"
+)
+
+```
+
+
+
+
+Row {data-height=200}
 -------------------------------------
 
 ### Background 
@@ -276,119 +503,78 @@ flexdashboard::valueBox(
 
 
 
-Row {data-height=350}
+
+
+
+Row {data-height=200}
 -------------------------------------
+
+```{r eval=FALSE, include=FALSE}
+df <- data.frame(
+  x = rep(seq(2, 15, 6.5), 2),
+  y = c(rep(6.5, 3), rep(2,3)),
+  h = rep(4.25, 6),
+  w = rep(6.25, 6),
+  value = c(paste0(table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_tests), ' (',
+                   table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_tests_7day),')'),
+            paste0(table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_cases),' (',
+                   table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_cases_7day),')'),
+            paste0(table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_deaths),' (',
+                   table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_deaths_7day),')'),
+            paste0(table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_tests),' (',
+                   table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_tests_7day),')'),
+            paste0(table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_cases),' (',
+                   table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_cases_7day),')'),
+            paste0(table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_deaths),' (',
+                   table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_deaths_7day),')')),
+  info = c("Tests - FDMN/Rohingya \n Total  (7 days)",
+           "Cases - FDMN/Rohingya \n Total  (7 days)",
+           "Deaths - FDMN/Rohingya \n Total  (7 days)",
+           "Tests - Host \n Total  (7 days)",
+           "Cases - Host \n Total  (7 days)",
+           "Deaths - Host \n Total  (7 days)"),
+  shape = '',
+  font_family = c(rep("fontawesome-webfont", 6)),
+  color = factor(1:6)
+)
+
+
+ggplot(df, aes(x, y, height = h, width = w, label = info)) +
+  geom_tile(aes(fill = color)) +
+  geom_text(color = "white", fontface = "bold", size = 10,
+            aes(label = value, x = x - 2.9, y = y + 1), hjust = 0) +
+  geom_text(color = "white", fontface = "bold",
+            aes(label = info, x = x - 2.9, y = y - 1), hjust = 0) +
+  coord_fixed() +
+  scale_fill_brewer(type = "qual",palette = "Dark2") +
+  geom_text(size = 20, aes(label = shape, family = font_family,
+                           x = x + 1.5, y = y + 0.5), alpha = 0.25) +
+  theme_void() +
+  guides(fill = FALSE)
+
+
+```
+
+ 
+
+
 
 ### Table
 
 ```{r}
 
 
-host_population <-  2805491
-fdmn_population <-  859205 
 
-
-#Cases
-cxb_cases <- all_cases_linelist %>% 
-  group_by(population_group,date_of_case_detection) %>% 
-  summarise(n = n(),.groups = 'drop') %>% 
-  select(date=date_of_case_detection, population_group, new_cases=n)
-
-#Deaths
-cxb_deaths <- all_cases_linelist %>% 
-  filter(x30_day_outcome=='Death') %>% 
-  group_by(population_group,date_of_case_detection) %>% 
-  summarise(n = n(),.groups = 'drop') %>% 
-  select(date=date_of_case_detection, population_group, new_deaths=n)
-
-#Tests
-cxb_tests <- tests_data %>%  
-  filter(!date %in% c('NULL', 'Total')) %>% 
-  mutate(date_format=excel_numeric_to_date(as.numeric(date)))  %>% 
-  select(date=date_format, fdmn, host,) %>% 
-  pivot_longer(-date) %>% 
-  select(date, population_group=name, new_tests=value) %>% 
-  mutate(population_group=case_when(grepl('fdmn', population_group) ~ 'Rohingya refugee/FDMN',
-                                    TRUE ~ 'Host community')) 
-#Bangladesh data
-bgd_data <- fread('https://covid.ourworldindata.org/data/owid-covid-data.csv') %>% 
-  filter(iso_code=='BGD') %>%        
-  mutate(date_format=ymd(date)) %>% 
-  select(date=date_format, new_tests,new_cases,new_deaths,population) %>% 
-  mutate(population_group='Bangladesh')
-
-first_date <- min(bgd_data$date)
-last_date <- today()
-
-#Combine CXB data
-
-cxb_table_data <- cxb_tests %>% 
-  full_join(cxb_cases, by=c('population_group', 'date')) %>% 
-  full_join(cxb_deaths, by=c('population_group', 'date')) %>% 
-  mutate(population=case_when(population_group=='Rohingya refugee/FDMN' ~ fdmn_population, 
-                              TRUE ~ host_population)) 
-rm(cxb_cases, cxb_deaths,cxb_tests)
-
-
-#Combine Bangaladesh and CXB data
-table_final_df <- bgd_data %>% 
-  bind_rows(cxb_table_data) %>% 
-  arrange(date, population_group) 
-
-rm(bgd_data, cxb_table_data)
-#Totals
-table_totals <- table_final_df %>% 
-  ungroup() %>% 
-  group_by(population_group, population) %>% 
-  summarise(total_tests=sum(new_tests, na.rm=TRUE),
-            total_cases=sum(new_cases, na.rm=TRUE),
-            total_deaths=sum(new_deaths, na.rm=TRUE)) %>% 
-  mutate(total_tests_pm=(total_tests/population)*1*10E5,
-         total_cases_pm=(total_cases/population)*1*10E5,
-         total_deaths_pm=(total_deaths/population)*1*10E5) %>% 
-  select(-population)
-
-#7-day
-table_7day <- table_final_df %>% 
-  ungroup() %>% 
-  filter(date > today() -7) %>% 
-  group_by(population_group, population) %>% 
-  summarise(total_tests_7day=sum(new_tests, na.rm=TRUE),
-            total_cases_7day=sum(new_cases, na.rm=TRUE),
-            total_deaths_7day=sum(new_deaths, na.rm=TRUE)) %>% 
-  mutate(total_tests_pm_7day=(total_tests_7day/population)*1*10E5,
-         total_cases_pm_7day=(total_cases_7day/population)*1*10E5,
-         total_deaths_pm_7day=(total_deaths_7day/population)*1*10E5)%>% 
-  select(-population)
-
-#Growth rate
-
-growth_rate <- table_final_df %>% 
-  group_by(population_group) %>% 
-  mutate(new_cases=coalesce(new_cases,0)) %>% 
-  mutate(cumulative_cases=cumsum(new_cases)) %>%
-  mutate(case_growth=ifelse(lag(cumulative_cases,7)>10, 
-                            ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>%
-                              summarise(case_growth=last(case_growth))
-
-#Final calculations
-table_calc_comb <- table_totals %>% 
-  left_join(table_7day, by='population_group') %>% 
-  left_join(growth_rate, by='population_group') %>% 
-  mutate(test_pos=total_cases/total_tests, 
-         cfr=total_deaths/total_cases)
-
-rm(table_totals,table_7day,growth_rate)
 
 
 table_calc_comb %>% 
   ungroup() %>%
   gt(rowname_col = "population_group") %>% 
   tab_stubhead(label = "Population group") %>% 
-  tab_header(
-    title = "COVID-19 summary table",
-    subtitle = ""
-  ) %>% 
+  # tab_header(
+  #   title = "COVID-19 summary table",
+  #   subtitle = ""
+  # ) %>% 
   cols_label(
     total_tests = "Total",
     total_cases = "Total",
@@ -447,7 +633,6 @@ table_calc_comb %>%
 
 
 ```
-
 
 
 ```{r eval=FALSE, include=FALSE}
@@ -509,7 +694,7 @@ ggarrange(test_growth_gph, case_growth_gph, ncol=2, common.legend = TRUE, legend
 
 ```
 
-Row {data-height=250}
+Row {data-height=100}
 -------------------------------------
 
 ### Additional Resources
@@ -1088,7 +1273,9 @@ godata_clean <- godata_wide %>%
             grepl('alive', outcome_id, ignore.case=TRUE) ~ "alive",
             grepl('deceased', outcome_id, ignore.case=TRUE) ~ "dead",
             grepl('recovered', outcome_id, ignore.case=TRUE) ~ "recovered",
-            grepl('death', questionnaire_answers_outcome, ignore.case=TRUE) ~ "dead"
+            grepl('death', questionnaire_answers_outcome, ignore.case=TRUE) ~ "dead",
+            grepl('death', questionnaire_answers_outcome_2, ignore.case=TRUE) ~ "dead"
+
   )) %>%
         mutate(outcome=fct_explicit_na(outcome, na_level = "(Outcome missing)"))  %>% 
   #Risk level
@@ -1311,10 +1498,17 @@ SARI ITC & Isolation  {data-orientation=rows data-navmenu="Healthcare facility m
 
 ```{r dru_hf}
 
-tableFormat <- gsheet_data$dru %>%
+num_vars <- c('number_of_functional_sari_beds', 'number_of_currently_filled_sari_beds','number_of_expected_sari_discharges_in_next_24_hours',
+              'number_of_functional_isolation_beds_non_sari','number_of_currently_filled_isolation_beds_non_sari','number_of_expected_isolation_discharges_in_next_24_hours_non_sari' )
+
+tableFormat <- dru_raw %>%
   clean_names() %>% 
-  select(facility_name, camp, agency_in_charge, currently_accepting_patient_severity, able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply, contains('sari'), contains('isolation')) %>%
-  pivot_longer(-c(facility_name, camp, agency_in_charge, currently_accepting_patient_severity,able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply)) %>%
+  #mutate(facility_name=gsub(":([[:alpha:]])", ": \\1", facility_name)) %>% 
+  select(timestamp,facility_name, camp, agency_in_charge, currently_accepting_patient_severity, able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply, contains('sari'), contains('isolation')) %>%
+  #reformat variables to confirm they are numeric 
+  mutate(across(num_vars, as.numeric)) %>% 
+  #mutate(number_of_currently_filled_sari_beds=as.numeric(number_of_currently_filled_sari_beds)) %>% 
+  pivot_longer(-c(timestamp,facility_name, camp, agency_in_charge, currently_accepting_patient_severity,able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply)) %>%
   mutate(camp= gsub("Camp", "", camp)) %>%
   #mutate(fac_type=ifelse(grepl('sari', name) , 'SARI', 'ISOLATION')) %>%
   mutate(fac_type=case_when(name %like% 'sari_beds|sari_discharges' ~ 'SARI',
@@ -1325,7 +1519,7 @@ tableFormat <- gsheet_data$dru %>%
                          ifelse(grepl('filled',name), 'FILLED', 'DISCHARGES'))) %>%
   group_by(facility_name,activity) %>%
   mutate(count_beds=sum(value)) %>%
-  select(facility_name, camp, agency_in_charge, currently_accepting_patient_severity, able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply, count_beds, activity,fac_type,value) %>%
+  select(timestamp,facility_name, camp, agency_in_charge, currently_accepting_patient_severity, able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply, count_beds, activity,fac_type,value) %>%
   pivot_wider(names_from=c(activity,fac_type), values_from=value) %>%
   ungroup() %>%
   mutate_if(is.numeric, funs(ifelse(is.na(.), 0, .))) %>%
@@ -1339,104 +1533,106 @@ tableFormat <- gsheet_data$dru %>%
   mutate(preg=ifelse(grepl('Preg', able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply) , '+', '')) %>%
   mutate(prop_filled_sari=coalesce(FILLED_SARI/FUNCTIONAL_SARI,NA)) %>%
   mutate(prop_filled_iso=coalesce(FILLED_ISOLATION/FUNCTIONAL_ISOLATION,NA)) %>%
-  select(facility_name, camp,mild:preg, FUNCTIONAL_SARI, FILLED_SARI,prop_filled_sari, DISCHARGES_SARI,
+  select(timestamp,facility_name, camp,mild:preg, FUNCTIONAL_SARI, FILLED_SARI,prop_filled_sari, DISCHARGES_SARI,
          FUNCTIONAL_ISOLATION, FILLED_ISOLATION, prop_filled_iso,DISCHARGES_ISOLATION,count_beds)  %>%
   arrange(as.numeric(camp)) %>%
   mutate(facility_name=sub("*\\Camp*", "", facility_name)) %>%
   mutate(facility_name=gsub('[[:digit:]]+', '', facility_name)) %>%
-  mutate(prop_filled_total=((FILLED_ISOLATION + FILLED_SARI)/count_beds))
+  mutate(prop_filled_total=((FILLED_ISOLATION + FILLED_SARI)/count_beds)) %>% 
+  relocate(timestamp, .after = last_col())
 
 #Cox's Bazar is 5 hours ahead of UK
-cxb_time <- now("GMT") + lubridate::hours(6)
-
-last_upd <- gsheet_data$dru %>%
-  clean_names() %>% 
-  select(facility_name, timestamp)
+# cxb_time <- now("GMT") + lubridate::hours(6)
+# 
+# last_upd <- gsheet_data$dru %>%
+#   clean_names() %>% 
+#       mutate(facility_name=gsub(":([[:alpha:]])", ": \\1", facility_name)) %>% 
+#   select(facility_name, timestamp)
 #mutate(time_entry=as.POSIXlt(timestamp,format="%Y-%m-%dT%H:%M:%S")) %>%
 #mutate(time_since_upd=cxb_time-timestamp) %>%
 # mutate(hours_since_upd=round(time_since_upd,0)) %>%
 #select(facility_name,hours_since_upd)
 
 dru_gt_table <- tableFormat %>% 
-  left_join(last_upd, by='facility_name') %>%
-  gt() %>%
-  opt_row_striping(., row_striping = TRUE) %>%
+ # left_join(last_upd, by='facility_name') %>% 
+  gt() %>% 
+  opt_row_striping(., row_striping = TRUE) %>% 
   tab_spanner(
     label = "Currently accepting?",
     columns = vars(mild,moderate,severe)
-  ) %>%
+  ) %>% 
   tab_spanner(
     label = "Severe beds",
     columns = vars(FUNCTIONAL_SARI, FILLED_SARI,prop_filled_sari, DISCHARGES_SARI)
-  ) %>%
+  ) %>% 
   tab_spanner(
     label = "Isolation beds",
     columns = vars(FUNCTIONAL_ISOLATION, FILLED_ISOLATION,prop_filled_iso, DISCHARGES_ISOLATION)
-  ) %>%
+  ) %>% 
   tab_spanner(
     label = "Accepting special needs patients?",
     columns = vars(paed, sam,preg)
-  ) %>%
+  ) %>% 
   tab_footnote(
     footnote = "Expected in next 24 hours",
     locations = cells_column_labels(columns = vars(DISCHARGES_SARI,DISCHARGES_ISOLATION))
-  ) %>%
+  ) %>% 
   tab_footnote(
     footnote = "Severe Acute Malnutrition",
     locations = cells_column_labels(columns = vars(sam))
-  ) %>%
+  ) %>% 
   tab_footnote(
     footnote = "Postpartum",
     locations = cells_column_labels(columns = vars(preg))
-  ) %>%
+  ) %>% 
   tab_footnote(
     footnote = "Beds with access to 24/7 oxygen",
     locations = cells_column_spanners(spanners = "Severe beds")
-  ) %>%
+  ) %>% 
   summary_rows(fns = list(Total = ~ sum(.)), columns = vars(FUNCTIONAL_SARI, FILLED_SARI, DISCHARGES_SARI,
                                                             FUNCTIONAL_ISOLATION, FILLED_ISOLATION, DISCHARGES_ISOLATION,
                                                             count_beds),
                formatter = fmt_number,
                decimals = 0,
-               use_seps = TRUE) %>%
+               use_seps = TRUE) %>% 
   (function(x) {
-    res <- function() x$`_data` %>%
-      dplyr::summarize(prop_filled_sari = sum(FILLED_SARI) / sum(FUNCTIONAL_SARI)) %>%
+    res <- function() x$`_data` %>% 
+      dplyr::summarize(prop_filled_sari = sum(FILLED_SARI) / sum(FUNCTIONAL_SARI)) %>% 
       dplyr::pull(.data$prop_filled_sari)
     
     summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_filled_sari),
                  formatter = fmt_percent,
                  decimals = 0,
                  use_seps = TRUE)
-  }) %>%
+  }) %>% 
   (function(x) {
-    res <- function() x$`_data` %>%
-      dplyr::summarize(prop_filled_iso = sum(FILLED_ISOLATION) / sum(FUNCTIONAL_ISOLATION)) %>%
+    res <- function() x$`_data` %>% 
+      dplyr::summarize(prop_filled_iso = sum(FILLED_ISOLATION) / sum(FUNCTIONAL_ISOLATION)) %>% 
       dplyr::pull(.data$prop_filled_iso)
     
     summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_filled_iso),
                  formatter = fmt_percent,
                  decimals = 0,
                  use_seps = TRUE)
-  }) %>%
+  }) %>% 
   (function(x) {
-    res <- function() x$`_data` %>%
-      dplyr::summarize(prop_filled_total = sum(FILLED_ISOLATION + FILLED_SARI) / sum(FUNCTIONAL_ISOLATION + FUNCTIONAL_SARI)) %>%
+    res <- function() x$`_data` %>% 
+      dplyr::summarize(prop_filled_total = sum(FILLED_ISOLATION + FILLED_SARI) / sum(FUNCTIONAL_ISOLATION + FUNCTIONAL_SARI)) %>% 
       dplyr::pull(.data$prop_filled_total)
     
     summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_filled_total),
                  formatter = fmt_percent,
                  decimals = 0,
                  use_seps = TRUE)
-  }) %>%
+  }) %>% 
   fmt_percent(
     columns = vars(prop_filled_sari,prop_filled_iso,prop_filled_total),
     decimals = 0
-  ) %>%
+  ) %>% 
   fmt_missing(
     columns = 4:18,
     missing_text = ""
-  ) %>%
+  ) %>% 
   cols_label(
     facility_name = "Facility name",
     camp = "Camp",
@@ -1457,14 +1653,14 @@ dru_gt_table <- tableFormat %>%
     count_beds = "Total beds",
     prop_filled_total = "Total filled (%)" ,
     timestamp = "Last updated"
-  ) %>%
+  ) %>% 
   data_color(
     columns = vars(prop_filled_sari,prop_filled_iso,prop_filled_total),
     colors = scales::col_numeric(
       "Reds",
-      domain = c(0, 1), na.color = "light grey")
-  ) %>%
-  tab_source_note("Data Source: DRU Live Bed monitoring Google Sheet") %>%
+      domain = c(0, 1), na.color = "grey89")
+  ) %>% 
+  tab_source_note("Data Source: DRU Live Bed monitoring Google Sheet") %>% 
   tab_style(
     style = list(
       cell_borders(
@@ -1478,16 +1674,15 @@ dru_gt_table <- tableFormat %>%
         columns = gt::everything()
       )
     )
-  ) %>%
+  ) %>% 
   cols_align(
     align = "center",
     columns = gt::everything()
-  ) %>%
+  ) %>% 
   tab_options(
     container.overflow.x = TRUE,
     container.overflow.y = TRUE,
-    grand_summary_row.background.color = "lightblue")
-
+    grand_summary_row.background.color = "white")
 
  #tables[[1]]
 
@@ -1502,27 +1697,28 @@ Quarantine   {data-orientation=rows data-navmenu="Healthcare facility monitoring
 
 ```{r isolation}
 
-quarantine_table_df <- gsheet_data$quarantine %>%
-  clean_names() %>% 
-  #left_join(test, by='facility_name') %>%
-  filter(!is.na(facility_name)) %>%
-  select(location_of_facility, facility_name,supporting_agency,
-         contains("individuals") ,
-         number_of_rooms_shelters_currently_functional,number_of_rooms_shelters_currently_filled, timestamp) %>%
-  mutate(prop_occupancy=number_of_rooms_shelters_currently_filled/number_of_rooms_shelters_currently_functional)
+quar_vars <- c('new_admissions_in_the_last_24_hours_individuals', 'current_occupancy_individuals', 
+               'cumulative_contacts_individuals','cumulative_new_arrivals_travellers_individuals', 
+               'number_of_rooms_shelters_currently_functional', 'number_of_rooms_shelters_currently_filled')  
 
-quarantine_table <- quarantine_table_df %>%
-  gt() %>%
-  opt_row_striping(., row_striping = TRUE) %>%
+quarantine_raw %>% clean_names() %>% 
+    filter(!is.na(facility_name)) %>% 
+  select(location_of_facility, facility_name,supporting_agency, 
+         contains("individuals") ,
+         number_of_rooms_shelters_currently_functional,number_of_rooms_shelters_currently_filled, timestamp) %>% 
+    mutate(across(quar_vars, as.numeric)) %>% 
+  mutate(prop_occupancy=number_of_rooms_shelters_currently_filled/number_of_rooms_shelters_currently_functional) %>% 
+  gt() %>% 
+  opt_row_striping(., row_striping = TRUE) %>% 
   tab_spanner(
     label = "Individuals",
     columns = vars(new_admissions_in_the_last_24_hours_individuals ,current_occupancy_individuals,
                    cumulative_contacts_individuals,cumulative_new_arrivals_travellers_individuals)
-  ) %>%
+  ) %>% 
   tab_spanner(
     label = "Shelters",
     columns = vars(number_of_rooms_shelters_currently_functional,number_of_rooms_shelters_currently_filled,prop_occupancy)
-  ) %>%
+  ) %>% 
   cols_label(
     location_of_facility = "Location",
     facility_name = "Facility name",
@@ -1534,38 +1730,38 @@ quarantine_table <- quarantine_table_df %>%
     number_of_rooms_shelters_currently_functional = "Functional (n)",
     number_of_rooms_shelters_currently_filled = "Filled (n)",
     prop_occupancy = "Filled (%)",
-    timestamp="Last updated") %>%
+    timestamp="Last updated") %>% 
   summary_rows(fns = list(Total = ~ sum(.)), columns = vars(new_admissions_in_the_last_24_hours_individuals,current_occupancy_individuals,
                                                             cumulative_contacts_individuals,cumulative_new_arrivals_travellers_individuals,
                                                             number_of_rooms_shelters_currently_filled, number_of_rooms_shelters_currently_functional),
                formatter = fmt_number,
                decimals = 0,
-               use_seps = TRUE) %>%
+               use_seps = TRUE) %>% 
   (function(x) {
-    res <- function() x$`_data` %>%
-      dplyr::summarize(prop_occupancy = sum(number_of_rooms_shelters_currently_filled) / sum(number_of_rooms_shelters_currently_functional)) %>%
+    res <- function() x$`_data` %>% 
+      dplyr::summarize(prop_occupancy = sum(number_of_rooms_shelters_currently_filled) / sum(number_of_rooms_shelters_currently_functional)) %>% 
       dplyr::pull(.data$prop_occupancy)
     
     summary_rows(x, fns = list(Total = ~ res()), columns = vars(prop_occupancy),
                  formatter = fmt_percent,
                  decimals = 0,
                  use_seps = TRUE)
-  }) %>%
+  }) %>% 
   fmt_percent(
     columns = vars(prop_occupancy),
     decimals = 0
-  ) %>%
-  tab_footnote(
+  ) %>% 
+   tab_footnote(
     footnote = "In last 24 hours",
     locations = cells_column_labels(columns = vars(new_admissions_in_the_last_24_hours_individuals))
-  ) %>%
+  ) %>% 
   data_color(
     columns = vars(prop_occupancy),
     colors = scales::col_numeric(
       "Reds",
-      domain = c(0, 1), na.color = "light grey")
-  ) %>%
-  tab_source_note("Data Source: Quarantine monitoring Google Sheet") %>%
+      domain = c(0, 1), na.color = "grey89")
+  ) %>% 
+  tab_source_note("Data Source: Quarantine monitoring Google Sheet") %>% 
   tab_style(
     style = list(
       cell_borders(
@@ -1579,15 +1775,15 @@ quarantine_table <- quarantine_table_df %>%
         columns = gt::everything()
       )
     )
-  ) %>%
+  ) %>% 
   cols_align(
     align = "center",
     columns = gt::everything()
-  ) %>%
+  ) %>% 
   tab_options(
-    container.overflow.x = TRUE,
-    container.overflow.y = TRUE,
-    grand_summary_row.background.color = "lightblue")
+  container.overflow.x = TRUE,
+  container.overflow.y = TRUE,
+    grand_summary_row.background.color = "white")
 
 
 
