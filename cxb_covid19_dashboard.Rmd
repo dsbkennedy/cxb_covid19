@@ -1701,7 +1701,7 @@ quar_vars <- c('new_admissions_in_the_last_24_hours_individuals', 'current_occup
                'cumulative_contacts_individuals','cumulative_new_arrivals_travellers_individuals', 
                'number_of_rooms_shelters_currently_functional', 'number_of_rooms_shelters_currently_filled')  
 
-quarantine_raw %>% clean_names() %>% 
+quarantine_table <- quarantine_raw %>% clean_names() %>% 
     filter(!is.na(facility_name)) %>% 
   select(location_of_facility, facility_name,supporting_agency, 
          contains("individuals") ,
