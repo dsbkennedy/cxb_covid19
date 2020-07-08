@@ -96,23 +96,88 @@ test_nationality %>%
   mutate(cases_roll=roll_mean((Case),7, na.rm=TRUE, align="right", fill = NA)) %>% 
   mutate(pos_roll=cases_roll/tests_roll) %>% 
   ggplot(., aes(x=date_format, y=pos_roll, color=population_group)) +
-  geom_line()  
+  geom_line()  +
+  scale_fill_manual(values=c("#ED7D31","#4472C4")) +
+  scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
+               date_labels = '%d-%m') +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal() +
+  labs(caption="Data source: Lab data",
+       x = "Date",
+       y = "Test positivity (%)",
+       fill="") +
+  theme_minimal()
 
-  group_by(name) %>% 
-  mutate(cases_roll=roll_mean((value),7, na.rm=TRUE, align="right", fill = NA)) %>% 
-  ggplot(., aes(x=date_format, y=cases_roll, color=population_group)) +
-  geom_line()  
 
 
-  #mutate(week=epiweek(date_format)) %>% 
-  #group_by(week, name) %>% 
-  #summarise(total_tests=sum(value)) 
+
+test_nationality %>% 
+  filter(name %in% c('host', 'fdmn','host_positive', 'fdmn_positive')) %>% 
+  mutate(indicator=case_when(grepl('positive', name) ~ 'Case', 
+                             TRUE ~ 'Test')) %>% 
+  select(-name) %>% 
+  pivot_wider(names_from=indicator) %>% 
+  group_by(population_group,date_format) %>% 
+  mutate(tests_roll=roll_mean((Test),7, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(cases_roll=roll_mean((Case),7, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(pos_roll=cases_roll/tests_roll) %>% 
+  ggplot(., aes(x=date_format, y=pos_roll, color=population_group)) +
+  geom_line()  +
+  scale_fill_manual(values=c("#ED7D31","#4472C4")) +
+  labs(caption="Data source: ARI/ILI Linelist",
+       x = "Week",
+       y = "Age (years)",
+       fill="Population group") +
+  theme_minimal()
 
 
-  dplyr::mutate(death_03da = zoo::rollmean(deaths, k = 3, fill = NA),
-                death_05da = zoo::rollmean(deaths, k = 5, fill = NA),
-                death_07da = zoo::rollmean(deaths, k = 7, fill = NA),
-                death_15da = zoo::rollmean(deaths, k = 15, fill = NA),
-                death_21da = zoo::rollmean(deaths, k = 21, fill = NA)) %>% 
-  dplyr::ungroup()
+
+
+ari_data <- gsheet_data$ari_ili %>% 
+    clean_names() %>% 
+    mutate(date_detect=ymd(date_of_case_detection),
+           date_onset=ymd(date_of_onset_of_any_of_the_symptoms)) %>% 
+    select(nationality, date_detect, date_onset,sample_type, laboratory_result, age, sex)
+  
+  
+  
+mean_age_gph <- ari_data %>% 
+    filter(!nationality=='UNK') %>% 
+    mutate(week=epiweek(date_detect)) %>% 
+    #filter(date_detect>=ymd('2020-05-01')) %>% 
+    filter(week>=19) %>% 
+    group_by(week, nationality) %>% 
+    #summarise(mean_age=mean(age,na.rm=TRUE)) %>% 
+    #ggplot(., aes(x=week, y=mean_age, fill=nationality)) +
+    #geom_col(position="dodge")
+  summarise(ci = list(mean_cl_normal(age) %>% 
+                        rename(mean=y, lwr=ymin, upr=ymax))) %>% 
+    unnest()  %>% 
+    ggplot(., aes(x=week, y=mean, fill=nationality)) +
+    geom_bar(stat="identity", width=.75, position = "dodge") +
+    geom_errorbar(aes(ymin=lwr, ymax=upr),
+                  width=.2,                    # Width of the error bars
+                  position=position_dodge(.9)) +
+  scale_fill_manual(values=c("#ED7D31","#4472C4")) +
+  labs(caption="Data source: ARI/ILI Linelist",
+       x = "Week",
+       y = "Age (years)",
+       fill="Population group") +
+  theme_minimal()
+    
+  
+ test <-  ari_data %>% 
+    mutate(onset_test = date_detect-date_onset) 
+  
+    ggplot(., aes(x=onset_test, color=nationality)) +
+    geom_histogram(fill="white", alpha=0.5, position="identity")
+  
+  
+  
+  ggplot(df, aes(x=weight, color=sex)) +
+    geom_histogram(fill="white", alpha=0.5, position="identity")
+  
+    
+  
+  
 

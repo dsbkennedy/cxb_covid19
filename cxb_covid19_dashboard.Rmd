@@ -42,8 +42,8 @@ library(ggplot2)
 library(ggthemes)
 library(gt)
 library(tidyr)
-#library(RcppRoll)
-#library(scales)
+library(RcppRoll)
+library(scales)
 library(sf)
 library(leaflet)
 #library(patchwork)
@@ -1491,6 +1491,134 @@ table1(~ age_years  + sex + risk_level +onset_sample | outcome , data=godata_cle
     scale_x_upset( n_intersections = 5) 
 
 ```
+
+
+
+Surveillance  {data-orientation=columns}
+=====================================  
+
+### Test positivity over time
+
+```{r test_positivity}
+
+##Test postiivity
+# test <- test_nationality %>% 
+#   filter(name %in% c('host', 'fdmn')) %>% 
+#   mutate(week=epiweek(date_format)) %>% 
+#   group_by(week, name) %>% 
+#   summarise(total_tests=sum(value)) %>% 
+#   mutate(name=case_when(grepl('host', name) ~ 'host',
+#                         TRUE ~ 'fdmn')) %>% 
+#   mutate(name_fac=factor(name, levels=c('host', 'fdmn'),
+#                          labels=c('Host community', 'Rohingya refugee/FDMN'))) %>% 
+#   select(-name)
+# 
+# 
+# case <- test_nationality %>% 
+#   filter(name %in% c('host_positive', 'fdmn_positive')) %>% 
+#   mutate(week=epiweek(date_format)) %>% 
+#   group_by(week, name) %>% 
+#   summarise(total_cases=sum(value)) %>% 
+#   mutate(name=case_when(grepl('host', name) ~ 'host',
+#                         TRUE ~ 'fdmn')) %>% 
+#   mutate(name_fac=factor(name, levels=c('host', 'fdmn'),
+#                          labels=c('Host community', 'Rohingya refugee/FDMN')))%>% 
+#   select(-name)
+# 
+# 
+# test_positivity_gph <- test %>% 
+#   left_join(case, by=c('week', 'name_fac')) %>% 
+#   filter(week>=19) %>% 
+#   mutate(pos=total_cases/total_tests) %>% 
+#   ggplot(., aes(x=week, y=pos, color=name_fac)) +
+#   geom_line() +
+#   ##geom_bar(stat="identity", width=.5, position = "dodge") +
+#   scale_y_continuous(labels = scales::percent) +
+#   scale_fill_manual(values=c("#ED7D31","#4472C4")) +
+#   labs(caption="Data source: Lab data",
+#        x = "Week",
+#        y = "Test positivity (%)",
+#        fill="Population group") +
+#   theme_minimal()
+
+
+test_positivity_gph <- test_nationality %>% 
+  filter(name %in% c('host', 'fdmn','host_positive', 'fdmn_positive')) %>% 
+  mutate(week=epiweek(date_format)) %>% 
+  #filter(date_detect>=ymd('2020-05-01')) %>% 
+  filter(week>=19) %>% 
+  mutate(population_group=factor(population_group)) %>% 
+  mutate(indicator=case_when(grepl('positive', name) ~ 'Case', 
+                             TRUE ~ 'Test')) %>% 
+  select(-c(name)) %>% 
+  pivot_wider(names_from=indicator) %>% 
+  group_by(population_group) %>% 
+  mutate(tests_roll=roll_mean((Test),7, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(cases_roll=roll_mean((Case),7, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(pos_roll=cases_roll/tests_roll) %>% 
+  ggplot(., aes(x=date_format, y=pos_roll, color=population_group)) +
+  geom_line()  +
+  scale_fill_manual(values=c("#ED7D31","#4472C4")) +
+  scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
+               date_labels = '%d-%m') +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal() +
+  labs(caption="Data source: Lab data",
+       x = "Date",
+       y = "Test positivity (%) (7-day average)",
+       color="Population group") +
+  theme_minimal()
+
+ggplotly(test_positivity_gph)
+
+
+```
+
+
+### Mean age of ARI/ILI samples by week
+
+```{r ari_ili_age}
+
+ari_data <- gsheet_data$ari_ili %>% 
+    clean_names() %>% 
+    mutate(date_detect=ymd(date_of_case_detection),
+           date_onset=date_of_onset_of_any_of_the_symptoms) %>% 
+    select(nationality, date_detect, date_onset,sample_type, laboratory_result, age, sex)
+  
+  
+  
+mean_age_gph <- ari_data %>% 
+  filter(!nationality=='UNK') %>% 
+  mutate(name_fac=factor(nationality, levels=c('Host', 'FDMN'),
+                         labels=c('Host community', 'Rohingya refugee/FDMN'))) %>% 
+  mutate(week=epiweek(date_detect)) %>% 
+  #filter(date_detect>=ymd('2020-05-01')) %>% 
+  filter(week>=19) %>% 
+  group_by(week, name_fac) %>% 
+  #summarise(mean_age=mean(age,na.rm=TRUE)) %>% 
+  #ggplot(., aes(x=week, y=mean_age, fill=nationality)) +
+  #geom_col(position="dodge")
+  summarise(ci = list(mean_cl_normal(age) %>% 
+                        rename(mean=y, lwr=ymin, upr=ymax))) %>% 
+  unnest()  %>% 
+  ggplot(., aes(x=week, y=mean, fill=name_fac)) +
+  geom_bar(stat="identity", width=.75, position = "dodge") +
+  geom_errorbar(aes(ymin=lwr, ymax=upr),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9)) +
+  scale_fill_manual(values=c("#ED7D31","#4472C4")) +
+  labs(caption="Data source: ARI/ILI Linelist",
+       x = "Week",
+       y = "Age (years)",
+       fill="Population group") +
+  theme_minimal()
+
+
+ggplotly(mean_age_gph)
+
+```
+
+
 
 
 SARI ITC & Isolation  {data-orientation=rows data-navmenu="Healthcare facility monitoring" data-icon="fa-list"}
