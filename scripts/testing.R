@@ -70,3 +70,49 @@ test_positivity_gph <- test %>%
 
 ggarrange(tests_week, cases_week, test_positivity_gph, legend="top")
 
+library(RcppRoll)
+test_nationality %>% 
+  filter(name %in% c('host', 'fdmn')) %>% 
+  group_by(name) %>% 
+  mutate(tests_roll=roll_mean((value),7, na.rm=TRUE, align="right", fill = NA)) %>% 
+  ggplot(., aes(x=date_format, y=tests_roll, fill=population_group)) +
+  geom_col()
+
+test_nationality %>% 
+  filter(name %in% c('host_positive', 'fdmn_positive')) %>% 
+  group_by(name) %>% 
+  mutate(cases_roll=roll_mean((value),7, na.rm=TRUE, align="right", fill = NA)) %>% 
+  ggplot(., aes(x=date_format, y=cases_roll, color=population_group)) +
+  geom_line()
+
+test_nationality %>% 
+  filter(name %in% c('host', 'fdmn','host_positive', 'fdmn_positive')) %>% 
+  mutate(indicator=case_when(grepl('positive', name) ~ 'Case', 
+                             TRUE ~ 'Test')) %>% 
+  select(-name) %>% 
+  pivot_wider(names_from=indicator) %>% 
+  group_by(population_group) %>% 
+  mutate(tests_roll=roll_mean((Test),7, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(cases_roll=roll_mean((Case),7, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(pos_roll=cases_roll/tests_roll) %>% 
+  ggplot(., aes(x=date_format, y=pos_roll, color=population_group)) +
+  geom_line()  
+
+  group_by(name) %>% 
+  mutate(cases_roll=roll_mean((value),7, na.rm=TRUE, align="right", fill = NA)) %>% 
+  ggplot(., aes(x=date_format, y=cases_roll, color=population_group)) +
+  geom_line()  
+
+
+  #mutate(week=epiweek(date_format)) %>% 
+  #group_by(week, name) %>% 
+  #summarise(total_tests=sum(value)) 
+
+
+  dplyr::mutate(death_03da = zoo::rollmean(deaths, k = 3, fill = NA),
+                death_05da = zoo::rollmean(deaths, k = 5, fill = NA),
+                death_07da = zoo::rollmean(deaths, k = 7, fill = NA),
+                death_15da = zoo::rollmean(deaths, k = 15, fill = NA),
+                death_21da = zoo::rollmean(deaths, k = 21, fill = NA)) %>% 
+  dplyr::ungroup()
+

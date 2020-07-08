@@ -112,8 +112,8 @@ test_nationality <- tests_data %>%
     mutate(date_format=excel_numeric_to_date(as.numeric(date))) %>% 
     select(-date) %>% 
     pivot_longer(-date_format) %>% 
-  mutate(population_group=case_when(name=='fdmn' ~ 'Rohingya refugee/FDMN',
-                                    name=='host' ~ 'Host community')) 
+  mutate(population_group=case_when(grepl('fdmn',name) ~ 'Rohingya refugee/FDMN',
+                                    grepl('host',name) ~ 'Host community')) 
 
 ##DRU data
 dru_raw <- gsheet_data$dru %>% clean_names() %>%   mutate(facility_name=gsub(":([[:alpha:]])", ": \\1", facility_name)) 
@@ -257,7 +257,7 @@ Landing page
 =====================================  
 
 
-Row {data-height=50}
+Row {data-height=75}
 -------------------------------------
 
 ### 
@@ -279,12 +279,13 @@ Row {data-height=50}
 
 host_tests <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_tests)
 host_tests_7day <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_tests_7day)
-               
+
  valueBox(
   format(paste0(host_tests,' (', host_tests_7day, ')'), big.mark = ","),
   icon= "fas fa-vials",
   color= "#ED7D31"
 )
+
 
 ```
 
@@ -317,7 +318,7 @@ host_deaths_7day <- table_calc_comb %>%  filter(population_group=='Host communit
 
 ```
 
-Row {data-height=50}
+Row {data-height=75}
 -------------------------------------
 
 ### 
