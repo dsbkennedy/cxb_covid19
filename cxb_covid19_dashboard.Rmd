@@ -1630,10 +1630,15 @@ SARI ITC & Isolation  {data-orientation=rows data-navmenu="Healthcare facility m
 num_vars <- c('number_of_functional_sari_beds', 'number_of_currently_filled_sari_beds','number_of_expected_sari_discharges_in_next_24_hours',
               'number_of_functional_isolation_beds_non_sari','number_of_currently_filled_isolation_beds_non_sari','number_of_expected_isolation_discharges_in_next_24_hours_non_sari' )
 
+clean_fn <- function(x){
+  ifelse(x == "NULL", NA,x)
+}
+
 tableFormat <- dru_raw %>%
   clean_names() %>% 
   #mutate(facility_name=gsub(":([[:alpha:]])", ": \\1", facility_name)) %>% 
   select(timestamp,facility_name, camp, agency_in_charge, currently_accepting_patient_severity, able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply, contains('sari'), contains('isolation')) %>%
+       mutate(across(num_vars, clean_fn)) %>% 
   #reformat variables to confirm they are numeric 
   mutate(across(num_vars, as.numeric)) %>% 
   #mutate(number_of_currently_filled_sari_beds=as.numeric(number_of_currently_filled_sari_beds)) %>% 
