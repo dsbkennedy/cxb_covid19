@@ -400,7 +400,7 @@ Row {data-height=75}
 ```{r}
 
  valueBox(
-  format(paste0('Rohingya refugee/FDMN'), big.mark = ","),
+  format(paste0('Rohingya/FDMN'), big.mark = ","),
   icon= "",
   color= "#4472C4"
 )
@@ -649,10 +649,10 @@ table_calc_comb %>%
     total_tests_pm_7day   = "Per million",
     test_pos = "Test positivity" 
   ) %>% 
-  tab_spanner(
-    label = "Tests",
-    columns = vars(total_tests, total_tests_pm,total_tests_7day,total_tests_pm_7day,test_pos)
-  ) %>% 
+  # tab_spanner(
+  #   label = "Tests",
+  #   columns = vars(total_tests, total_tests_pm,total_tests_7day,total_tests_pm_7day,test_pos)
+  # ) %>% 
   tab_style(
     style = list(
       cell_borders(
@@ -698,10 +698,10 @@ table_calc_comb %>%
     total_cases_pm_7day   = "Per million",
     case_growth = "Growth rate"
   ) %>% 
-  tab_spanner(
-    label = "Cases",
-    columns = vars(total_cases, total_cases_pm,total_cases_7day,total_cases_pm_7day,case_growth)
-  ) %>% 
+  # tab_spanner(
+  #   label = "Cases",
+  #   columns = vars(total_cases, total_cases_pm,total_cases_7day,total_cases_pm_7day,case_growth)
+  # ) %>% 
   tab_style(
     style = list(
       cell_borders(
@@ -747,10 +747,10 @@ table_calc_comb %>%
     total_deaths_pm_7day  = "Per million", 
     cfr = "Case Fatality Risk"
   ) %>% 
-  tab_spanner(
-    label = "Deaths",
-    columns = vars(total_deaths, total_deaths_pm,total_deaths_7day,total_deaths_pm_7day, cfr)
-  ) %>% 
+  # tab_spanner(
+  #   label = "Deaths",
+  #   columns = vars(total_deaths, total_deaths_pm,total_deaths_7day,total_deaths_pm_7day, cfr)
+  # ) %>% 
   tab_style(
     style = list(
       cell_borders(
@@ -919,7 +919,8 @@ ggarrange(test_growth_gph, case_growth_gph, ncol=2, common.legend = TRUE, legend
 Row {data-height=250}
 -------------------------------------
 
-### Epicurve  
+### Cases by date  
+
 ```{r epicurve}
 
 epi_curve <- table_final_df %>% 
@@ -967,7 +968,7 @@ test_positivity_gph <- test_nationality %>%
   scale_y_continuous(labels = scales::percent) +
   theme_minimal() +
   labs(caption="Data source: Lab data",
-       x = "Date",
+       x = "Date of test",
        y = "Test positivity (%) (7-day average)",
        color="Population group") +
   theme_minimal()
@@ -1694,7 +1695,7 @@ Row
 -------------------------------------
 
 
-### Age and sex distribution
+### Cases by age group and sex
 
 
 ```{r}
@@ -1704,7 +1705,7 @@ ggplotly(case_age_sex_gph)
 
 
 
-### Cases by date and sex {data-height=350}
+### Cases by date and sex 
 
 ```{r}
 
@@ -1741,7 +1742,7 @@ label(godata_clean$status) <- "Status"
 label(godata_clean$risk_level) <- "Risk level"
 label(godata_clean$onset_sample) <- "Symptom onest to sample taken (days)"
 
-table1(~ age_years  + sex + risk_level +onset_sample | outcome , data=godata_clean, topclass="Rtable1-zebra",footnote="Data source: GoData") 
+table1(~ age_years  + sex  + onset_sample | outcome , data=godata_clean, topclass="Rtable1-zebra",footnote="Data source: GoData") 
 
 ```
 
