@@ -1961,7 +1961,7 @@ tableFormat <- dru_raw %>%
   mutate(mild=ifelse(grepl('Mild', currently_accepting_patient_severity) , '+', '')) %>%
   mutate(moderate=ifelse(grepl('Moderate', currently_accepting_patient_severity) , '+', '')) %>%
   mutate(severe=ifelse(grepl('Severe', currently_accepting_patient_severity) , '+', '')) %>%
-  mutate(paed=ifelse(grepl('Pead', able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply) , '+', '')) %>%
+  mutate(paed=ifelse(grepl('Pead|Paed', able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply) , '+', '')) %>%
   mutate(sam=ifelse(grepl('SAM', able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply) , '+', '')) %>%
   mutate(preg=ifelse(grepl('Preg', able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply) , '+', '')) %>%
   mutate(prop_filled_sari=coalesce(FILLED_SARI/FUNCTIONAL_SARI,NA)) %>%
