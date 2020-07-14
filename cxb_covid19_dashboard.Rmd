@@ -1181,7 +1181,7 @@ summaryTable_host <- table_calc_comb_subloc %>%
 summaryTable_host
 ```   
 
-### Testing {data-height=350}
+### Tests and cases over time {data-height=350}
 
 ```{r daily_tests}
 
