@@ -634,17 +634,156 @@ ggplot(df, aes(x, y, height = h, width = w, label = info)) +
 
 ```
 
- 
+### Tests
+```{r tests_tab}
+
+table_calc_comb %>% 
+  ungroup() %>%
+  select(population_group, contains('test')) %>% 
+  gt(rowname_col = "population_group") %>% 
+  tab_stubhead(label = "Population group") %>% 
+  cols_label(
+    total_tests = "Total",
+    total_tests_pm = "Per million",
+    total_tests_7day = "Last 7 days", 
+    total_tests_pm_7day   = "Per million",
+    test_pos = "Test positivity" 
+  ) %>% 
+  tab_spanner(
+    label = "Tests",
+    columns = vars(total_tests, total_tests_pm,total_tests_7day,total_tests_pm_7day,test_pos)
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "bottom",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_column_labels(
+        columns = gt::everything()
+      )
+    )
+  ) %>% 
+  cols_align(
+    align = "center",
+    columns = gt::everything()
+  ) %>% 
+  fmt_percent(
+    columns = vars(test_pos),
+    decimals = 1
+  ) %>% 
+  fmt_number(
+    columns=vars(total_tests_pm,total_tests_pm_7day),
+    decimals = 1
+  )
+
+```
+
+### Cases
+
+```{r case_tab}
+
+table_calc_comb %>% 
+  ungroup() %>%
+  select(population_group, contains('case')) %>% 
+  gt(rowname_col = "population_group") %>% 
+  tab_stubhead(label = "Population group") %>% 
+  cols_label(
+    total_cases = "Total",
+    total_cases_pm = "Per million",
+    total_cases_7day = "Last 7 days",
+    total_cases_pm_7day   = "Per million",
+    case_growth = "Growth rate"
+  ) %>% 
+  tab_spanner(
+    label = "Cases",
+    columns = vars(total_cases, total_cases_pm,total_cases_7day,total_cases_pm_7day,case_growth)
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "bottom",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_column_labels(
+        columns = gt::everything()
+      )
+    )
+  ) %>% 
+  cols_align(
+    align = "center",
+    columns = gt::everything()
+  ) %>% 
+  fmt_percent(
+    columns = vars(case_growth),
+    decimals = 1
+  ) %>% 
+  fmt_number(
+    columns=vars(total_cases_pm, total_cases_pm_7day),
+    decimals = 1
+  )
 
 
+```
 
+### Deaths
+
+```{r deaths_tab}
+table_calc_comb %>% 
+  ungroup() %>%
+  select(population_group, contains('death'), cfr) %>% 
+  gt(rowname_col = "population_group") %>% 
+  tab_stubhead(label = "Population group") %>% 
+  cols_label(
+    total_deaths = "Total",
+    total_deaths_pm = "Per million", 
+    total_deaths_7day = "Last 7 days",
+    total_deaths_pm_7day  = "Per million", 
+    cfr = "Case Fatality Risk"
+  ) %>% 
+  tab_spanner(
+    label = "Deaths",
+    columns = vars(total_deaths, total_deaths_pm,total_deaths_7day,total_deaths_pm_7day, cfr)
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "bottom",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_column_labels(
+        columns = gt::everything()
+      )
+    )
+  ) %>% 
+  cols_align(
+    align = "center",
+    columns = gt::everything()
+  ) %>% 
+  fmt_percent(
+    columns = vars(cfr),
+    decimals = 1
+  ) %>% 
+  fmt_number(
+    columns=vars(total_deaths_pm,total_deaths_pm_7day),
+    decimals = 1
+  )
+```
+
+
+<!---
 ### Table
 
 ```{r}
-
-
-
-
 
 table_calc_comb %>% 
   ungroup() %>%
@@ -713,6 +852,9 @@ table_calc_comb %>%
 
 
 ```
+
+--->
+
 
 
 ```{r eval=FALSE, include=FALSE}
@@ -814,8 +956,8 @@ test_positivity_gph <- test_nationality %>%
   select(-c(name)) %>% 
   pivot_wider(names_from=indicator) %>% 
   group_by(population_group) %>% 
-  mutate(tests_roll=roll_mean((Test),14, na.rm=TRUE, align="right", fill = NA)) %>% 
-  mutate(cases_roll=roll_mean((Case),14, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(tests_roll=roll_mean((Test),7, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(cases_roll=roll_mean((Case),7, na.rm=TRUE, align="right", fill = NA)) %>% 
   mutate(pos_roll=cases_roll/tests_roll) %>% 
   ggplot(., aes(x=date_format, y=pos_roll, color=population_group)) +
   geom_line()  +
@@ -826,7 +968,7 @@ test_positivity_gph <- test_nationality %>%
   theme_minimal() +
   labs(caption="Data source: Lab data",
        x = "Date",
-       y = "Test positivity (%) (14-day average)",
+       y = "Test positivity (%) (7-day average)",
        color="Population group") +
   theme_minimal()
 
@@ -1127,7 +1269,7 @@ map_host  <- tm_shape(case_shp_host) +
               breaks = c(0, 100, 250, 500,1000,2000),
               title="Confirmed COVID-19 cases", 
               palette='YlOrRd', 
-              id="confirmed", alpha=0.5) +   
+              id="total_cases", alpha=0.5) +   
   tm_text("upazilla", root=5) +
   tm_legend(text.size=1,
             title.size=1.2,
@@ -1330,17 +1472,18 @@ pal <- colorNumeric(
 map_fdmn <- case_shp_fdmn %>%
   mutate(camp=gsub('Camp', '', new_camp_n)) %>%
   tm_shape(.) +
-  tm_polygons("total_cases", title="Confirmed COVID-19 cases", palette='YlOrRd', id="confirmed", alpha=0.5, colorNA=NULL) +
-  tm_text("camp", root=5) +
+  tm_polygons("total_cases", title="Confirmed COVID-19 cases", palette='YlOrRd', 
+              id="total_cases", alpha=0.5, colorNA=NULL) +
+  tm_text("camp", col="black", root=5) +
   tm_legend(text.size=1,
             title.size=1.2,
             position = c("left","bottom"),
-            bg.color = "white",
+            bg.color = "black",
             bg.alpha=.2,
             width=.8,
             frame="white",
             height=.6)
-  #tm_facets("upazila", ncol=1)
+#tm_facets("upazila", ncol=1)
 tmap_leaflet(map_fdmn)
 
 ```
@@ -1504,19 +1647,19 @@ godata_clean <- godata_wide %>%
 ```{r cases}
 
 case_age_sex <- godata_clean %>% 
-  count(sex,age_group)
+  count(sex,age_group, .drop = FALSE)
 
 max_case <- max(case_age_sex$n)
 
 case_age_sex_gph <- ggplot(case_age_sex,
-       aes(x = age_group,
-           y = ifelse(sex == 'male', n, -n),
-           fill = sex)) +
-  geom_bar(stat = "identity", width = 0.7) +
-  coord_flip() +
-  scale_y_continuous(limits = c(-max_case, max_case),
-                     breaks = seq(-max_case, max_case, 2),
-                     labels = abs(seq(-max_case, max_case, 2))) +
+                           aes(x = age_group,
+                               y=n,
+                               #y = ifelse(sex == 'male', n, -n),
+                               fill = sex)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.5) +
+  scale_y_continuous(limits = c(0, max_case),
+                     breaks = seq(0, max_case, 2),
+                     labels = abs(seq(0, max_case, 2))) +
   labs(x = "Age", y = "Number of cases", fill = '') +
   theme_minimal()
 
@@ -1533,14 +1676,14 @@ death_age_sex <- godata_clean %>%
 max_deaths <- max(death_age_sex$n)
 
 death_age_sex_gph <- ggplot(death_age_sex,
-       aes(x = age_group,
-           y = ifelse(sex == 'male', n, -n),
-           fill = sex)) +
-  geom_bar(stat = "identity", width = 0.7) +
-  coord_flip() +
-  scale_y_continuous(limits = c(-max_case, max_case),
-                     breaks = seq(-max_case, max_case, 2),
-                     labels = abs(seq(-max_case, max_case, 2))) +
+                           aes(x = age_group,
+                               y=n,
+                               #y = ifelse(sex == 'male', n, -n),
+                               fill = sex)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.5) +
+  scale_y_continuous(limits = c(0, max_case),
+                     breaks = seq(0, max_case, 2),
+                     labels = abs(seq(0, max_case, 2))) +
   labs(x = "Age", y = "Number of deaths", fill = '') +
   theme_minimal()
 
@@ -1555,7 +1698,8 @@ Row
 
 
 ```{r}
-ggarrange(case_age_sex_gph, death_age_sex_gph, ncol=2, common.legend = TRUE, legend="top")
+#ggarrange(case_age_sex_gph, death_age_sex_gph, ncol=2, common.legend = TRUE, legend="top")
+ggplotly(case_age_sex_gph)
 ```
 
 
