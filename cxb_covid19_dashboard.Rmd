@@ -90,21 +90,21 @@ gdrive_link <- "1Gnutu0OxxFJJq73KUzLQzHZHteFwpQP-B_tXct7OGwE"
 #plan(multiprocess)
 
 
-gs4_deauth()
-gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%  set_names(sheet_names)
+#gs4_deauth()
+#gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%  set_names(sheet_names)
 
 #Google data
-# token <- readRDS("data/droptoken.rds")
+ token <- readRDS("data/droptoken.rds")
 # # Then pass the token to each drop_ function
 # 
 # #My example
-# drop_download(path = '/cxb/gsheet_data.Rds',
-#               local_path = 'gsheet_data.Rds', 
-#               dtoken = token, 
-#               overwrite = TRUE)
+drop_download(path = '/cxb/gsheet_data.Rds',
+              local_path = 'gsheet_data.Rds',
+              dtoken = token,
+              overwrite = TRUE)
 
 # Main data frame for data analysis
-#gsheet_data <- readRDS('gsheet_data.Rds')
+gsheet_data <- readRDS('gsheet_data.Rds')
 #load("C:/Users/idcvdken/Dropbox (LSoHaTM)/r_cxb/dashboard/cxb_dashboard/data/gsheet_data.RData")
 ### All cases
 
@@ -1192,7 +1192,7 @@ testing_host_gph <-  test_nationality %>%
   ggplot(., aes(x=date_format, y=value, fill=name_fac)) +
   geom_bar(stat="identity") +
     scale_fill_manual(values=c("#ED7D31","#4472C4")) +
-  scale_x_date(date_breaks = '7 day', date_minor_breaks = '1 day',
+  scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
                date_labels = '%d-%m') +
   labs(caption="Data source: Lab data",
        x = "Date",
@@ -1409,7 +1409,7 @@ testing_fdmn_gph <-
   ggplot(., aes(x=date_format, y=value, fill=name_fac)) +
   geom_bar(stat="identity") +
     scale_fill_manual(values=c("#ED7D31","#4472C4")) +
-  scale_x_date(date_breaks = '7 day', date_minor_breaks = '1 day',
+  scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
                date_labels = '%d-%m') +
   labs(caption="Data source: Lab data",
        x = "Date",
@@ -1508,6 +1508,12 @@ godata_wide <- cases %>%
   unnest(c(
     #addresses,
     date_ranges,
+    questionnaire_answers_health_facility,
+    questionnaire_answers_status_at_detection,
+    questionnaire_answers_outcome,
+    questionnaire_answers_outcome_2,
+    questionnaire_answers_msf_outcome,
+    #questionnaire_answers_outcome2,
     #questionnaire_answers_nationality,
     #questionnaire_answers_nationality_2,
     #questionnaire_answers_cif_nationality,
@@ -1554,18 +1560,22 @@ godata_clean <- godata_wide %>%
   mutate(sex = case_when(
                 grepl('_male', gender, ignore.case=TRUE) ~ "male",
         grepl('_female', gender, ignore.case=TRUE) ~ "female"
-  )) %>%
+  )) %>% 
   #Updated this classification to match survey
   #updated to "outcome"
   mutate(outcome = case_when(
             grepl('alive', outcome_id, ignore.case=TRUE) ~ "alive",
             grepl('deceased', outcome_id, ignore.case=TRUE) ~ "dead",
             grepl('recovered', outcome_id, ignore.case=TRUE) ~ "recovered",
-            grepl('death', questionnaire_answers_outcome, ignore.case=TRUE) ~ "dead",
-            grepl('death', questionnaire_answers_outcome_2, ignore.case=TRUE) ~ "dead"
-
+            #grepl('death', questionnaire_answers_outcome, ignore.case=TRUE) ~ "dead",
+            grepl('healthy', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "alive",
+            grepl('not recovered', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "alive",
+            grepl('$recovered', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "recovered",
+            grepl('death', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "dead"
   )) %>%
         mutate(outcome=fct_explicit_na(outcome, na_level = "(Outcome missing)"))  %>% 
+  #Status at detection
+  mutate(detection_status = questionnaire_answers_status_at_detection_value) %>%
   #Risk level
   mutate(risk_level = case_when(
             grepl('low', risk_level, ignore.case=TRUE) ~ "low",
@@ -1616,10 +1626,6 @@ godata_clean <- godata_wide %>%
   #Hypertension
   mutate(htn=case_when(grepl('hypertension',questionnaire_answers_select_pre_existing_medical_condition,ignore.case=TRUE)~1,
                          grepl('yes', questionnaire_answers_hypertension,ignore.case=TRUE)~1)) %>% 
-  #Pre-existing conditions
-  #Hypertension
-  mutate(htn=case_when(grepl('hypertension',questionnaire_answers_select_pre_existing_medical_condition,ignore.case=TRUE)~1,
-                       grepl('yes', questionnaire_answers_hypertension,ignore.case=TRUE)~1)) %>% 
   #Cardiovascular
   mutate(cardiovascular=case_when(grepl('cardiovascular',questionnaire_answers_select_pre_existing_medical_condition,ignore.case=TRUE)~1,
                        grepl('yes', questionnaire_answers_cardiovascular_disease,ignore.case=TRUE)~1)) %>% 
@@ -1629,6 +1635,10 @@ godata_clean <- godata_wide %>%
   #Lung disease
   mutate(lung_disease=case_when(grepl('chronic lung',questionnaire_answers_select_pre_existing_medical_condition,ignore.case=TRUE)~1,
                        grepl('yes', questionnaire_answers_chronic_lung_disease,ignore.case=TRUE)~1)) %>% 
+  mutate(any_comorb=case_when(htn==1 ~ 1,
+                              cardiovascular==1 ~ 1,
+                              diabetes==1 ~ 1,
+                              lung_disease==1 ~ 1)) %>% 
   #Time intervals
    unnest(questionnaire_answers_date_sample_collected,   keep_empty = TRUE, names_sep = "_") %>% 
   #Date of onset
@@ -1636,7 +1646,24 @@ godata_clean <- godata_wide %>%
   #Date sample collected
   mutate(date_sample_collected=ymd_hms(questionnaire_answers_date_sample_collected_value)) %>% 
   mutate(date_sample_collected=as.Date(date_sample_collected)) %>% 
-  mutate(onset_sample=as.integer(date_sample_collected-date_symptom_onset_final))
+  mutate(onset_sample=as.integer(date_sample_collected-date_symptom_onset_final)) %>% 
+  #Clean health facility variable
+  mutate(health_facility_name=case_when(grepl('KTP', questionnaire_answers_health_facility_value, ignore.case = T) ~ 'MSF / KTP Hospital',
+                                      grepl('Leda', questionnaire_answers_health_facility_value, ignore.case = T) ~ 'IOM Leda',
+                                      grepl('Hope', questionnaire_answers_health_facility_value, ignore.case = T) ~ 'Hope Foundation / Camp 4',
+                                      grepl('BKL', questionnaire_answers_health_facility_value, ignore.case = T) ~ 'MSF OCA BKL',
+                                      grepl('5', questionnaire_answers_health_facility_value, ignore.case = T) ~ 'UNHCR / Camp 5',
+                                      grepl('8W', questionnaire_answers_health_facility_value, ignore.case = T) ~ 'MSF / Camp 8 W',
+                                      questionnaire_answers_health_facility_value=='MR ITC' ~ 'Main Road SARI ITC', 
+                                      questionnaire_answers_health_facility_value=='MT ITC' ~ 'Main Road SARI ITC', 
+                                      grepl('Main Road SARI ITC', questionnaire_answers_health_facility_value, ignore.case = T) ~ 'Main Road SARI ITC',
+                                      grepl('FH-MTI SARI ITC', questionnaire_answers_health_facility_value, ignore.case = T) ~ 'FH-MTI SARI ITC',
+                                      TRUE ~ questionnaire_answers_health_facility_value)) %>% 
+  #Contact with someone else
+  mutate(contact_cov19=case_when(grepl('yes', questionnaire_answers_have_you_had_contact_with_an_anyone_with_suspected_or_confirmed_covid_19_infection, ignore.case=T) ~'Yes',
+                                 grepl('no', questionnaire_answers_have_you_had_contact_with_an_anyone_with_suspected_or_confirmed_covid_19_infection, ignore.case=T)  ~'No',
+                                 grepl('unknown', questionnaire_answers_have_you_had_contact_with_an_anyone_with_suspected_or_confirmed_covid_19_infection, ignore.case=T) ~'Unknown'))
+
 
   
 
@@ -1714,8 +1741,8 @@ epi_curve <- godata_clean %>%
   count(date_symptom_onset_final, sex) %>% 
   ggplot(.) +
   geom_col(aes(x = date_symptom_onset_final, y = n, fill=sex)) +
-  scale_x_date(date_breaks = '7 day', date_minor_breaks = '1 day', 
-               date_labels = '%d %m') +
+  scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
+               date_labels = '%d-%m') +
   theme_minimal() +
   #plot_settings +
   labs(x = "Date of symptom onset",
@@ -1731,7 +1758,7 @@ ggplotly(epi_curve)
 Column 
 -------------------------------------
 
-### Cases by outcome 
+### Cases by status at presentation 
 
 ```{r}
 label(godata_clean$age_years) <- "Age"
@@ -1739,10 +1766,18 @@ label(godata_clean$sex) <- "Sex"
 label(godata_clean$outcome) <- "Outcome"
 label(godata_clean$questionnaire_answers_travel_outside_camps) <- "Travel outside camp (last 14 days)"
 label(godata_clean$status) <- "Status"
-label(godata_clean$risk_level) <- "Risk level"
+#label(godata_clean$risk_level) <- "Risk level"
 label(godata_clean$onset_sample) <- "Symptom onest to sample taken (days)"
+label(godata_clean$health_facility_name) <- "Health facility"
+label(godata_clean$outcome) <- "Patient outcome"
+label(godata_clean$contact_cov19) <- "Did the case have contact with a suspected or confirmed COVID-19 case?"
+label(godata_clean$any_comorb) <- "Did the case report a pre-existing condition?"
 
-table1(~ age_years  + sex  + onset_sample | outcome , data=godata_clean, topclass="Rtable1-zebra",footnote="Data source: GoData") 
+
+table1(~ age_years  + sex  + 
+         health_facility_name  + outcome + contact_cov19 +
+         #factor(cough) + factor(sore_throat) + factor(fever) + factor(rapid_breathing) + factor(resp_distress) +
+         onset_sample | detection_status , data=godata_clean, topclass="Rtable1-zebra",footnote="Data source: GoData") 
 
 ```
 
