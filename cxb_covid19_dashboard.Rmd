@@ -445,7 +445,7 @@ fdmn_deaths <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/F
 fdmn_deaths_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_deaths_7day)
                
  valueBox(
-  format(paste(fdmn_deaths,' (', fdmn_deaths_7day, ')'), big.mark = ","),
+  format(paste0(fdmn_deaths,' (', fdmn_deaths_7day, ')'), big.mark = ","),
   icon = "fas fa-procedures",
   color= "#4472C4"
 )
@@ -1291,7 +1291,7 @@ tmap_leaflet(map_host)
 
  
  
-FDMN/Rohingya community {data-orientation=columns}
+Rohingya refugee/FDMN {data-orientation=columns}
 =====================================  
 
 Row 
@@ -1721,7 +1721,7 @@ death_age_sex_gph <- ggplot(death_age_sex,
 ```
 
 
-Row  {data-width=300}
+Row  
 -------------------------------------
 
 
@@ -1758,10 +1758,10 @@ ggplotly(epi_curve)
 
 
 
-Column {data-width=650}
+Column 
 -------------------------------------
 
-### Cases by status at presentation 
+### Detailed information on cases
 
 ```{r}
 label(godata_clean$age_years) <- "Age"
@@ -1775,12 +1775,15 @@ label(godata_clean$health_facility_name) <- "Health facility"
 label(godata_clean$outcome) <- "Patient outcome"
 label(godata_clean$contact_cov19) <- "Did the case have contact with a suspected or confirmed COVID-19 case?"
 label(godata_clean$any_comorb) <- "Did the case report a pre-existing condition?"
+label(godata_clean$detection_status) <- "Status at detection"
 
 
 table1(~ age_years  + sex  + 
-         health_facility_name  + outcome + contact_cov19 +
+         #health_facility_name  + 
+         detection_status +
+         outcome + contact_cov19 +
          #factor(cough) + factor(sore_throat) + factor(fever) + factor(rapid_breathing) + factor(resp_distress) +
-         onset_sample | detection_status , data=godata_clean, topclass="Rtable1-zebra",footnote="Data source: GoData") 
+         onset_sample  , data=godata_clean, topclass="Rtable1-zebra",footnote="Data source: GoData") 
 
 ```
 
