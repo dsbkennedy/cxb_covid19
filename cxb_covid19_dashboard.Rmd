@@ -999,7 +999,10 @@ Row {data-height=100}
 ### Partners
 
 
-```{r, echo=FALSE, out.width="49%", out.height="20%", fig.align='center'} 
+
+
+
+```{r, echo=FALSE,fig.cap="This dashboard was developed by the [UK Public Health Rapid Support Team](https://www.lshtm.ac.uk/research/centres-projects-groups/uk-phrst)", out.width = '100%', out.height="20%", fig.align='center'} 
 
 #knitr::include_graphics(c("data/health_sector_logo_size.png","data/who_bgd_logo_size.png"))
 knitr::include_graphics(here('data', 'logo_comb.png'))
@@ -1012,7 +1015,9 @@ s <- now("UTC-6")
 ```
 
 
-This dashboard was developed by the [UK Public Health Rapid Support Team](https://www.lshtm.ac.uk/research/centres-projects-groups/uk-phrst)
+
+
+
 
 ### Contact details
 
