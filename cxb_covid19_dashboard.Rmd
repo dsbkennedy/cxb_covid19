@@ -987,13 +987,13 @@ Row {data-height=100}
 
   + [WHO Bangaladesh Rohingya Crisis](https://www.who.int/bangladesh/emergencies/Rohingyacrisis/bulletin-and-reports){target="_blank"}
 
-  + [SOPs](https://ln2.sync.com/dl/f29c53860/2hqhzj3x-q476hijz-sf8admz2-9b8793y9) 
+  + [SOPs](https://ln2.sync.com/dl/f29c53860/2hqhzj3x-q476hijz-sf8admz2-9b8793y9){target="_blank"}
   
-  + [Field manuals](https://ln2.sync.com/dl/77f93df70/czt8mutv-8rcug6ge-erffrmd5-5s9i76c3)
+  + [Field manuals](https://ln2.sync.com/dl/77f93df70/czt8mutv-8rcug6ge-erffrmd5-5s9i76c3){target="_blank"}
   
-  + [Infographics](https://ln2.sync.com/dl/8da6ec810/f8q6b3c7-vgnyxh76-cepdkgqu-e2q4d9na)
+  + [Infographics](https://ln2.sync.com/dl/8da6ec810/f8q6b3c7-vgnyxh76-cepdkgqu-e2q4d9na){target="_blank"}
   
-  + [Healthcare facility monitoring (Live Dashboard)](https://worldhealthorg.shinyapps.io/cxb_dru_dashboard)
+  + [Healthcare facility monitoring (Live Dashboard)](https://worldhealthorg.shinyapps.io/cxb_dru_dashboard){target="_blank"}
   
 
 ### Partners
@@ -1002,7 +1002,7 @@ Row {data-height=100}
 
 
 
-```{r, echo=FALSE,fig.cap="This dashboard was developed by the [UK Public Health Rapid Support Team](https://www.lshtm.ac.uk/research/centres-projects-groups/uk-phrst)", out.width = '100%', out.height="20%", fig.align='center'} 
+```{r, echo=FALSE,fig.cap="This dashboard was developed by the [UK Public Health Rapid Support Team](https://www.lshtm.ac.uk/research/centres-projects-groups/uk-phrst){target='_blank'}", fig.align='center'} 
 
 #knitr::include_graphics(c("data/health_sector_logo_size.png","data/who_bgd_logo_size.png"))
 knitr::include_graphics(here('data', 'logo_comb.png'))
