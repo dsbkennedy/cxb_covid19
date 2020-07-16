@@ -1718,7 +1718,7 @@ death_age_sex_gph <- ggplot(death_age_sex,
 ```
 
 
-Row 
+Row  {data-width=300}
 -------------------------------------
 
 
@@ -1755,7 +1755,7 @@ ggplotly(epi_curve)
 
 
 
-Column 
+Column {data-width=650}
 -------------------------------------
 
 ### Cases by status at presentation 
