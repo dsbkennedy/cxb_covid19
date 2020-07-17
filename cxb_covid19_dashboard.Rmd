@@ -1788,8 +1788,7 @@ tests_table <- ari_ili_tests_total %>%
   left_join(ari_ili_tests_growth, by='camp') %>% 
   left_join(ari_ili_tests_result, by='camp')
 
-tests_table %>% 
-gt() %>% 
+gt(tests_table) %>% 
   opt_row_striping(., row_striping = TRUE) %>% 
   fmt_percent(
     columns = 4:9,
@@ -1815,10 +1814,11 @@ gt() %>%
     columns = 5:9,
   ) %>% 
   tab_options(
-    #container.height = px(600),
+    container.height = px(1000),
+    container.overflow.y = TRUE,
     #container.width = px(1000),
-    table.font.size = "x-small"
-  )
+    table.font.size = "small"
+  ) 
 
 
 # tests_table <- ari_ili_tests_total %>% 
