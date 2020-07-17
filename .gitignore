@@ -30,6 +30,12 @@ vignettes/*.pdf
 # Rds files
 *.Rds
 
+# csv files
+*.csv
+
+# png files
+*.png
+
 # knitr and R markdown default cache directories
 *_cache/
 /cache/
