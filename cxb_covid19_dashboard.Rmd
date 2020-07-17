@@ -81,7 +81,7 @@ age_labs <- c(paste(seq(0, 60, by = 10), seq(9, 69, by = 10),
 options(scipen=10000)
 
 
-sheet_names <- c('host_fdmn_append', 'ari_ili', 'testing', 'dru', 'quarantine')
+sheet_names <- c('fdmn', 'host', 'ari_ili', 'testing', 'dru', 'quarantine')
 #sheet_names <- c('host_fdmn_append',  'testing')
 #sheet_names <- c('host_fdmn_append',  'testing', 'dru', 'quarantine')
 
@@ -108,13 +108,25 @@ gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%  set_name
 #load("C:/Users/idcvdken/Dropbox (LSoHaTM)/r_cxb/dashboard/cxb_dashboard/data/gsheet_data.RData")
 ### All cases
 
-all_cases_raw <- gsheet_data$host_fdmn_append %>% clean_names()
+#all_cases_raw <- gsheet_data$host_fdmn_append %>% clean_names()
+fdmn_raw <- gsheet_data$fdmn %>% 
+  clean_names() %>% 
+    janitor::remove_empty() %>% 
+    select(-date_of_death) %>% 
+  mutate(camp_of_residence=as.character(camp_of_residence))
+
+host_raw <- gsheet_data$host %>% 
+  clean_names() %>% 
+  janitor::remove_empty()
+
+all_cases_raw <- fdmn_raw %>% 
+  bind_rows(host_raw)
 
 all_date_cols <- grep("(date|created_at| updated_on)", names(all_cases_raw))
 
 all_cases_linelist <- all_cases_raw %>% clean_dates( force_Date  = all_date_cols,
                                                      guess_dates = all_date_cols) %>% 
-  mutate(camp=as.numeric(camp_of_residence)) %>% 
+  #mutate(camp=as.numeric(camp_of_residence)) %>% 
   mutate(population_group=case_when(nationality=='FDMN' ~ 'Rohingya refugee/FDMN',
                                     nationality=='Host' ~ 'Host community')) %>% 
     mutate(upazilla=case_when(upazilla=='CXB Sadar' ~ 'Sadar', 
@@ -832,20 +844,20 @@ Data updated at - "`r s`"
 
 #Cases
 cxb_cases_subloc <- all_cases_linelist %>% 
-  group_by(population_group,date_of_case_detection,upazilla, camp) %>% 
+  group_by(population_group,date_of_case_detection,upazilla, camp_of_residence) %>% 
   summarise(n = n(),.groups = 'drop') %>% 
-  select(date=date_of_case_detection, population_group,upazilla, camp, new_cases=n)
+  select(date=date_of_case_detection, population_group,upazilla, camp_of_residence, new_cases=n)
 
 #Deaths
 cxb_deaths_subloc <- all_cases_linelist %>% 
   filter(x30_day_outcome=='Death') %>% 
-  group_by(population_group,date_of_case_detection,upazilla, camp) %>% 
+  group_by(population_group,date_of_case_detection,upazilla, camp_of_residence) %>% 
   summarise(n = n(),.groups = 'drop') %>% 
-  select(date=date_of_case_detection, population_group,upazilla, camp, new_deaths=n)
+  select(date=date_of_case_detection, population_group,upazilla, camp_of_residence, new_deaths=n)
 
 cxb_cases_deaths_subloc <- cxb_cases_subloc %>% 
-  full_join(cxb_deaths_subloc, by=c('population_group', 'date', 'upazilla', 'camp')) %>% 
-  mutate(location=coalesce(as.character(camp),upazilla)) %>% 
+  full_join(cxb_deaths_subloc, by=c('population_group', 'date', 'upazilla', 'camp_of_residence')) %>% 
+  mutate(location=coalesce(as.character(camp_of_residence),upazilla)) %>% 
   full_join(., population, by='location') %>% 
   filter(!is.na(population_group))
 
@@ -1088,7 +1100,7 @@ summaryTable_fdmn <- table_calc_comb_subloc %>%
                                     ifelse(grepl('teknaf', location, ignore.case=T), NA, total_cases_pm_7day))) %>% 
   #  mutate(total_deaths_pm_7day=ifelse(grepl('ukhia', location, ignore.case=T),NA, 
   #                              ifelse(grepl('teknaf', location, ignore.case=T), NA, total_deaths_pm_7day))) %>% 
-  mutate(camp=as.numeric(location)) %>% 
+  mutate(camp=location) %>% 
   arrange(camp) %>% 
   select(-c(population_group,camp,total_deaths_pm,total_deaths_pm_7day)) %>% 
   gt() %>% 
@@ -1198,19 +1210,20 @@ Column
 ```{r fdmn_map}
 
 shp_file_fdmn <- read_sf(list.files(here('data','shapefiles'), 
-                               pattern='1.shp$', 
-                               full.names = T)) %>% 
-
+                                    pattern='1.shp$', 
+                                    full.names = T)) %>% 
+  
   clean_names() %>% 
-  mutate(code=as.numeric(code))
+  mutate(merge_col = case_when(code=='KRC' ~ 'Kutupalong RC',
+                               code=='NRC' ~ 'Nyapara RC', 
+         TRUE ~ code))
 
 case_shp_fdmn <- table_calc_comb_subloc %>% 
   filter(population_group=='Rohingya refugee/FDMN') %>% 
   filter(!location %in% c('Ukhia', 'Teknaf')) %>% 
-  mutate(code=as.numeric(location)) %>% 
+  mutate(code=location) %>% 
   select(code,total_cases, total_deaths) %>% 
-  filter(!is.na(code)) %>% 
-  left_join(shp_file_fdmn,.,by='code')
+  left_join(shp_file_fdmn,.,by=c('merge_col'='code'))
 
 pal <- colorNumeric(
   palette = "YlOrRd",
@@ -1781,7 +1794,8 @@ ari_ili_tests_result <- ari_ili_df %>%
   group_by(camp) %>% 
   mutate(prop=n/sum(n)) %>% 
   select(-n) %>% 
-  pivot_wider(names_from=laboratory_result, values_from=prop) 
+  pivot_wider(names_from=laboratory_result, values_from=prop) %>% 
+  select(camp, positive,negative,pending,not_done,n_a)
 
 tests_table <- ari_ili_tests_total %>% 
   left_join(ari_ili_tests_7day, by='camp') %>% 
@@ -1815,9 +1829,9 @@ gt(tests_table) %>%
   ) %>% 
   tab_options(
     container.height = px(1000),
-    container.overflow.y = TRUE,
+    container.overflow.y = TRUE
     #container.width = px(1000),
-    table.font.size = "small"
+    #table.font.size = "small"
   ) 
 
 
