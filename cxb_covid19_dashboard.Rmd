@@ -73,6 +73,8 @@ library(jsonlite)
 library(magrittr)
 #library(tibble, lib.loc = "/usr/local/lib/R/site-library")
 library(tibble)
+library(stringr)
+
 
 
 age_labs <- c(paste(seq(0, 60, by = 10), seq(9, 69, by = 10),
@@ -754,7 +756,7 @@ ggplotly(epi_curve)
 ```
 
 
-### Test positivity
+### Test positivity trend
 
 ```{r test postivity}
 test_positivity_gph <- test_nationality %>% 
@@ -1076,6 +1078,8 @@ Row
     
 ```{r}
 
+# prepare regular expression
+regexp <- "[[:digit:]]+"
 
 fdmn_table_data <- table_calc_comb %>% 
   filter(grepl('fdmn', population_group, ignore.case = T)) %>% 
@@ -1101,8 +1105,11 @@ summaryTable_fdmn <- table_calc_comb_subloc %>%
   #  mutate(total_deaths_pm_7day=ifelse(grepl('ukhia', location, ignore.case=T),NA, 
   #                              ifelse(grepl('teknaf', location, ignore.case=T), NA, total_deaths_pm_7day))) %>% 
   mutate(camp=location) %>% 
-  arrange(camp) %>% 
-  select(-c(population_group,camp,total_deaths_pm,total_deaths_pm_7day)) %>% 
+  #arrange(camp) %>% 
+  mutate(camp_number=str_extract(camp, regexp)) %>% 
+  mutate(camp_number=as.numeric(camp_number)) %>% 
+  arrange(camp_number) %>% 
+  select(-c(population_group,camp,total_deaths_pm,total_deaths_pm_7day,camp_number)) %>% 
   gt() %>% 
   # tab_header(
   #   title = "Rohingya refugee/FDMN Summary",
@@ -1800,7 +1807,11 @@ ari_ili_tests_result <- ari_ili_df %>%
 tests_table <- ari_ili_tests_total %>% 
   left_join(ari_ili_tests_7day, by='camp') %>% 
   left_join(ari_ili_tests_growth, by='camp') %>% 
-  left_join(ari_ili_tests_result, by='camp')
+  left_join(ari_ili_tests_result, by='camp') %>% 
+  mutate(camp_number=str_extract(camp, regexp)) %>% 
+  mutate(camp_number=as.numeric(camp_number)) %>% 
+  arrange(camp_number) %>% 
+  select(-camp_number)
 
 gt(tests_table) %>% 
   opt_row_striping(., row_striping = TRUE) %>% 
@@ -1861,6 +1872,13 @@ gt(tests_table) %>%
 ```
 
 
+```{r test_camp_pos_gph, eval=FALSE, include=FALSE}
+
+ggplot(tests_table, aes(x=camp, y=positive)) +
+  geom_line()
+
+
+```
 
 
 SARI ITC & Isolation  {data-orientation=rows}
