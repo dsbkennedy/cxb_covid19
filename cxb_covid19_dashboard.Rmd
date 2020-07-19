@@ -75,42 +75,21 @@ library(magrittr)
 library(tibble)
 library(stringr)
 
-
+source(here('login.R'))
 
 age_labs <- c(paste(seq(0, 60, by = 10), seq(9, 69, by = 10),
                     sep = "-"), paste(70, "+", sep = ""))
 
 options(scipen=10000)
 
-
-sheet_names <- c('fdmn', 'host', 'ari_ili', 'testing', 'dru', 'quarantine')
-#sheet_names <- c('host_fdmn_append',  'testing')
-#sheet_names <- c('host_fdmn_append',  'testing', 'dru', 'quarantine')
-
-gdrive_link <- "1Gnutu0OxxFJJq73KUzLQzHZHteFwpQP-B_tXct7OGwE"
-
-#plan(multiprocess)
+#Google data
 
 
 #gs4_deauth()
 gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%  set_names(sheet_names)
 
 # #Google data
-#  token <- readRDS("data/droptoken.rds")
-# # # Then pass the token to each drop_ function
-# # 
-# # #My example
-# drop_download(path = '/cxb/gsheet_data.Rds',
-#               local_path = 'gsheet_data.Rds',
-#               dtoken = token,
-#               overwrite = TRUE)
-# 
-# # Main data frame for data analysis
-# gsheet_data <- readRDS('gsheet_data.Rds')
-#load("C:/Users/idcvdken/Dropbox (LSoHaTM)/r_cxb/dashboard/cxb_dashboard/data/gsheet_data.RData")
-### All cases
 
-#all_cases_raw <- gsheet_data$host_fdmn_append %>% clean_names()
 fdmn_raw <- gsheet_data$fdmn %>% 
   clean_names() %>% 
     janitor::remove_empty() %>% 
@@ -158,26 +137,16 @@ quarantine_raw <- gsheet_data$quarantine %>% clean_names() %>% filter(!is.na(fac
 
 ### Camp population
 
-# camp_population <- read.csv(here('data', 'camp_population.csv')) %>% 
-#   mutate(camp=as.numeric(camp))
+
 
 #Population 
 population <- read.csv(here('data', 'population.csv')) 
 
 
 ### GoData
-# drop_download(path = '/cxb/cases.Rds',
-#               local_path = 'cases.Rds', 
-#               dtoken = token, 
-#               overwrite = TRUE)
-# 
-# cases <- readRDS('cases.Rds')
 
 
-url <- "https://godata-r4.who.int/"                   # <--------------------- insert instance url here, don't forget the slash at end !
-username <- "david.kennedy@lshtm.ac.uk"                           # <--------------------- insert your username for signing into Go.Data webapp here
-password <- "tEssAmAIsIE150!"                           # <--------------------- insert your password for signing into Go.Data webapp here
-outbreak_id <- "9116fb0c-2b2e-424f-9252-accaf574e785"   # <--------------------- insert your outbreak ID here
+
 
 #get access token
 url_request <- paste0(url,"api/oauth/token?access_token=123")
