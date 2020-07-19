@@ -1765,11 +1765,13 @@ ari_ili_df <- gsheet_data$ari_ili %>%
   clean_names() %>% 
   clean_data() %>% 
   #complete(date_of_case_detection = min(date_of_case_detection), max(date_of_case_detection), by = "day") %>% 
-  mutate(camp=gsub('camp_', '', camp))
+  mutate(camp=gsub('camp_', '', camp)) %>% 
+   filter(nationality=='fdmn') %>% 
+    filter(sample_type!='follow_up') 
 
 
 ari_ili_tests_df <- ari_ili_df %>% 
-  filter(nationality=='fdmn') %>% 
+ 
   count(date_of_case_detection,camp) %>% 
   complete(date_of_case_detection,camp, fill = list(n = 0)) %>% 
   group_by(camp) %>%
