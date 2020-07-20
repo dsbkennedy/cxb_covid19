@@ -1,6 +1,6 @@
 ---
 title: 'COVID-19  Dashboard: Cox’s Bazar, Bangladesh'
-subtitle: 'This is the subtitle'
+subtitle: ''
 knit: (function(input_file, encoding) {
   out_dir <- 'docs';
   rmarkdown::render(input_file,
@@ -1869,7 +1869,8 @@ tableFormat <- dru_raw %>%
   clean_names() %>% 
   #mutate(facility_name=gsub(":([[:alpha:]])", ": \\1", facility_name)) %>% 
   select(timestamp,facility_name, camp, agency_in_charge, currently_accepting_patient_severity, able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply, contains('sari'), contains('isolation')) %>%
-       mutate(across(num_vars, clean_fn)) %>% 
+  #replace(.=="NULL", NA) %>% 
+  mutate(across(num_vars, clean_fn)) %>% 
   #reformat variables to confirm they are numeric 
   mutate(across(num_vars, as.numeric)) %>% 
   #mutate(number_of_currently_filled_sari_beds=as.numeric(number_of_currently_filled_sari_beds)) %>% 
@@ -1901,8 +1902,12 @@ tableFormat <- dru_raw %>%
   select(timestamp,facility_name, camp,mild:preg, FUNCTIONAL_SARI, FILLED_SARI,prop_filled_sari, DISCHARGES_SARI,
          FUNCTIONAL_ISOLATION, FILLED_ISOLATION, prop_filled_iso,DISCHARGES_ISOLATION,count_beds)  %>%
   arrange(as.numeric(camp)) %>%
-  mutate(facility_name=sub("*\\Camp*", "", facility_name)) %>%
-  mutate(facility_name=gsub('[[:digit:]]+', '', facility_name)) %>%
+  mutate(facility_name=sub("*\\Camp*", "", facility_name)) %>% 
+  mutate(facility_name=gsub("[[:digit:]]+.*","",facility_name)) %>% 
+  mutate(camp_number=str_extract(camp, "[[:digit:]]+")) %>% 
+  mutate(camp_number=as.numeric(camp_number)) %>% 
+  arrange(camp_number) %>% 
+  select(-camp_number) %>% 
   mutate(prop_filled_total=((FILLED_ISOLATION + FILLED_SARI)/count_beds)) %>% 
   relocate(timestamp, .after = last_col())
 
