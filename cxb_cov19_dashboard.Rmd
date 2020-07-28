@@ -163,13 +163,6 @@ cases <- as_tibble(fromJSON(json_cases, flatten = TRUE)) %>%
   select(-c(firstName,middleName,lastName, addresses))
 
 
-### Tables
-# drop_download(path = '/cxb/tables.Rds',
-#               local_path = 'tables.Rds', 
-#               dtoken = token, 
-#               overwrite = TRUE)
-# 
-# tables <- readRDS('tables.Rds')
 
 host_population <-  2805491
 fdmn_population <-  859205 
@@ -180,9 +173,7 @@ fdmn_population <-  859205
 
 ```{r table_wranging}
 
-host_population <-  2805491
-fdmn_population <-  859205 
-
+####
 
 #Cases
 cxb_cases <- all_cases_linelist %>% 
@@ -1206,12 +1197,26 @@ godata_wide <- cases %>%
     remove_empty(c("rows", "cols")) 
 
 
+
+
+
+
+
+
 godata_clean <- godata_wide %>% 
   #Ethnicity
   mutate(population_group=coalesce(questionnaire_answers_nationality_value,questionnaire_answers_nationality_2_value,questionnaire_answers_cif_nationality_value)) %>% 
   filter(population_group=='FDMN')  %>% 
   #Test result
   mutate(lab_result=coalesce(questionnaire_answers_lab_result_value,questionnaire_answers_result_2_value)) %>% 
+  #Some records don't have lab data in GoData. These are dropped when filter==positive
+    mutate(lab_result=case_when(visual_id %in% c("CXB3310283", "CXB3310414", 
+                                                 "CXB5310154", "CXB4950010",
+                                                 "CXB3310590", "CXB5310243",
+                                                 "CXB2120064","CXB3310451", 
+                                                 "CXB3310542", "CXB3310603", 
+                                                 "CXB3830005") ~ 'Positive',
+                              TRUE ~ lab_result)) %>% 
   filter(lab_result=='Positive') %>% 
   #Dates
   mutate(date_of_reporting = guess_dates(date_of_reporting),
@@ -1482,11 +1487,33 @@ label(godata_clean$detection_status) <- "Status at detection"
 
 table1(~ age_years  + sex  + 
          detection_status +
-         outcome + contact_cov19 +
-         onset_sample  , data=godata_clean, topclass="Rtable1-zebra",footnote="Data source: GoData") 
+         outcome + contact_cov19 
+           , data=godata_clean, topclass="Rtable1-zebra",footnote="Data source: GoData") 
 
 ```
 
+### Symptoms at presentation
+ 
+```{r symptoms_gph}
+godata_clean %>% 
+    #filter(population_group=='Rohingya refugee/FDMN') %>% 
+    #filter(test_result=='Positive') %>% 
+    select(id, cough, rapid_breathing, resp_distress, runny_nose, fever) %>% 
+    pivot_longer(-id) %>% 
+    filter(value==1) %>% 
+    arrange(id, name) %>% 
+    select(-value) %>% 
+    group_by(id) %>%
+    summarize(symptom_list = list(name)) %>% 
+    ggplot(aes(x=symptom_list)) +
+    geom_bar() +
+    theme_bw() +
+    labs(x = "",
+         y = "Number of cases",
+         title="Distribution of symptoms at presentation",
+         caption="Data source: GoData") +
+    scale_x_upset(n_intersections = 5)
+```
  
 
 
@@ -1688,7 +1715,9 @@ Home-based care
 =====================================  
 
 ```{r}
-hbc_df <- read.csv(here('data', 'home_based_care_20200721.csv')) %>% clean_names() %>% 
+hbc_df <- read.csv(here('data', 'home_based_care_20200728.csv')) %>% 
+  clean_names() %>% 
+    filter(week>25) %>% 
   mutate(camp_number=str_extract(camp, "[[:digit:]]+")) %>% 
   mutate(camp_number=as.numeric(camp_number)) %>% 
   mutate(camp=reorder(camp,camp_number)) 
@@ -1710,7 +1739,7 @@ hhvisit_gph <- hbc_df %>%
   ggplot(., aes(x=week, y=hhvisited)) +
   geom_col() +
   labs(x='Week', y='Households visited') +
-  scale_x_continuous(breaks = c(25, 26, 27, 28, 29)) +
+  #scale_x_continuous(breaks = c(25, 26, 27, 28, 29)) +
   theme_minimal() 
 
 ggplotly(hhvisit_gph)
@@ -1734,7 +1763,7 @@ hhvisit_camp_gph <- hbc_df %>%
   summarise(hhvisited=sum(c1_total_hh_visited_week, na.rm=TRUE)) %>% 
   ggplot(., aes(x=week, y=hhvisited)) +
   geom_line() +
-  scale_x_continuous(breaks = c(25, 26, 27, 28, 29)) +
+ # scale_x_continuous(breaks = c(25, 26, 27, 28, 29)) +
   labs(x='Week', y='Households visited') +
   theme_minimal() +
   facet_wrap(~camp)
@@ -1792,11 +1821,14 @@ symptoms_gph <- symptoms_df %>%
   summarise(total_cases=sum(value,na.rm=TRUE)) %>% 
   group_by(severity,week) %>% 
   mutate(prop=total_cases/sum(total_cases)) %>% 
-  ggplot(aes(x=week,y=prop, color=interaction(sex,age_group))) +
-  geom_line() +
+  mutate(age_group=factor(age_group, levels=c('<5', '5-59', '>=60'))) %>% 
+  mutate(age_group=fct_rev(age_group)) %>% 
+  ggplot(aes(x=week,y=prop, fill=interaction(sex,age_group))) +
+  geom_col() +
   facet_wrap(~severity, ncol=2) +
   theme_minimal() +
-  labs(x='Week', y='Proportion of cases', color='Sex & \n Age group') +
+  labs(x='Week', y='Proportion of cases', fill='Sex & \n Age group') +
+  scale_fill_brewer(palette="Dark2") +
   scale_y_continuous(labels = scales::percent)
 
 ggplotly(symptoms_gph)
