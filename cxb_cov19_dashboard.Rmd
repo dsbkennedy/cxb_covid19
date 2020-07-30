@@ -1154,16 +1154,16 @@ tmap_leaflet(map_fdmn)
 ```
 
 
+Inputs {.sidebar}
+-------------------------------------
 
+TEST TEST
+TEST
 
 Epidemiology {data-orientation=columns}
 =====================================  
 
-<br>
 
-This tab shows information from GoData. The data are only from the FDMN/Rohingya population. 
-
-Where there is a discrepancy between the total number of cases in this tab and the Rohingya tab, data have yet to be entered into GoData.
 
 
 ```{r epi_wranging}
@@ -1374,6 +1374,7 @@ godata_clean <- godata_wide %>%
 
 
 
+
 ```{r cases}
 
 case_age_sex <- godata_clean %>% 
@@ -1420,7 +1421,9 @@ death_age_sex_gph <- ggplot(death_age_sex,
 ```
 
 
-Row  
+
+
+Col  
 -------------------------------------
 
 
@@ -1441,6 +1444,11 @@ epi_curve <- godata_clean %>%
 ggplotly(epi_curve)
 
 ```
+
+This tab shows information from GoData. The data are only from the FDMN/Rohingya population. 
+
+Where there is a discrepancy between the total number of cases in this tab and the Rohingya tab, data have not yet been added to GoData.
+
 
 ### Cases and deaths by age group
 
@@ -1779,6 +1787,7 @@ hhvisit_gph <- hbc_df %>%
   summarise(hhvisited=sum(c1_total_hh_visited_week, na.rm=TRUE)) %>% 
   ggplot(., aes(x=week, y=hhvisited)) +
   geom_col() +
+  labs(title='Households visited') +
   #labs(x='', y='Households visited') +
   #scale_x_continuous(breaks = c(25, 26, 27, 28, 29)) +
   theme_minimal() 
@@ -1798,6 +1807,7 @@ p %>% layout(xaxis = x, yaxis = y)
 
 ### Households visited - By camp
 
+
 ```{r}
 hhvisit_camp_gph <- hbc_df %>% 
   select(week, camp, c1_total_hh_visited_week) %>% 
@@ -1814,7 +1824,7 @@ hhvisit_camp_gph <- hbc_df %>%
   ggplot(., aes(x=week, y=hhvisited)) +
   geom_line() +
   # scale_x_continuous(breaks = c(25, 26, 27, 28, 29)) +
-  labs(x='Week', y='Households visited') +
+  labs(x='Week', y='Households visited', title='Households visited- by camp') +
   theme_minimal() +
   facet_wrap(~camp)
 
