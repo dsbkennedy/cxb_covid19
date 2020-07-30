@@ -1154,16 +1154,26 @@ tmap_leaflet(map_fdmn)
 ```
 
 
-Inputs {.sidebar}
--------------------------------------
 
-TEST TEST
-TEST
 
 Epidemiology {data-orientation=columns}
 =====================================  
 
+Inputs {.sidebar}
+-------------------------------------
 
+<br>
+<br>
+
+This section displays data from GoData. The data are only for the FDMN/Rohingya population. 
+
+<br> 
+
+If there is a difference between the number of cases in this section and the number of cases on the "Landing page", the data have not 
+yet been added to GoData.
+
+
+<br>
 
 
 ```{r epi_wranging}
@@ -1445,10 +1455,6 @@ ggplotly(epi_curve)
 
 ```
 
-This tab shows information from GoData. The data are only from the FDMN/Rohingya population. 
-
-Where there is a discrepancy between the total number of cases in this tab and the Rohingya tab, data have not yet been added to GoData.
-
 
 ### Cases and deaths by age group
 
@@ -1699,7 +1705,25 @@ ggplotly(tests_gph)
 EWARS - Overall {data-navmenu="All-cause mortality"}  
 =====================================  
 
+Inputs {.sidebar}
+-------------------------------------
+
+<br>
+<br>
+
+<br> 
+
 Data from 2019 are only included from week 30. Before this week, there was low coverage of the data collection tool.  
+
+
+<br>
+
+
+Column 
+-------------------------------------
+
+
+### Number of reported deaths per week
 
 ```{r}
 ewars_mort <- read.csv(here('data', 'community_mortality_20200729.csv')) %>% clean_names() 
@@ -1709,12 +1733,12 @@ ewars_mort_gph <- ewars_mort %>%
   filter(!(isoyear==2019 & isoweek<30)) %>% 
   filter(!camp_zone=='') %>% 
   count(isoyear, isoweek) %>% 
-  ggplot(., aes(x=isoweek, y=n, fill=factor(isoyear))) +
+  ggplot(., aes(x=isoweek, y=n, color=factor(isoyear))) +
   #geom_col() +
   #geom_smooth() +
   geom_line() +
   theme_minimal() +
-  labs(x='Week', y='Number of deaths', fill='Year')
+  labs(x='Week', y='Number of deaths', color='Year')
 
 ggplotly(ewars_mort_gph)
 
@@ -1725,7 +1749,28 @@ ggplotly(ewars_mort_gph)
 EWARS - Camp-level {data-navmenu="All-cause mortality"}  
 =====================================  
 
-Data from 2019 are only included from week 30. Before this week, there was low coverage of the data collection tool. At the camp-level, spikes are likely due to an increase in partners reporting to the tool not an increase in the number of people dying.   
+Inputs {.sidebar}
+-------------------------------------
+
+<br>
+<br>
+
+<br> 
+
+Data from 2019 are only included from week 30. Before this week, there was low coverage of the data collection tool. 
+
+<br>
+
+At the camp-level, spikes are likely due to an increase in partners reporting to the tool not an increase in the number of people dying.   
+
+
+
+Column 
+-------------------------------------
+
+
+### Number of reported deaths per week by camp
+
 
 
 ```{r}
@@ -1749,13 +1794,17 @@ ggplotly(ewars_mort_camp_gph)
 
 
 ```
-
+<!---
 
 CHW - Overall {data-navmenu="All-cause mortality"}  
 =====================================  
 
 CHW - Camp-level {data-navmenu="All-cause mortality"}  
 =====================================  
+
+--->
+
+
 
 Community-based surveillance 
 =====================================  
@@ -1768,6 +1817,24 @@ hbc_df <- read.csv(here('data', 'home_based_care_20200728.csv')) %>%
   mutate(camp_number=as.numeric(camp_number)) %>% 
   mutate(camp=reorder(camp,camp_number)) 
 ```
+
+
+Inputs {.sidebar}
+-------------------------------------
+
+<br>
+<br>
+
+
+Community Health Workers/Volunteers (CHWs) are an outreach workforce consisting of approximately 1400 women and men, primarily Rohingya, who live near or inside the camps. CHWs are each assigned fixed, unique geographic areas with approximately 160 households, which are visited once every two weeks since mid 2018.
+
+<br>
+
+The CHWs use a KoBo Toolbox-based tool, the Community Health Workers Reporting Tool (CHW-RT), to collect data on household indicators.  
+
+
+<br>
+
 
 
 Row  {data-height=550}
