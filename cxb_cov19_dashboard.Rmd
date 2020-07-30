@@ -63,8 +63,8 @@ library(stringr)
 
 source(here('login.R'))
 
-age_labs <- c(paste(seq(0, 60, by = 10), seq(9, 69, by = 10),
-                    sep = "-"), paste(70, "+", sep = ""))
+age_labs <- c(paste(seq(0, 50, by = 10), seq(9, 59, by = 10),
+                    sep = "-"), paste(60, "+", sep = ""))
 
 options(scipen=10000)
 
@@ -124,15 +124,11 @@ quarantine_raw <- gsheet_data$quarantine %>% clean_names() %>% filter(!is.na(fac
 
 ### Camp population
 
-
-
 #Population 
 population <- read.csv(here('data', 'population.csv')) 
 
 
 ### GoData
-
-
 #get access token
 url_request <- paste0(url,"api/oauth/token?access_token=123")
 
@@ -739,7 +735,7 @@ s <- now("UTC-6")
 
 ### Contact details
 
-If you have any questions contact -----
+If you have any questions contact kennedyd@who.int
 
 
 
@@ -1199,9 +1195,7 @@ godata_wide <- cases %>%
 
 
 
-
-
-
+###Clean up GoData
 
 godata_clean <- godata_wide %>% 
   #Ethnicity
@@ -1231,7 +1225,7 @@ godata_clean <- godata_wide %>%
     #is.na(age_years) && is.na(age_months) ~  NA_integer_,
     TRUE ~ as.integer(age_years))) %>%
   #Age group
-  mutate(age_group=cut(age_years,breaks = c(seq(0, 70, by = 10), Inf), labels = age_labs, right = FALSE)) %>%
+  mutate(age_group=cut(age_years,breaks = c(seq(0, 60, by = 10), Inf), labels = age_labs, right = FALSE)) %>%
   mutate(age_group=fct_explicit_na(age_group, na_level = "(outcome missing)")) %>% 
   #Classification
   filter(classification != "lng_reference_data_category_case_classification_not_a_case_discarded") %>%
@@ -1242,22 +1236,27 @@ godata_clean <- godata_wide %>%
   )) %>%
   #Sex
   mutate(sex = case_when(
-                grepl('_male', gender, ignore.case=TRUE) ~ "male",
-        grepl('_female', gender, ignore.case=TRUE) ~ "female"
+                grepl('_male', gender, ignore.case=TRUE) ~ "Male",
+        grepl('_female', gender, ignore.case=TRUE) ~ "Female", 
+        visual_id=="CXB3310202" ~ 'Female',
   )) %>% 
+   mutate(sex=factor(sex, levels=c('Male', 'Female'))) %>% 
   #Updated this classification to match survey
   #updated to "outcome"
   mutate(outcome = case_when(
-            grepl('alive', outcome_id, ignore.case=TRUE) ~ "alive",
-            grepl('deceased', outcome_id, ignore.case=TRUE) ~ "dead",
-            grepl('recovered', outcome_id, ignore.case=TRUE) ~ "recovered",
+            grepl('alive', outcome_id, ignore.case=TRUE) ~ "Alive",
+            grepl('deceased', outcome_id, ignore.case=TRUE) ~ "Dead",
+            grepl('recovered', outcome_id, ignore.case=TRUE) ~ "Recovered",
             #grepl('death', questionnaire_answers_outcome, ignore.case=TRUE) ~ "dead",
-            grepl('healthy', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "alive",
-            grepl('not recovered', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "alive",
-            grepl('$recovered', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "recovered",
-            grepl('death', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "dead"
+            grepl('healthy', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "Alive",
+            grepl('not recovered', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "Alive",
+            grepl('$recovered', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "Recovered",
+            questionnaire_answers_msf_outcome_value=='Recovered' ~ 'Recovered',
+            questionnaire_answers_outcome_2_value=='Recovered' ~ 'Recovered',
+            grepl('death', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "Dead", 
+            visual_id %in% c("CXB3310414","CXB3310590","CXB2120064") ~ 'Alive',
   )) %>%
-        mutate(outcome=fct_explicit_na(outcome, na_level = "(Outcome missing)"))  %>% 
+   #     mutate(outcome=fct_explicit_na(outcome, na_level = "(Outcome missing)"))  %>% 
   #Status at detection
   mutate(detection_status = questionnaire_answers_status_at_detection_value) %>%
   #Risk level
@@ -1272,9 +1271,12 @@ godata_clean <- godata_wide %>%
                 grepl('other', date_ranges_typeId, ignore.case=TRUE) ~ "other",
                 grepl('isolation', date_ranges_typeId, ignore.case=TRUE) ~ "isolation"
   )) %>%
-  mutate(pregnant = case_when(grepl('trimester', date_ranges_typeId, ignore.case=TRUE) ~ "pregnant"
-  )) %>%
-  mutate(pregnant=case_when(grepl('yes',questionnaire_answers_pregnant,ignore.case=TRUE)~1)) %>% 
+  mutate(pregnant = case_when(grepl('trimester', pregnancy_status, ignore.case=TRUE) ~ "Yes",
+                    grepl('yes',questionnaire_answers_pregnant,ignore.case=TRUE)~ "Yes",
+                    (sex=='Female' & age_years>=15) ~ 'No',
+                    sex=='Male' ~ 'Not applicable',
+                    age_years<15 ~ 'Not applicable',
+                    age_years>50 ~ 'Not applicable')) %>% 
   #Symptoms
   #Cough
   mutate(cough=case_when(grepl('cough',questionnaire_answers_respiratory_symptoms_value,ignore.case=TRUE)~1,
@@ -1319,10 +1321,19 @@ godata_clean <- godata_wide %>%
   #Lung disease
   mutate(lung_disease=case_when(grepl('chronic lung',questionnaire_answers_select_pre_existing_medical_condition,ignore.case=TRUE)~1,
                        grepl('yes', questionnaire_answers_chronic_lung_disease,ignore.case=TRUE)~1)) %>% 
+    #Kidney disease
+  mutate(kidney_disease=case_when(grepl('kidney',questionnaire_answers_select_pre_existing_medical_condition,ignore.case=TRUE)~1,
+                       grepl('yes', questionnaire_answers_kidney_failure,ignore.case=TRUE)~1)) %>% 
+      #Neurological disease
+  mutate(neuro_disease=case_when(grepl('neuro',questionnaire_answers_select_pre_existing_medical_condition,ignore.case=TRUE)~1,
+                       grepl('yes', questionnaire_answers_chronic_neuro_condition,ignore.case=TRUE)~1)) %>% 
   mutate(any_comorb=case_when(htn==1 ~ 1,
                               cardiovascular==1 ~ 1,
                               diabetes==1 ~ 1,
-                              lung_disease==1 ~ 1)) %>% 
+                              lung_disease==1 ~ 1, 
+                              kidney_disease==1 ~ 1,
+                              neuro_disease ==1~ 1, 
+                              TRUE ~ 0)) %>% 
   #Time intervals
    unnest(questionnaire_answers_date_sample_collected,   keep_empty = TRUE, names_sep = "_") %>% 
   #Date of onset
@@ -1346,8 +1357,15 @@ godata_clean <- godata_wide %>%
   #Contact with someone else
   mutate(contact_cov19=case_when(grepl('yes', questionnaire_answers_have_you_had_contact_with_an_anyone_with_suspected_or_confirmed_covid_19_infection, ignore.case=T) ~'Yes',
                                  grepl('no', questionnaire_answers_have_you_had_contact_with_an_anyone_with_suspected_or_confirmed_covid_19_infection, ignore.case=T)  ~'No',
-                                 grepl('unknown', questionnaire_answers_have_you_had_contact_with_an_anyone_with_suspected_or_confirmed_covid_19_infection, ignore.case=T) ~'Unknown'))
-
+                                 grepl('yes', questionnaire_answers_contact_with_patient, ignore.case=T) ~'Yes',
+                                 grepl('no', questionnaire_answers_contact_with_patient, ignore.case=T)  ~'No')) %>% 
+           mutate(contact_cov19=factor(contact_cov19, levels=c('Yes', 'No'))) %>% 
+  #Smoking history
+  mutate(social_event=case_when(grepl('yes', questionnaire_answers_did_the_patient_go_to_any_social_event_party_mass_gathering_religious_services, ignore.case=T) ~'Yes',
+                                 grepl('no', questionnaire_answers_did_the_patient_go_to_any_social_event_party_mass_gathering_religious_services, ignore.case=T)  ~'No',
+                                 grepl('yes', questionnaire_answers_attended_occasion, ignore.case=T) ~'Yes',
+                                 grepl('no', questionnaire_answers_attended_occasion, ignore.case=T)  ~'No')) %>% 
+           mutate(social_event=factor(social_event, levels=c('Yes', 'No'))) 
 
   
 
@@ -1406,8 +1424,7 @@ Row
 -------------------------------------
 
 
-
-### Epi curve of COVID-19 cases
+### Epi curve of COVID-19 cases by gender
 
 ```{r}
 
@@ -1419,7 +1436,7 @@ epi_curve <- godata_clean %>%
                date_labels = '%d-%m') +
   theme_minimal() +
   labs(x = "Date of symptom onset",
-       y = "Number of cases")
+       y = "Number of cases", fill='')
 
 ggplotly(epi_curve)
 
@@ -1438,7 +1455,7 @@ ggplotly(epi_curve)
   max_cases <- max(case_age$n)
   
  death_age <- godata_clean %>% 
-   filter(outcome=='dead') %>% 
+   filter(outcome=='Dead') %>% 
     count(age_group, .drop = FALSE) %>% 
    mutate(indicator='Deaths')
 
@@ -1483,25 +1500,35 @@ label(godata_clean$outcome) <- "Patient outcome"
 label(godata_clean$contact_cov19) <- "Did the case have contact with a suspected or confirmed COVID-19 case?"
 label(godata_clean$any_comorb) <- "Did the case report a pre-existing condition?"
 label(godata_clean$detection_status) <- "Status at detection"
+label(godata_clean$social_event) <- "Did the case attend a social event/mass gathering before developing symptoms?"
 
 
 table1(~ age_years  + sex  + 
          detection_status +
-         outcome + contact_cov19 
+         outcome + contact_cov19 + social_event
            , data=godata_clean, topclass="Rtable1-zebra",footnote="Data source: GoData") 
 
 ```
 
 ### Symptoms at presentation
  
-```{r symptoms_gph}
-godata_clean %>% 
+```{r symptom_gph}
+symptom_gph <- godata_clean %>% 
     #filter(population_group=='Rohingya refugee/FDMN') %>% 
     #filter(test_result=='Positive') %>% 
-    select(id, cough, rapid_breathing, resp_distress, runny_nose, fever) %>% 
+    select(id, cough, rapid_breathing, resp_distress, runny_nose, fever,loss_smell,fatigue,loss_appetite,sore_throat,diarrhoea) %>% 
     pivot_longer(-id) %>% 
     filter(value==1) %>% 
     arrange(id, name) %>% 
+  mutate(name=case_when(name=='runny_nose' ~ 'Runny nose',
+                        name=='rapid_breathing' ~ 'Rapid breathing',
+                        name=='resp-distress' ~ 'Respiratory distress',
+                        name=='fever' ~ 'Fever', 
+                        name=='cough' ~ 'Cough', 
+                        name=='fatigue' ~ 'Fatigue',
+                        name=='loss_appetite' ~ 'Loss of appetite',
+                        name=='sore_throat' ~ 'Sore throat', 
+                        name=='diarrhoea' ~ 'Diarrhoea')) %>% 
     select(-value) %>% 
     group_by(id) %>%
     summarize(symptom_list = list(name)) %>% 
@@ -1512,10 +1539,12 @@ godata_clean %>%
          y = "Number of cases",
          title="Distribution of symptoms at presentation",
          caption="Data source: GoData") +
-    scale_x_upset(n_intersections = 5)
+    scale_x_upset(n_intersections = 5) +
+  scale_y_continuous(breaks= pretty_breaks())
+
+symptom_gph
 ```
  
-
 
 Testing  
 =====================================  
@@ -1663,7 +1692,7 @@ EWARS - Overall {data-navmenu="All-cause mortality"}
 =====================================  
 
 ```{r}
-ewars_mort <- read.csv(here('data', 'community_mortality_20200720.csv')) %>% clean_names() 
+ewars_mort <- read.csv(here('data', 'community_mortality_20200729.csv')) %>% clean_names() 
 
 ewars_mort_gph <- ewars_mort %>% 
   filter(isoyear>2018) %>% 
@@ -1711,7 +1740,7 @@ CHW - Overall {data-navmenu="All-cause mortality"}
 CHW - Camp-level {data-navmenu="All-cause mortality"}  
 =====================================  
 
-Home-based care  
+Community-based surveillance 
 =====================================  
 
 ```{r}
@@ -1724,8 +1753,11 @@ hbc_df <- read.csv(here('data', 'home_based_care_20200728.csv')) %>%
 ```
 
 
-Row  {data-height=650}
+Row  {data-height=550}
 -------------------------------------
+
+<br>
+<br>
 
 
 ### Households visited
@@ -1738,11 +1770,20 @@ hhvisit_gph <- hbc_df %>%
   summarise(hhvisited=sum(c1_total_hh_visited_week, na.rm=TRUE)) %>% 
   ggplot(., aes(x=week, y=hhvisited)) +
   geom_col() +
-  labs(x='Week', y='Households visited') +
+  #labs(x='', y='Households visited') +
   #scale_x_continuous(breaks = c(25, 26, 27, 28, 29)) +
   theme_minimal() 
 
-ggplotly(hhvisit_gph)
+p <- ggplotly(hhvisit_gph + ylab(" ") + xlab(" "))
+
+x <- list(
+  title = "Week"
+)
+y <- list(
+  title = "Households visited"
+)
+p %>% layout(xaxis = x, yaxis = y)
+
 
 ```
 
@@ -1763,19 +1804,29 @@ hhvisit_camp_gph <- hbc_df %>%
   summarise(hhvisited=sum(c1_total_hh_visited_week, na.rm=TRUE)) %>% 
   ggplot(., aes(x=week, y=hhvisited)) +
   geom_line() +
- # scale_x_continuous(breaks = c(25, 26, 27, 28, 29)) +
+  # scale_x_continuous(breaks = c(25, 26, 27, 28, 29)) +
   labs(x='Week', y='Households visited') +
   theme_minimal() +
   facet_wrap(~camp)
 
-ggplotly(hhvisit_camp_gph)
+# p <- ggplotly(hhvisit_camp_gph + ylab(" ") + xlab(" "))
+# x <- list(
+#   title = "Week"
+# )
+# y <- list(
+#   title = "Households visited"
+# )
+# p %>% layout(xaxis = x, yaxis = y)
+
+hhvisit_camp_gph
+
 ```
 
 
 Row  {data-height=350}
 -------------------------------------
 
-### Patients with symptoms 
+### Individuals reporting mild symptoms
 
 ```{r}
 symptoms_df <- hbc_df %>%
@@ -1799,39 +1850,90 @@ symptoms_df <- hbc_df %>%
                              age_grp=='Less than 5' ~ '<5',
                              age_grp=='60 & over' ~ '>=60'))
 
-total_consultations_gph <- symptoms_df %>% 
-  group_by(week, severity) %>% 
-  summarise(total_cases=sum(value,na.rm=TRUE)) %>% 
-  ggplot(aes(x=week, y=total_cases)) +
-  geom_col() +
-  theme_minimal() +
-  labs(x='Week', y='Total cases') +
-  facet_wrap(~severity, ncol=1, scales="free")
+# total_consultations_gph <- symptoms_df %>% 
+#   group_by(week, severity) %>% 
+#   summarise(total_cases=sum(value,na.rm=TRUE)) %>% 
+#   ggplot(aes(x=week, y=total_cases)) +
+#   geom_line() +
+#   theme_minimal() +
+#   scale_y_continuous(limits = c(0,NA)) +
+#   labs(x='Week', y='Total cases') +
+#   facet_wrap(~severity, ncol=1, scales="free")
+# 
+# #ggplotly(total_consultations_gph)
+# 
+# total_consultations_gph
 
-ggplotly(total_consultations_gph)
+# q <- ggplotly(total_consultations_gph + ylab(" ") + xlab(" "))
+# 
+# x2 <- list(
+#   title = "Week"
+# )
+# y2 <- list(
+#   title = "Total cases"
+# )
+# q %>% layout(xaxis = x2, yaxis = y2)
+
+symptoms_df %>% 
+  group_by(week, severity, age_grp, sex) %>% 
+  summarise(total=sum(value,na.rm=TRUE)) %>% 
+  pivot_wider(names_from=c(age_grp,sex), values_from=total) %>% 
+  arrange(desc(week)) %>% 
+  ungroup() %>% 
+  filter(severity=='Mild') %>% 
+  select(-severity) %>% 
+  clean_names() %>% 
+  select(week, contains('less_than_5'), contains('5_to_59'), contains('60_over')) %>% 
+  rowwise %>% 
+  mutate(total = sum(c_across(!week))) %>% 
+  gt(rowname_col = c("week")) %>% 
+  opt_row_striping(., row_striping = TRUE) %>% 
+  tab_stubhead('Week') %>% 
+  tab_spanner(
+    label = "Under 5",
+    columns = vars(less_than_5_male,less_than_5_female)) %>% 
+  tab_spanner(
+    label = "5 to 59",
+    columns = vars(x5_to_59_male,x5_to_59_female)) %>% 
+  tab_spanner(
+    label = "60 and over",
+    columns = vars(x60_over_male,x60_over_female)) %>% 
+  cols_label(
+    week = "Week",
+    less_than_5_male = "Male",
+    less_than_5_female = "Female",
+    x5_to_59_male = "Male",
+    x5_to_59_female = "Female",
+    x60_over_male = "Male",
+    x60_over_female = "Female", 
+    total="Total")   
+
+
+
 ```
 
-### Symptoms by sex and age group
+### Individuals reporting moderate/severe symptoms
 
 ```{r}
 
-symptoms_gph <- symptoms_df %>% 
-  ungroup() %>% 
-  group_by(severity,week, sex, age_group) %>% 
-  summarise(total_cases=sum(value,na.rm=TRUE)) %>% 
-  group_by(severity,week) %>% 
-  mutate(prop=total_cases/sum(total_cases)) %>% 
-  mutate(age_group=factor(age_group, levels=c('<5', '5-59', '>=60'))) %>% 
-  mutate(age_group=fct_rev(age_group)) %>% 
-  ggplot(aes(x=week,y=prop, fill=interaction(sex,age_group))) +
-  geom_col() +
-  facet_wrap(~severity, ncol=2) +
-  theme_minimal() +
-  labs(x='Week', y='Proportion of cases', fill='Sex & \n Age group') +
-  scale_fill_brewer(palette="Dark2") +
-  scale_y_continuous(labels = scales::percent)
-
-ggplotly(symptoms_gph)
+# symptoms_gph <- symptoms_df %>% 
+#   ungroup() %>% 
+#   group_by(severity,week, sex, age_group) %>% 
+#   summarise(total_cases=sum(value,na.rm=TRUE)) %>% 
+#   group_by(severity,week) %>% 
+#   mutate(prop=total_cases/sum(total_cases)) %>% 
+#   mutate(age_group=factor(age_group, levels=c('<5', '5-59', '>=60'))) %>% 
+#   mutate(age_group=fct_rev(age_group)) %>% 
+#   filter(severity=='Mild') %>% 
+#   ggplot(aes(x=week,y=prop, fill=interaction(sex,age_group))) +
+#   geom_col() +
+#   #facet_wrap(~severity, ncol=2) +
+#   theme_minimal() +
+#   labs(x='Week', y='Proportion of cases', fill='Sex & \n Age group') +
+#   scale_fill_brewer(palette="Dark2") +
+#   scale_y_continuous(labels = scales::percent)
+# 
+# ggplotly(symptoms_gph)
 
 # cbs_sex_gph <-  symptoms_df %>% 
 #   ungroup() %>% 
@@ -1862,6 +1964,42 @@ ggplotly(symptoms_gph)
 #   scale_y_continuous(labels = scales::percent, limits=c(0,1))
 # 
 # cbs_sex_gph / cbs_age_gph & theme(legend.position = "top")
+
+symptoms_df %>% 
+  group_by(week, severity, age_grp, sex) %>% 
+  summarise(total=sum(value,na.rm=TRUE)) %>% 
+  pivot_wider(names_from=c(age_grp,sex), values_from=total) %>% 
+  arrange(desc(week)) %>% 
+  ungroup() %>% 
+  filter(!severity=='Mild') %>% 
+  select(-severity) %>% 
+  clean_names() %>% 
+  select(week, contains('less_than_5'), contains('5_to_59'), contains('60_over')) %>% 
+  rowwise %>% 
+  mutate(total = sum(c_across(!week))) %>% 
+  gt(rowname_col = c("week")) %>% 
+  opt_row_striping(., row_striping = TRUE) %>% 
+  tab_stubhead('Week') %>% 
+  tab_spanner(
+    label = "Under 5",
+    columns = vars(less_than_5_male,less_than_5_female)) %>% 
+  tab_spanner(
+    label = "5 to 59",
+    columns = vars(x5_to_59_male,x5_to_59_female)) %>% 
+  tab_spanner(
+    label = "60 and over",
+    columns = vars(x60_over_male,x60_over_female)) %>% 
+  cols_label(
+    week = "Week",
+    less_than_5_male = "Male",
+    less_than_5_female = "Female",
+    x5_to_59_male = "Male",
+    x5_to_59_female = "Female",
+    x60_over_male = "Male",
+    x60_over_female = "Female", 
+    total="Total")  
+
+
 ```
 
 Clinical case management  
