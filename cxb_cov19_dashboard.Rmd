@@ -1691,17 +1691,22 @@ ggplotly(tests_gph)
 EWARS - Overall {data-navmenu="All-cause mortality"}  
 =====================================  
 
+Data from 2019 are only included from week 30. Before this week, there was low coverage of the data collection tool.  
+
 ```{r}
 ewars_mort <- read.csv(here('data', 'community_mortality_20200729.csv')) %>% clean_names() 
 
 ewars_mort_gph <- ewars_mort %>% 
   filter(isoyear>2018) %>% 
+  filter(!(isoyear==2019 & isoweek<30)) %>% 
   filter(!camp_zone=='') %>% 
   count(isoyear, isoweek) %>% 
-  ggplot(., aes(x=isoweek, y=n, color=factor(isoyear))) +
+  ggplot(., aes(x=isoweek, y=n, fill=factor(isoyear))) +
+  #geom_col() +
+  #geom_smooth() +
   geom_line() +
   theme_minimal() +
-  labs(x='Week', y='Count', color='Year')
+  labs(x='Week', y='Number of deaths', fill='Year')
 
 ggplotly(ewars_mort_gph)
 
@@ -1712,10 +1717,14 @@ ggplotly(ewars_mort_gph)
 EWARS - Camp-level {data-navmenu="All-cause mortality"}  
 =====================================  
 
+Data from 2019 are only included from week 30. Before this week, there was low coverage of the data collection tool. At the camp-level, spikes are likely due to an increase in partners reporting to the tool not an increase in the number of people dying.   
+
+
 ```{r}
 
 ewars_mort_camp_gph <-  ewars_mort %>% 
     filter(isoyear>2018) %>% 
+    filter(!(isoyear==2019 & isoweek<30)) %>% 
     filter(!camp_zone=='') %>% 
     count(isoyear, isoweek, camp_zone) %>% 
     mutate(camp_number=str_extract(camp_zone, "[[:digit:]]+")) %>% 
@@ -1825,6 +1834,7 @@ hhvisit_camp_gph
 
 Row  {data-height=350}
 -------------------------------------
+
 
 ### Individuals reporting mild symptoms
 
@@ -2013,7 +2023,7 @@ Row {data-height=650}
 <br>
 <br>
 
-<iframe width='1500px' height='1000px' src="https://app.powerbi.com/view?r=eyJrIjoiY2YyMDY3OWItZWU1My00ZDRkLWE2MWMtMjc2YWJlYTkzNDY3IiwidCI6IjE1MjZjY2Q5LWQ2YjktNDM2MC1iOTk5LTlmMmY4MjE4M2RjNiIsImMiOjl9"  >
+<iframe width='100%' height='100%' src="https://app.powerbi.com/view?r=eyJrIjoiY2YyMDY3OWItZWU1My00ZDRkLWE2MWMtMjc2YWJlYTkzNDY3IiwidCI6IjE1MjZjY2Q5LWQ2YjktNDM2MC1iOTk5LTlmMmY4MjE4M2RjNiIsImMiOjl9"  >
 </iframe>
 
 
