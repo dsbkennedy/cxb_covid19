@@ -31,7 +31,6 @@ library(tidyr)
 library(RcppRoll)
 library(scales)
 library(sf)
-library(leaflet)
 library(patchwork)
 library(flexdashboard)
 #library(linelist)
@@ -1613,10 +1612,15 @@ symptom_gph
 ```
  
 
-Testing  
+Testing  {data-orientation=columns}
 =====================================  
 
+
+
 ```{r testing}
+
+breaks <- c(-Inf,5,18,59,Inf)
+labs <- c('Under 5', '5 to 18', '18 to 59', '60 and over')
 
 ari_ili_df <- gsheet_data$ari_ili %>% 
   clean_names() %>% 
@@ -1628,7 +1632,8 @@ ari_ili_df <- gsheet_data$ari_ili %>%
   filter(laboratory_result %in% c('positive', 'negative')) %>% 
   mutate(camp_number=str_extract(camp, regexp)) %>% 
   mutate(camp_number=as.numeric(camp_number)) %>% 
-  mutate(camp=reorder(camp,camp_number)) 
+  mutate(camp=reorder(camp,camp_number)) %>% 
+    mutate(age_group=cut(age,breaks = breaks, labels = labs, right = FALSE)) 
 
 
 ari_ili_tests_df <- ari_ili_df %>% 
@@ -1667,44 +1672,76 @@ ari_ili_tests_result <- ari_ili_df %>%
   pivot_wider(names_from=laboratory_result, values_from=prop) %>% 
   select(camp, positive,negative)
 
-tests_gph <- ari_ili_df %>% 
-  #filter(nationality=='fdmn') %>% 
-  count(camp, laboratory_result) %>% 
+# tests_gph <- ari_ili_df %>% 
+#   #filter(nationality=='fdmn') %>% 
+#   count(camp, laboratory_result) %>% 
+#   pivot_wider(names_from=laboratory_result, values_from=n) %>% 
+#   mutate(total=negative+positive) %>% 
+#   select(-negative) %>% 
+#   drop_na() %>% 
+#   group_by(camp) %>% 
+# mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
+#                      broom::tidy())) %>%
+#   unnest(rate) %>% 
+#   ungroup() %>% 
+#   mutate(camp=factor(camp)) %>% 
+#   ggplot(aes(x=fct_rev(camp), y=estimate)) +
+#   geom_point() +
+#   coord_flip() +
+#   geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
+#                 position = position_dodge(width = 0.1)) +
+#   theme_minimal() +
+#   labs(x='Camp', 
+#        y='% COVID-19 + samples', 
+#        title='Test postivity by camp', 
+#        subtitle='Average (mean) with 95% confidence intervals', 
+#        caption='Data source:ARI/ILI linelist') +
+#   scale_y_continuous(labels = scales::percent)  +
+#   theme(legend.position='top')
+
+
+
+
+
+tests_gph <- ari_ili_df %>%  
+  filter(!laboratory_result %in% c('n_a','not_done')) %>% 
+  filter(nationality=='fdmn') %>% 
+  count(age_group, laboratory_result) %>% 
+  filter(!is.na(age_group)) %>% 
   pivot_wider(names_from=laboratory_result, values_from=n) %>% 
   mutate(total=negative+positive) %>% 
   select(-negative) %>% 
   drop_na() %>% 
-  group_by(camp) %>% 
-mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
-                     broom::tidy())) %>%
+  group_by(age_group) %>% 
+  mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
+                       broom::tidy())) %>%
   unnest(rate) %>% 
   ungroup() %>% 
-  mutate(camp=factor(camp)) %>% 
-  ggplot(aes(x=fct_rev(camp), y=estimate)) +
+  ggplot(aes(x=age_group, y=estimate)) +
   geom_point() +
-  coord_flip() +
+  #coord_flip() +
   geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
                 position = position_dodge(width = 0.1)) +
   theme_minimal() +
-  labs(x='Camp', 
+  labs(x='Age group', 
        y='% COVID-19 + samples', 
-       title='Test postivity by camp', 
+       title='Test postivity by age group', 
        subtitle='Average (mean) with 95% confidence intervals', 
        caption='Data source:ARI/ILI linelist') +
   scale_y_continuous(labels = scales::percent)  +
   theme(legend.position='top')
 
-
-
 tests_table <- ari_ili_tests_total %>% 
   left_join(ari_ili_tests_7day, by='camp') %>% 
   left_join(ari_ili_tests_growth, by='camp') %>% 
   left_join(ari_ili_tests_result, by='camp') %>% 
+  mutate(camp=trimws(camp)) %>% 
   mutate(camp_number=str_extract(camp, regexp)) %>% 
   mutate(camp_number=as.numeric(camp_number)) %>% 
   arrange(camp_number) %>% 
   select(-camp_number) %>% 
   select(-c(growth,negative)) %>% 
+  mutate(camp=sub("0+", "", camp)) %>% 
   gt() %>% 
   opt_row_striping(., row_striping = TRUE) %>% 
   fmt_percent(
@@ -1723,7 +1760,7 @@ tests_table <- ari_ili_tests_total %>%
    # negative = "Negative",
     #not_done = "Not complete",
    # pending = "Pending", 
-    positive = "Positive",
+    positive = "Total positive (%)",
     #n_a = 'Result missing'
   ) %>% 
   # tab_spanner(
@@ -1739,6 +1776,10 @@ tests_table <- ari_ili_tests_total %>%
 
 
 ```
+
+Column {data-width=400}
+-------------------------------------
+
 ### Table of test results
 
 ```{r test_camp_pos_gph}
@@ -1747,13 +1788,127 @@ tests_table
 
 ```
 
-### Test postiivty by camp
+
+
+Column {data-width=600}
+-------------------------------------
+
+
+### Test positivity by age group
 
 ```{r}
 ggplotly(tests_gph)
 ```
 
 
+### Number of tests per 10,000 people by age group
+
+```{r}
+
+population <- readxl::read_xlsx(here('data','block_population.xlsx'), sheet='Final', skip=1) %>% 
+  clean_names %>%  
+  clean_data() %>% 
+  filter(grepl('total', camp)) %>% 
+  filter(!camp=='grand_total') %>% 
+  select(-block) %>% 
+  mutate(across(c(infant_below_1:x16), as.numeric)) %>% 
+  mutate(age_0_5 = rowSums(.[4:7])) %>% 
+  mutate(age_5_17 = rowSums(.[8:11])) %>% 
+  mutate(age_18_59 = rowSums(.[12:13])) %>% 
+  mutate(age_over60 = rowSums(.[14:15])) %>% 
+  select(camp, contains('total'), contains('age')) %>% 
+  mutate(camp=gsub('_total', '', camp)) %>% 
+    mutate(camp=gsub('camp_', '', camp)) %>% 
+  mutate(camp=trimws(camp)) 
+
+
+tests_age_group_df <- ari_ili_df %>%  
+  filter(!laboratory_result %in% c('n_a','not_done')) %>% 
+  filter(nationality=='fdmn') %>% 
+  count(age_group, .drop=FALSE) 
+
+
+age_group_pop <- population %>%  select(-c(total_families, total_individuals)) %>% 
+  summarise(across(contains('age'), sum)) %>% 
+  pivot_longer(age_0_5:age_over60) %>% 
+  mutate(age_group=labs) %>% 
+  select(-name)
+
+ tests_age_group_gph <- tests_age_group_df %>% 
+  left_join(age_group_pop, by='age_group') %>% 
+  mutate(tests_per10000=(n/value)*10000) %>% 
+  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 18', '18 to 59', '60 and over'))) %>% 
+  ggplot(aes(x=age_group, y=tests_per10000, fill=age_group)) +
+  geom_col() +
+  theme_minimal() +
+   theme(legend.position="none") +
+   labs(x='Age groups', y='Tests per 10,000 people', fill='Age groups')
+ 
+ ggplotly(tests_age_group_gph)
+```
+
+
+<!---
+
+### Map of testing rates
+
+```{r}
+tests_camp_df <- ari_ili_df %>%  
+   filter(!laboratory_result %in% c('n_a','not_done')) %>% 
+   filter(nationality=='fdmn') %>% 
+   filter(!is.na(age)) %>% 
+   #mutate(age_group=cut(age,breaks = breaks, labels = labs, right = FALSE)) %>% 
+   count(camp, .drop=FALSE) %>% 
+   mutate(camp=sub("0+", "", camp)) %>% 
+   mutate(camp=trimws(camp))
+ 
+shp_file_fdmn <- shp_file_fdmn %>%  clean_data()
+
+ 
+tests_camp_per10000_df <- tests_camp_df %>% 
+   left_join(population, by='camp') %>% 
+  drop_na() %>% 
+  mutate(tests_per10000=(n/total_individuals)*10000) %>% 
+    select(camp, n, total_individuals,tests_per10000) 
+
+
+tests_shp_fdmn <- tests_camp_per10000_df %>% 
+  mutate(camp=case_when(camp=='kutupalong_rc' ~ 'krc',
+                        camp=='nayapara_rc' ~ 'nrc',
+                        camp=='4_ext' ~ '4e', 
+                        TRUE ~ camp)) %>% 
+  #filter(population_group=='Rohingya refugee/FDMN') %>% 
+  #filter(!location %in% c('Ukhia', 'Teknaf')) %>% 
+  #mutate(code=location) %>% 
+  #select(code,total_cases, total_deaths) %>% 
+  anti_join(shp_file_fdmn,.,by=c('code'='camp'))
+
+#fdmn.bins <-c(0, 1, 2, 5, 10)
+
+tests_fdmn_pal <- colorBin( "YlOrRd", bins=4, na.color = "grey", domain=tests_shp_fdmn$tests_per10000)
+  
+tests_popup <- paste(
+  "<strong>Camp: </strong>"
+  , tests_shp_fdmn$code
+  , "<br><strong>Tests per 10,000: </strong>"
+  , tests_shp_fdmn$tests_per10000)
+  
+  leaflet(tests_camp_df) %>% 
+  addTiles() %>% 
+  addPolygons(data=tests_camp_df,
+              color="black",
+              fillColor = ~ fdmn_pal(tests_per10000),
+              stroke = TRUE,   
+              smoothFactor = 0.2,
+              popup=popup,
+              weight = 1,
+              fillOpacity = .6) %>% 
+  addLegend("bottomright", pal = fdmn_pal, values = ~host_pal, title = "Number of tests per 10,000 people")
+
+ 
+```
+
+--->
 
 EWARS - Overall {data-navmenu="All-cause mortality"}  
 =====================================  
@@ -1924,10 +2079,13 @@ Community-based surveillance
 ```{r}
 hbc_df <- read.csv(here('data', 'home_based_care_20200805.csv')) %>% 
   clean_names() %>% 
-    filter(week>25) %>% 
+  mutate(max_week=max(week)) %>% 
   mutate(camp_number=str_extract(camp, "[[:digit:]]+")) %>% 
   mutate(camp_number=as.numeric(camp_number)) %>% 
-  mutate(camp=reorder(camp,camp_number)) 
+  mutate(camp=reorder(camp,camp_number)) %>% 
+  filter(week>25) %>% 
+  filter(week<max_week)
+
 ```
 
 
@@ -1949,7 +2107,7 @@ The CHWs use a KoBo Toolbox-based tool, the Community Health Workers Reporting T
 
 
 
-Row  {data-height=550}
+Row  {data-height=500}
 -------------------------------------
 
 <br>
@@ -2087,7 +2245,7 @@ ggplotly(prop_visit_camp_gph)
 ```
 
 
-Row  {data-height=450}
+Row  {data-height=500}
 -------------------------------------
 
 
