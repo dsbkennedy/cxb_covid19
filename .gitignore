@@ -30,6 +30,16 @@ vignettes/*.pdf
 # Rds files
 *.Rds
 
+
+# R files
+*.R
+
+# Excel files
+*.xlsx
+
+# html files
+*.html
+
 # csv files
 *.csv
 

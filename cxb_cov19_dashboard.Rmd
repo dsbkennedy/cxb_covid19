@@ -2251,6 +2251,7 @@ Row  {data-height=500}
 
 ### Individuals reporting mild symptoms
 
+
 ```{r}
 symptoms_df <- hbc_df %>%
   filter(week>25) %>% 
@@ -2290,7 +2291,8 @@ symptoms_gph <- symptoms_df %>%
   scale_fill_brewer(palette="Dark2") +
   scale_y_continuous(labels = scales::percent)
 
-ggplotly(symptoms_gph)
+ggplotly(symptoms_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+#ggplotly(symptoms_gph)
 
 # total_consultations_gph <- symptoms_df %>%
 #   group_by(week, severity) %>%
