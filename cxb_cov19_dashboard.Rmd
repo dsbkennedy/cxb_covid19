@@ -939,33 +939,76 @@ case_shp_host <- table_calc_comb_subloc %>%
   #mutate(code=location) %>% 
   rename(upazilla = location) %>% 
   select(upazilla,total_cases, total_deaths) %>% 
-  left_join(shp_file_host,.,by='upazilla')
+  left_join(shp_file_host,.,by='upazilla') %>%    mutate(total_cases=ifelse(total_cases==0, NA, total_cases)) %>% 
+  mutate(total_deaths=ifelse(total_deaths==0, NA, total_deaths))
+
+host_pal_cases_bins <-c(0, 100, 250, 500, 1000, 2500)
+host_pal_deaths_bins <-c(0, 5, 10, 25, 50)
+
+
+host_pal_cases <- colorBin( "YlGn", bins=host_pal_cases_bins, na.color = "grey", pretty=FALSE)
+host_pal_deaths <- colorBin( "PuRd", bins=host_pal_deaths_bins, na.color = "grey", pretty=FALSE)
+
+
 
 popup <- paste(
   "<strong>Upazila: </strong>"
   , case_shp_host$upazilla
   , "<br><strong>Cases: </strong>"
   , case_shp_host$total_cases
+  , "<br><strong>Deaths: </strong>"
+  , case_shp_host$total_deaths
 )
 
-host.bins <-c(0, 100, 250, 500, 1000, 2500)
-
-host_pal <- colorBin( "YlOrRd", bins=host.bins, na.color = "#aaff56")
-  
-
-  
-  
-  leaflet(case_shp_host) %>% 
+leaflet(case_shp_host) %>% 
   addTiles() %>% 
   addPolygons(data=case_shp_host,
               color="black",
-              fillColor = ~ host_pal(total_cases),
+              fillColor = ~ host_pal_cases(total_cases),
               stroke = TRUE,   
               smoothFactor = 0.2,
               popup=popup,
               weight = 1,
-              fillOpacity = .6) %>% 
-  addLegend("bottomright", pal = host_pal, values = ~host_pal, title = "Number of cases")
+              fillOpacity = .6, group="Cases") %>% 
+  addLegend(pal = host_pal_cases, values = ~total_cases, title = "Cases", group="Cases") %>% 
+  addPolygons(data=case_shp_host,
+              color="black",
+              fillColor = ~ host_pal_deaths(total_deaths),
+              stroke = TRUE,   
+              smoothFactor = 0.2,
+              popup=popup,
+              weight = 1,
+              fillOpacity = .6, group="Deaths") %>% 
+  addLegend(pal = host_pal_deaths, values = ~total_deaths, title = "Deaths", group="Deaths") %>% 
+  addLayersControl(baseGroups = c("Cases", "Deaths"), 
+                   position = "topleft",
+                   options = layersControlOptions(collapsed=F)) %>% hideGroup("Deaths")
+
+# popup <- paste(
+#   "<strong>Upazila: </strong>"
+#   , case_shp_host$upazilla
+#   , "<br><strong>Cases: </strong>"
+#   , case_shp_host$total_cases
+# )
+# 
+# host.bins <-c(0, 100, 250, 500, 1000, 2500)
+# 
+# host_pal <- colorBin( "YlOrRd", bins=host.bins, na.color = "#aaff56")
+#   
+# 
+#   
+#   
+#   leaflet(case_shp_host) %>% 
+#   addTiles() %>% 
+#   addPolygons(data=case_shp_host,
+#               color="black",
+#               fillColor = ~ host_pal(total_cases),
+#               stroke = TRUE,   
+#               smoothFactor = 0.2,
+#               popup=popup,
+#               weight = 1,
+#               fillOpacity = .6) %>% 
+#   addLegend("bottomright", pal = host_pal, values = ~host_pal, title = "Number of cases")
 
 
 # map_host  <- tm_shape(case_shp_host) + 
@@ -1154,30 +1197,80 @@ case_shp_fdmn <- table_calc_comb_subloc %>%
   filter(!location %in% c('Ukhia', 'Teknaf')) %>% 
   mutate(code=location) %>% 
   select(code,total_cases, total_deaths) %>% 
-  left_join(shp_file_fdmn,.,by=c('merge_col'='code'))
+  left_join(shp_file_fdmn,.,by=c('merge_col'='code')) %>% 
+    mutate(total_cases=ifelse(total_cases==0, NA, total_cases)) %>% 
+  mutate(total_deaths=ifelse(total_deaths==0, NA, total_deaths))
 
-fdmn.bins <-c(0, 1, 2, 5, 10)
+fdmn_pal_cases_bins <-c(0, 1, 2, 5, 10)
+fdmn_pal_deaths_bins <-c(0, 1, 2)
 
-fdmn_pal <- colorBin( "YlOrRd", bins=fdmn.bins, na.color = "grey")
-  
+
+fdmn_pal_cases <- colorBin( "YlGn", bins=fdmn_pal_cases_bins, na.color = "grey", pretty=FALSE)
+fdmn_pal_deaths <- colorBin( "PuRd", bins=fdmn_pal_deaths_bins, na.color = "grey", pretty=FALSE)
+
+
+#fdmn.bins <-c(0, 1, 2, 5, 10)
+# 
+# fdmn_pal_cases <- colorBin( "Blues", domain=case_shp_fdmn$total_cases, bins=3, na.color = "grey")
+# fdmn_pal_deaths <- colorBin( "YlOrRd", domain=case_shp_fdmn$total_deaths, bins=3, na.color = "grey")
+
 popup <- paste(
   "<strong>Camp: </strong>"
   , case_shp_fdmn$code
   , "<br><strong>Cases: </strong>"
   , case_shp_fdmn$total_cases
+  , "<br><strong>Deaths: </strong>"
+  , case_shp_fdmn$total_deaths
 )
-  
-  leaflet(case_shp_fdmn) %>% 
+
+leaflet(case_shp_fdmn) %>% 
   addTiles() %>% 
   addPolygons(data=case_shp_fdmn,
               color="black",
-              fillColor = ~ fdmn_pal(total_cases),
+              fillColor = ~ fdmn_pal_cases(total_cases),
               stroke = TRUE,   
               smoothFactor = 0.2,
               popup=popup,
               weight = 1,
-              fillOpacity = .6) %>% 
-  addLegend("bottomright", pal = fdmn_pal, values = ~host_pal, title = "Number of cases")
+              fillOpacity = .6, group="Cases") %>% 
+  addLegend(pal = fdmn_pal_cases, values = ~total_cases, title = "Cases", group="Cases") %>% 
+  addPolygons(data=case_shp_fdmn,
+              color="black",
+              fillColor = ~ fdmn_pal_deaths(total_deaths),
+              stroke = TRUE,   
+              smoothFactor = 0.2,
+              popup=popup,
+              weight = 1,
+              fillOpacity = .6, group="Deaths") %>% 
+  addLegend(pal = fdmn_pal_deaths, values = ~total_deaths, title = "Deaths", group="Deaths") %>% 
+  addLayersControl(baseGroups = c("Cases", "Deaths"), 
+                   position = "topleft",
+                   options = layersControlOptions(collapsed=F)) %>% hideGroup("Deaths")
+
+
+
+# fdmn.bins <-c(0, 1, 2, 5, 10)
+# 
+# fdmn_pal <- colorBin( "YlOrRd", bins=fdmn.bins, na.color = "grey")
+#   
+# popup <- paste(
+#   "<strong>Camp: </strong>"
+#   , case_shp_fdmn$code
+#   , "<br><strong>Cases: </strong>"
+#   , case_shp_fdmn$total_cases
+# )
+#   
+#   leaflet(case_shp_fdmn) %>% 
+#   addTiles() %>% 
+#   addPolygons(data=case_shp_fdmn,
+#               color="black",
+#               fillColor = ~ fdmn_pal(total_cases),
+#               stroke = TRUE,   
+#               smoothFactor = 0.2,
+#               popup=popup,
+#               weight = 1,
+#               fillOpacity = .6) %>% 
+#   addLegend("bottomright", pal = fdmn_pal, values = ~fdmn_pal, title = "Number of cases")
 
 # pal <- colorNumeric(
 #   palette = "YlOrRd",
@@ -1703,31 +1796,6 @@ ari_ili_tests_result <- ari_ili_df %>%
 
 
 
-tests_gph <- ari_ili_df %>%  
-  filter(!laboratory_result %in% c('n_a','not_done')) %>% 
-  filter(nationality=='fdmn') %>% 
-  count(age_group, laboratory_result) %>% 
-  filter(!is.na(age_group)) %>% 
-  pivot_wider(names_from=laboratory_result, values_from=n) %>% 
-  mutate(total=negative+positive) %>% 
-  select(-negative) %>% 
-  drop_na() %>% 
-  group_by(age_group) %>% 
-  mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
-                       broom::tidy())) %>%
-  unnest(rate) %>% 
-  ungroup() %>% 
-  ggplot(aes(x=age_group, y=estimate)) +
-  geom_point() +
-  #coord_flip() +
-  geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
-                position = position_dodge(width = 0.1)) +
-  theme_minimal() +
-  labs(x='Age group', 
-       y='% COVID-19 + samples', 
-       caption='Data source:ARI/ILI linelist') +
-  scale_y_continuous(labels = scales::percent)  +
-  theme(legend.position='top')
 
 tests_table <- ari_ili_tests_total %>% 
   left_join(ari_ili_tests_7day, by='camp') %>% 
@@ -1795,6 +1863,35 @@ Column {data-width=600}
 ### Test positivity by age group
 
 ```{r}
+
+
+
+tests_gph <- ari_ili_df %>%  
+  filter(!laboratory_result %in% c('n_a','not_done')) %>% 
+  filter(nationality=='fdmn') %>% 
+  count(age_group, laboratory_result) %>% 
+  filter(!is.na(age_group)) %>% 
+  pivot_wider(names_from=laboratory_result, values_from=n) %>% 
+  mutate(total=negative+positive) %>% 
+  select(-negative) %>% 
+  drop_na() %>% 
+  group_by(age_group) %>% 
+  mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
+                       broom::tidy())) %>%
+  unnest(rate) %>% 
+  ungroup() %>% 
+  ggplot(aes(x=age_group, y=estimate)) +
+  geom_point() +
+  #coord_flip() +
+  geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
+                position = position_dodge(width = 0.1)) +
+  theme_minimal() +
+  labs(x='Age group', 
+       y='% COVID-19 + samples', 
+       caption='Data source:ARI/ILI linelist') +
+  scale_y_continuous(labels = scales::percent)  +
+  theme(legend.position='top')
+
 ggplotly(tests_gph)
 ```
 
