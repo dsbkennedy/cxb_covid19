@@ -1,5 +1,5 @@
 ---
-title: 'COVID-19  Dashboard: Cox’s Bazar, Bangladesh'
+title: 'COVID-19  Dashboard:Cox’s Bazar, Bangladesh'
 knit: (function(input_file, encoding) {
   out_dir <- 'docs';
   rmarkdown::render(input_file,
