@@ -13,14 +13,16 @@ output:
 ---
 ```{r global, include=FALSE}
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=TRUE)
+```
 
+```{r setup_import, include=FALSE}
+
+##Load required packages
 
 library(lubridate)
 library(here)
 library(data.table)
 library(dplyr)
-#library(tibble)
-#library(purrr)
 library(janitor)
 library(linelist)
 library(forcats)
@@ -33,20 +35,10 @@ library(scales)
 library(sf)
 library(patchwork)
 library(flexdashboard)
-#library(linelist)
-#library(googlesheets4)
-#library(kableExtra)
 library(plotly)
-#library(httr)
-#library(jsonlite)
-#library(magrittr)
 library(ggupset)
-#library(furrr)
 library(table1)
-#library(deidentifyr)
-library(rdrop2)
 library(ggpubr)
-library(tmap)
 library(htmltools)
 library(purrr)
 library(googlesheets4)
@@ -55,27 +47,23 @@ library(tidyr)
 library(httr)
 library(jsonlite)
 library(magrittr)
-#library(tibble, lib.loc = "/usr/local/lib/R/site-library")
 library(tibble)
 library(stringr)
 library(leaflet)
 library(tsibble)
 
+##Load login information for Google Sheets & GoData
 source(here('login.R'))
 
-age_labs <- c(paste(seq(0, 50, by = 10), seq(9, 59, by = 10),
-                    sep = "-"), paste(60, "+", sep = ""))
-
+##Set ggplot to show numbers instead of scientific notation
 options(scipen=10000)
 
-#Google data
-
+##Import data from Google Sheets
 
 gs4_deauth()
 gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%  set_names(sheet_names)
 
-# #Google data
-
+##Import FDMN data 
 fdmn_raw <- gsheet_data$fdmn %>% 
   clean_names() %>% 
     janitor::remove_empty() %>% 
@@ -83,53 +71,52 @@ fdmn_raw <- gsheet_data$fdmn %>%
     #select(-date_of_death) %>% 
   mutate(camp_of_residence=as.character(camp_of_residence))
 
+##Import host data 
 host_raw <- gsheet_data$host %>% 
   clean_names() %>% 
   janitor::remove_empty()
 
+##Bind FDMN and host data
 all_cases_raw <- fdmn_raw %>% 
   bind_rows(host_raw)
 
+#Find all date columns
 all_date_cols <- grep("(date|created_at| updated_on)", names(all_cases_raw))
 
+#Process linelist data
 all_cases_linelist <- all_cases_raw %>% clean_dates( force_Date  = all_date_cols,
                                                      guess_dates = all_date_cols) %>% 
-  #mutate(camp=as.numeric(camp_of_residence)) %>% 
   mutate(population_group=case_when(grepl('host', nationality, ignore.case=T)~ 'Host community',
                                     grepl('fdmn', nationality, ignore.case=T) ~ 'Rohingya refugee/FDMN')) %>% 
   mutate(upazilla=case_when(upazilla=='CXB Sadar' ~ 'Sadar', 
                             TRUE~upazilla)) %>% 
   filter(!(is.na(population_group))) 
 
-  
 
-### Testing data
-
+## Testing data
 tests_data <- gsheet_data$testing %>% 
   clean_names() 
 
 test_nationality <- tests_data %>% 
     filter(!date %in% c('NULL', 'Total')) %>% 
-  #mutate(host_positivity=(host_positive/host)) %>% 
-  #mutate(fdmn_positivity=(fdmn_positive/fdmn)) %>% 
     mutate(date_format=excel_numeric_to_date(as.numeric(date))) %>% 
     select(-date) %>% 
     pivot_longer(-date_format) %>% 
   mutate(population_group=case_when(grepl('fdmn',name) ~ 'Rohingya refugee/FDMN',
                                     grepl('host',name) ~ 'Host community')) 
 
+
 ##DRU data
 dru_raw <- gsheet_data$dru %>% clean_names() %>%   mutate(facility_name=gsub(":([[:alpha:]])", ": \\1", facility_name)) 
 quarantine_raw <- gsheet_data$quarantine %>% clean_names() %>% filter(!is.na(facility_name))
 
 
-### Camp population
-
-#Population 
+### Camp population file
 population <- read.csv(here('data', 'population.csv')) 
 
 
 ### GoData
+
 #get access token
 url_request <- paste0(url,"api/oauth/token?access_token=123")
 
@@ -160,17 +147,15 @@ cases <- as_tibble(fromJSON(json_cases, flatten = TRUE)) %>%
   select(-c(firstName,middleName,lastName, addresses))
 
 
-
+#Save populations as objects for processing later on 
 host_population <-  2805491
 fdmn_population <-  859205 
 
 
-
 ```
 
-```{r table_wranging}
+```{r wranging_valuebox}
 
-####
 
 #Cases
 cxb_cases <- all_cases_linelist %>% 
@@ -194,15 +179,6 @@ cxb_tests <- tests_data %>%
   select(date, population_group=name, new_tests=value) %>% 
   mutate(population_group=case_when(grepl('fdmn', population_group) ~ 'Rohingya refugee/FDMN',
                                     TRUE ~ 'Host community')) 
-#Bangladesh data
-bgd_data <- fread('https://covid.ourworldindata.org/data/owid-covid-data.csv') %>% 
-  filter(iso_code=='BGD') %>%        
-  mutate(date_format=ymd(date)) %>% 
-  select(date=date_format, new_tests,new_cases,new_deaths,population) %>% 
-  mutate(population_group='Bangladesh')
-
-first_date <- min(bgd_data$date)
-last_date <- today()
 
 #Combine CXB data
 
@@ -212,6 +188,19 @@ cxb_table_data <- cxb_tests %>%
   mutate(population=case_when(population_group=='Rohingya refugee/FDMN' ~ fdmn_population, 
                               TRUE ~ host_population)) 
 rm(cxb_cases, cxb_deaths,cxb_tests)
+
+#Bangladesh data from Our World In Data
+bgd_data <- fread('https://covid.ourworldindata.org/data/owid-covid-data.csv') %>% 
+  filter(iso_code=='BGD') %>%        
+  mutate(date_format=ymd(date)) %>% 
+  select(date=date_format, new_tests,new_cases,new_deaths,population) %>% 
+  mutate(population_group='Bangladesh')
+
+#Get first date from Bangladesh data
+first_date <- min(bgd_data$date)
+#Last date is today
+last_date <- today()
+
 
 
 #Combine Bangaladesh and CXB data
@@ -277,7 +266,8 @@ Row {data-height=75}
 
 ### 
 
-```{r}
+```{r host_placeholder}
+##Host community placeholder
 
  valueBox(
   format(paste0('Host community'), big.mark = ","),
@@ -290,7 +280,8 @@ Row {data-height=75}
 
 ### Tests: Total (Last 7 days)
 
-```{r}
+```{r host_tests}
+##Host community tests
 
 host_tests <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_tests)
 host_tests_7day <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_tests_7day)
@@ -306,7 +297,9 @@ host_tests_7day <- table_calc_comb %>%  filter(population_group=='Host community
 
 ### Cases: Total (Last 7 days)
 
-```{r}
+```{r host_cases}
+##Host community cases
+
 host_cases <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_cases)
 host_cases_7day <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_cases_7day)
                
@@ -320,7 +313,9 @@ host_cases_7day <- table_calc_comb %>%  filter(population_group=='Host community
 
 ### Deaths: Total (Last 7 days)
 
-```{r}
+```{r host_deaths}
+##Host community deaths
+
 host_deaths <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_deaths)
 host_deaths_7day <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_deaths_7day)
                
@@ -338,7 +333,8 @@ Row {data-height=75}
 
 ### 
 
-```{r}
+```{r fdmn_placeholder}
+##FDMN placeholder
 
  valueBox(
   format(paste0('Rohingya/FDMN'), big.mark = ","),
@@ -352,7 +348,8 @@ Row {data-height=75}
 
 ### Tests: Total (Last 7 days)
 
-```{r}
+```{r fdmn_tests}
+##FDMN tests
 
 fdmn_tests <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_tests)
 fdmn_tests_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_tests_7day)
@@ -367,7 +364,9 @@ fdmn_tests_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refug
 
 ### Cases: Total (Last 7 days)
 
-```{r}
+```{r fdmn_cases}
+##FDMN cases
+
 fdmn_cases <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_cases)
 fdmn_cases_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_cases_7day)
                
@@ -381,7 +380,9 @@ fdmn_cases_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refug
 
 ### Deaths: Total (Last 7 days)
 
-```{r}
+```{r fdmn_deaths}
+##FDMN deaths
+
 fdmn_deaths <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_deaths)
 fdmn_deaths_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_deaths_7day)
                
@@ -399,57 +400,9 @@ fdmn_deaths_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refu
 Row {data-height=150}
 -------------------------------------
 
-
-
-
-```{r eval=FALSE, include=FALSE}
-df <- data.frame(
-  x = rep(seq(2, 15, 6.5), 2),
-  y = c(rep(6.5, 3), rep(2,3)),
-  h = rep(4.25, 6),
-  w = rep(6.25, 6),
-  value = c(paste0(table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_tests), ' (',
-                   table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_tests_7day),')'),
-            paste0(table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_cases),' (',
-                   table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_cases_7day),')'),
-            paste0(table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_deaths),' (',
-                   table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_deaths_7day),')'),
-            paste0(table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_tests),' (',
-                   table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_tests_7day),')'),
-            paste0(table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_cases),' (',
-                   table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_cases_7day),')'),
-            paste0(table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_deaths),' (',
-                   table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_deaths_7day),')')),
-  info = c("Tests - FDMN/Rohingya \n Total  (7 days)",
-           "Cases - FDMN/Rohingya \n Total  (7 days)",
-           "Deaths - FDMN/Rohingya \n Total  (7 days)",
-           "Tests - Host \n Total  (7 days)",
-           "Cases - Host \n Total  (7 days)",
-           "Deaths - Host \n Total  (7 days)"),
-  shape = '',
-  font_family = c(rep("fontawesome-webfont", 6)),
-  color = factor(1:6)
-)
-
-
-ggplot(df, aes(x, y, height = h, width = w, label = info)) +
-  geom_tile(aes(fill = color)) +
-  geom_text(color = "white", fontface = "bold", size = 10,
-            aes(label = value, x = x - 2.9, y = y + 1), hjust = 0) +
-  geom_text(color = "white", fontface = "bold",
-            aes(label = info, x = x - 2.9, y = y - 1), hjust = 0) +
-  coord_fixed() +
-  scale_fill_brewer(type = "qual",palette = "Dark2") +
-  geom_text(size = 20, aes(label = shape, family = font_family,
-                           x = x + 1.5, y = y + 0.5), alpha = 0.25) +
-  theme_void() +
-  guides(fill = FALSE)
-
-
-```
-
 ### Tests
-```{r tests_tab}
+
+```{r tests_table}
 
 table_calc_comb %>% 
   ungroup() %>%
@@ -494,7 +447,7 @@ table_calc_comb %>%
 
 ### Cases
 
-```{r case_tab}
+```{r cases_table}
 
 table_calc_comb %>% 
   ungroup() %>%
@@ -540,7 +493,8 @@ table_calc_comb %>%
 
 ### Deaths
 
-```{r deaths_tab}
+```{r deaths_table}
+
 table_calc_comb %>% 
   ungroup() %>%
   select(population_group, contains('death'), cfr) %>% 
@@ -582,69 +536,13 @@ table_calc_comb %>%
 ```
 
 
-
-
-
-```{r eval=FALSE, include=FALSE}
-### Graph
-
-test_growth_rate <- cxb_bgd_data %>% 
-  group_by(population_group) %>% 
-  mutate(new_tests=coalesce(new_tests,0)) %>% 
-  mutate(cumulative_tests=cumsum(new_tests)) %>% 
-  select(date,population_group, cumulative_tests) %>% 
-  mutate(test_growth=ifelse(lag(cumulative_tests,7)>10,
-                           ((cumulative_tests/lag(cumulative_tests,7))^(1/7))-1,NA))
-
-test_growth_gph <- test_growth_rate %>% 
-  filter(date>=ymd('2020-05-01')) %>% 
-ggplot(aes(x=date, test_growth, color=population_group)) +
-  geom_line() +
-  labs(x = "Date",
-       y = "Test growth rate",
-       color="") +
-  theme_tufte() +
-  theme(legend.position="top") +
-  scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
-               date_labels = '%d-%m') +
-  scale_y_continuous(labels = scales::percent)
-
-
-case_growth_rate <- cxb_bgd_data %>% 
-  group_by(population_group) %>% 
-  mutate(new_cases=coalesce(new_cases,0)) %>% 
-  mutate(cumulative_cases=cumsum(new_cases)) %>% 
-  select(date,population_group, cumulative_cases) %>% 
-  mutate(case_growth=ifelse(lag(cumulative_cases,7)>10,
-                            ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA))
-
-case_growth_gph <- case_growth_rate %>% 
-  filter(date>=ymd('2020-03-23')) %>% 
-  ggplot(aes(x=date, case_growth, color=population_group)) +
-  geom_line() +
-  labs(x = "Date",
-       y = "Case growth rate",
-       color="") +
-  theme_tufte() +
-  theme(legend.position="top") +
-  scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
-               date_labels = '%d-%m') +
-  scale_y_continuous(labels = scales::percent)
-
-
-
-ggarrange(test_growth_gph, case_growth_gph, ncol=2, common.legend = TRUE, legend="top")
-
-
-```
-
 Row {data-height=250}
 -------------------------------------
 
 ### Cases by date  (Scales are different for each graph)
 
 
-```{r epicurve}
+```{r epicurve_bgd_host_fdmn}
 
 epi_curve <- table_final_df %>% 
   mutate(week=epiweek(date)) %>% 
@@ -665,7 +563,7 @@ ggplotly(epi_curve)
 
 ### Test positivity trend
 
-```{r test postivity}
+```{r test postivity_trend}
 test_positivity_gph <- test_nationality %>% 
   filter(name %in% c('host', 'fdmn','host_positive', 'fdmn_positive')) %>% 
   mutate(week=epiweek(date_format)) %>% 
@@ -725,6 +623,7 @@ Row {data-height=75}
 
 knitr::include_graphics(here('data', 'logo_comb.png'))
 
+##Time in Bangladesh
 s <- now("UTC-6")
 
 ```
@@ -744,7 +643,9 @@ If you have any questions contact kennedyd@who.int
 Data updated at - "`r s`"
 
 
-```{r data_formatting}
+```{r data_wrangling_subdistrict}
+
+##Calculate across all data and then separate by Host & FDMN at a later stage
 
 #Cases
 cxb_cases_subloc <- all_cases_linelist %>% 
@@ -825,7 +726,7 @@ Row
 ### Table {data-height=500}
 
 
-```{r}
+```{r host_cases_deaths_table}
 host_table_data <- table_calc_comb %>% 
   filter(grepl('host', population_group, ignore.case = T)) %>% 
   mutate(location="Total") %>% 
@@ -844,11 +745,9 @@ summaryTable_host <- table_calc_comb_subloc %>%
     total_cases = "Total",
     total_deaths = "Total",
     total_cases_pm = "Per million",
-    #total_deaths_pm = "Per million", 
     total_cases_7day = "Last 7 days",
     total_deaths_7day = "Last 7 days",
     total_cases_pm_7day   = "Per million",
-    #total_deaths_pm_7day  = "Per million", 
     cfr = "Case Fatality Risk", 
     case_growth = "Growth rate"
   ) %>% 
@@ -897,7 +796,7 @@ summaryTable_host
 
 ### Tests and cases over time {data-height=500}
 
-```{r daily_tests}
+```{r host_tests_cases_gph}
 
 testing_host_gph <-  test_nationality %>% 
       filter(name %in% c('host', 'host_positive')) %>% 
@@ -936,12 +835,13 @@ shp_file_host <- read_sf(here('data', 'shapefiles', 'cxb_shp.shp'))
 
 case_shp_host <- table_calc_comb_subloc %>% 
   filter(population_group=='Host community') %>% 
-  #mutate(code=location) %>% 
   rename(upazilla = location) %>% 
   select(upazilla,total_cases, total_deaths) %>% 
   left_join(shp_file_host,.,by='upazilla') %>%    mutate(total_cases=ifelse(total_cases==0, NA, total_cases)) %>% 
   mutate(total_deaths=ifelse(total_deaths==0, NA, total_deaths))
 
+#Define colour palettes based on available data
+#This will need to be updated as cases increase
 host_pal_cases_bins <-c(0, 100, 250, 500, 1000, 2500)
 host_pal_deaths_bins <-c(0, 5, 10, 25, 50)
 
@@ -950,8 +850,7 @@ host_pal_cases <- colorBin( "YlGn", bins=host_pal_cases_bins, na.color = "grey",
 host_pal_deaths <- colorBin( "PuRd", bins=host_pal_deaths_bins, na.color = "grey", pretty=FALSE)
 
 
-
-popup <- paste(
+host_popup <- paste(
   "<strong>Upazila: </strong>"
   , case_shp_host$upazilla
   , "<br><strong>Cases: </strong>"
@@ -967,7 +866,7 @@ leaflet(case_shp_host) %>%
               fillColor = ~ host_pal_cases(total_cases),
               stroke = TRUE,   
               smoothFactor = 0.2,
-              popup=popup,
+              popup=host_popup,
               weight = 1,
               fillOpacity = .6, group="Cases") %>% 
   addLegend(pal = host_pal_cases, values = ~total_cases, title = "Cases", group="Cases") %>% 
@@ -976,7 +875,7 @@ leaflet(case_shp_host) %>%
               fillColor = ~ host_pal_deaths(total_deaths),
               stroke = TRUE,   
               smoothFactor = 0.2,
-              popup=popup,
+              popup=host_popup,
               weight = 1,
               fillOpacity = .6, group="Deaths") %>% 
   addLegend(pal = host_pal_deaths, values = ~total_deaths, title = "Deaths", group="Deaths") %>% 
@@ -984,51 +883,7 @@ leaflet(case_shp_host) %>%
                    position = "topleft",
                    options = layersControlOptions(collapsed=F)) %>% hideGroup("Deaths")
 
-# popup <- paste(
-#   "<strong>Upazila: </strong>"
-#   , case_shp_host$upazilla
-#   , "<br><strong>Cases: </strong>"
-#   , case_shp_host$total_cases
-# )
-# 
-# host.bins <-c(0, 100, 250, 500, 1000, 2500)
-# 
-# host_pal <- colorBin( "YlOrRd", bins=host.bins, na.color = "#aaff56")
-#   
-# 
-#   
-#   
-#   leaflet(case_shp_host) %>% 
-#   addTiles() %>% 
-#   addPolygons(data=case_shp_host,
-#               color="black",
-#               fillColor = ~ host_pal(total_cases),
-#               stroke = TRUE,   
-#               smoothFactor = 0.2,
-#               popup=popup,
-#               weight = 1,
-#               fillOpacity = .6) %>% 
-#   addLegend("bottomright", pal = host_pal, values = ~host_pal, title = "Number of cases")
 
-
-# map_host  <- tm_shape(case_shp_host) + 
-#   tm_polygons("total_cases", 
-#               style = "fixed",
-#               breaks = c(0, 100, 250, 500,1000,2000),
-#               title="Confirmed COVID-19 cases", 
-#               palette='YlOrRd', 
-#               id="total_cases", alpha=0.5) +   
-#   tm_text("upazilla", root=5) +
-#   tm_legend(text.size=1,
-#             title.size=1.2,
-#             position = c("left","bottom"), 
-#             bg.color = "white", 
-#             bg.alpha=.2, 
-#             width=.8,
-#             frame="white", 
-#             height=.6) 
-# 
-# tmap_leaflet(map_host)
 
 ```
 
@@ -1043,9 +898,9 @@ Row
    
 ### Table {data-height=500}
     
-```{r}
+```{r fdmn_table}
 
-# prepare regular expression
+# prepare regular expression for extracting camp number from camp variable
 regexp <- "[[:digit:]]+"
 
 fdmn_table_data <- table_calc_comb %>% 
@@ -1062,36 +917,24 @@ summaryTable_fdmn <- table_calc_comb_subloc %>%
   mutate(location=case_when(grepl('ukhia', location, ignore.case=T)~'Camp missing (Ukhia)',
                             grepl('teknaf', location, ignore.case=T)~'Camp missing (Teknaf)',
                             TRUE ~ location)) %>% 
-  #mutate(total_cases_pm=ifelse())
   mutate(total_cases_pm=ifelse(grepl('ukhia', location, ignore.case=T),NA, 
                                ifelse(grepl('teknaf', location, ignore.case=T), NA, total_cases_pm))) %>% 
-  # mutate(total_deaths_pm=ifelse(grepl('ukhia', location, ignore.case=T),NA, 
-  #                             ifelse(grepl('teknaf', location, ignore.case=T), NA, total_deaths_pm))) %>% 
   mutate(total_cases_pm_7day=ifelse(grepl('ukhia', location, ignore.case=T),NA, 
                                     ifelse(grepl('teknaf', location, ignore.case=T), NA, total_cases_pm_7day))) %>% 
-  #  mutate(total_deaths_pm_7day=ifelse(grepl('ukhia', location, ignore.case=T),NA, 
-  #                              ifelse(grepl('teknaf', location, ignore.case=T), NA, total_deaths_pm_7day))) %>% 
   mutate(camp=location) %>% 
-  #arrange(camp) %>% 
   mutate(camp_number=str_extract(camp, regexp)) %>% 
   mutate(camp_number=as.numeric(camp_number)) %>% 
   arrange(camp_number) %>% 
   select(-c(population_group,camp,total_deaths_pm,total_deaths_pm_7day,camp_number)) %>% 
   gt() %>% 
-  # tab_header(
-  #   title = "Rohingya refugee/FDMN Summary",
-  #   subtitle = ""
-  # ) %>% 
   cols_label(
     location = "Camp",
     total_cases = "Total",
     total_deaths = "Total",
     total_cases_pm = "Per million",
-    #total_deaths_pm = "Per million", 
     total_cases_7day = "Last 7 days",
     total_deaths_7day = "Last 7 days",
     total_cases_pm_7day   = "Per million",
-    # total_deaths_pm_7day  = "Per million", 
     cfr = "Case Fatality Risk", 
     case_growth = "Growth rate"
   ) %>% 
@@ -1145,16 +988,14 @@ summaryTable_fdmn <- table_calc_comb_subloc %>%
   )
 
 
-
 summaryTable_fdmn
 ```
 
 
 ### Tests and cases over time {data-height=500}
 
-```{r}
+```{r fdmn_tests_cases}
 
-    
 testing_fdmn_gph <-  test_nationality %>% 
   filter(name %in% c('fdmn', 'fdmn_positive')) %>% 
        mutate(name_fac=factor(name,levels=c('fdmn', 'fdmn_positive'), 
@@ -1209,12 +1050,7 @@ fdmn_pal_cases <- colorBin( "YlGn", bins=fdmn_pal_cases_bins, na.color = "grey",
 fdmn_pal_deaths <- colorBin( "PuRd", bins=fdmn_pal_deaths_bins, na.color = "grey", pretty=FALSE)
 
 
-#fdmn.bins <-c(0, 1, 2, 5, 10)
-# 
-# fdmn_pal_cases <- colorBin( "Blues", domain=case_shp_fdmn$total_cases, bins=3, na.color = "grey")
-# fdmn_pal_deaths <- colorBin( "YlOrRd", domain=case_shp_fdmn$total_deaths, bins=3, na.color = "grey")
-
-popup <- paste(
+fdmn_popup <- paste(
   "<strong>Camp: </strong>"
   , case_shp_fdmn$code
   , "<br><strong>Cases: </strong>"
@@ -1230,7 +1066,7 @@ leaflet(case_shp_fdmn) %>%
               fillColor = ~ fdmn_pal_cases(total_cases),
               stroke = TRUE,   
               smoothFactor = 0.2,
-              popup=popup,
+              popup=fdmn_popup,
               weight = 1,
               fillOpacity = .6, group="Cases") %>% 
   addLegend(pal = fdmn_pal_cases, values = ~total_cases, title = "Cases", group="Cases") %>% 
@@ -1239,7 +1075,7 @@ leaflet(case_shp_fdmn) %>%
               fillColor = ~ fdmn_pal_deaths(total_deaths),
               stroke = TRUE,   
               smoothFactor = 0.2,
-              popup=popup,
+              popup=fdmn_popup,
               weight = 1,
               fillOpacity = .6, group="Deaths") %>% 
   addLegend(pal = fdmn_pal_deaths, values = ~total_deaths, title = "Deaths", group="Deaths") %>% 
@@ -1249,50 +1085,7 @@ leaflet(case_shp_fdmn) %>%
 
 
 
-# fdmn.bins <-c(0, 1, 2, 5, 10)
-# 
-# fdmn_pal <- colorBin( "YlOrRd", bins=fdmn.bins, na.color = "grey")
-#   
-# popup <- paste(
-#   "<strong>Camp: </strong>"
-#   , case_shp_fdmn$code
-#   , "<br><strong>Cases: </strong>"
-#   , case_shp_fdmn$total_cases
-# )
-#   
-#   leaflet(case_shp_fdmn) %>% 
-#   addTiles() %>% 
-#   addPolygons(data=case_shp_fdmn,
-#               color="black",
-#               fillColor = ~ fdmn_pal(total_cases),
-#               stroke = TRUE,   
-#               smoothFactor = 0.2,
-#               popup=popup,
-#               weight = 1,
-#               fillOpacity = .6) %>% 
-#   addLegend("bottomright", pal = fdmn_pal, values = ~fdmn_pal, title = "Number of cases")
 
-# pal <- colorNumeric(
-#   palette = "YlOrRd",
-#   domain = case_shp_fdmn$total_cases)
-# 
-# 
-# map_fdmn <- case_shp_fdmn %>%
-#   mutate(camp=gsub('Camp', '', new_camp_n)) %>%
-#   tm_shape(.) +
-#   tm_polygons("total_cases", title="Confirmed COVID-19 cases", palette='YlOrRd', 
-#               id="total_cases", alpha=0.5, colorNA=NULL) +
-#   tm_text("camp", col="black", root=5) +
-#   tm_legend(text.size=1,
-#             title.size=1.2,
-#             position = c("left","bottom"),
-#             bg.color = "black",
-#             bg.alpha=.2,
-#             width=.8,
-#             frame="white",
-#             height=.6)
-# #tm_facets("upazila", ncol=1)
-# tmap_leaflet(map_fdmn)
 
 ```
 
@@ -1319,7 +1112,7 @@ yet been added to GoData.
 <br>
 
 
-```{r epi_wranging}
+```{r godata_wrangling}
 
 godata_wide <- cases %>%
   clean_names() %>% 
@@ -1332,23 +1125,19 @@ godata_wide <- cases %>%
     questionnaire_answers_outcome,
     questionnaire_answers_outcome_2,
     questionnaire_answers_msf_outcome,
-    #questionnaire_answers_outcome2,
-    #questionnaire_answers_nationality,
-    #questionnaire_answers_nationality_2,
-    #questionnaire_answers_cif_nationality,
     contains('nationality'),
     contains('result'),
-    contains('symptom'),
-    # questionnaireAnswers.numeroIDcasIndex,
-    # questionnaireanswers_liendeparente
+    contains('symptom')
   ),
   keep_empty = TRUE, names_sep = "_") %>% 
     remove_empty(c("rows", "cols")) 
 
 
-
-
 ###Clean up GoData
+
+##Define age groups for GoData
+age_labs <- c(paste(seq(0, 50, by = 10), seq(9, 59, by = 10),
+                    sep = "-"), paste(60, "+", sep = ""))
 
 godata_clean <- godata_wide %>% 
   #Ethnicity
@@ -1362,7 +1151,7 @@ godata_clean <- godata_wide %>%
                                                  "CXB3310590", "CXB5310243",
                                                  "CXB2120064","CXB3310451", 
                                                  "CXB3310542", "CXB3310603", 
-                                                 "CXB3830005") ~ 'Positive',
+                                                 "CXB3830005","CXB2008001") ~ 'Positive',
                               TRUE ~ lab_result)) %>% 
   filter(lab_result=='Positive') %>% 
   #Dates
@@ -1529,61 +1318,13 @@ godata_clean <- godata_wide %>%
 
 
 
-```{r cases}
-
-case_age_sex <- godata_clean %>% 
-  count(sex,age_group, .drop = FALSE)
-
-max_case <- max(case_age_sex$n)
-
-case_age_sex_gph <- ggplot(case_age_sex,
-                           aes(x = age_group,
-                               y=n,
-                               #y = ifelse(sex == 'male', n, -n),
-                               fill = sex)) +
-  geom_bar(stat = "identity", position = "dodge", width = 0.5) +
-  scale_y_continuous(limits = c(0, max_case),
-                     breaks = seq(0, max_case, 2),
-                     labels = abs(seq(0, max_case, 2))) +
-  labs(x = "Age", y = "Number of cases", fill = '') +
-  theme_minimal()
-
-
-```
-
-
-```{r deaths}
-
-death_age_sex <- godata_clean %>% 
-  filter(outcome=='dead') %>% 
-  count(sex,age_group, .drop = FALSE)
-
-max_deaths <- max(death_age_sex$n)
-
-death_age_sex_gph <- ggplot(death_age_sex,
-                           aes(x = age_group,
-                               y=n,
-                               #y = ifelse(sex == 'male', n, -n),
-                               fill = sex)) +
-  geom_bar(stat = "identity", position = "dodge", width = 0.5) +
-  scale_y_continuous(limits = c(0, max_case),
-                     breaks = seq(0, max_case, 2),
-                     labels = abs(seq(0, max_case, 2))) +
-  labs(x = "Age", y = "Number of deaths", fill = '') +
-  theme_minimal()
-
-```
-
-
-
-
 Column  {data-width=650}
 -------------------------------------
 
 
 ### Epi curve of COVID-19 cases by gender
 
-```{r}
+```{r godata_epicurve}
 
 epi_curve <- godata_clean %>% 
   count(date_symptom_onset_final, sex) %>% 
@@ -1592,6 +1333,7 @@ epi_curve <- godata_clean %>%
   scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
                date_labels = '%d-%m') +
   theme_minimal() +
+    scale_fill_brewer(palette="Dark2") +
   labs(x = "Date of symptom onset",
        y = "Number of cases", fill='')
 
@@ -1603,7 +1345,7 @@ ggplotly(epi_curve)
 ### Cases and deaths by age group
 
 
-```{r}
+```{r godata_cases_deaths_agegrp}
 
 
  case_age <- godata_clean %>% 
@@ -1628,9 +1370,10 @@ case_death_age_gph <-  case_age %>%
    labs(x = "Age group", y = "Count", fill = '') +
    theme_minimal() +
    scale_y_continuous(breaks=seq(0,max_cases,2)) +
+    scale_fill_brewer(palette="Dark2") +
    geom_text(
      aes(label = ifelse(n>0,n,''), y = n + 0.05),
-     position = position_dodge(0.9),
+     position = position_dodge(0.7),
      vjust = 0
    ) 
 
@@ -1710,7 +1453,7 @@ Testing  {data-orientation=columns}
 
 
 
-```{r testing}
+```{r testing_wrangling}
 
 breaks <- c(-Inf,5,59,Inf)
 labs <- c('Under 5', '5 to 59', '60 and over')
@@ -1718,7 +1461,6 @@ labs <- c('Under 5', '5 to 59', '60 and over')
 ari_ili_df <- gsheet_data$ari_ili %>% 
   clean_names() %>% 
   clean_data() %>% 
-  #complete(date_of_case_detection = min(date_of_case_detection), max(date_of_case_detection), by = "day") %>% 
   mutate(camp=gsub('camp_', '', camp)) %>% 
   filter(nationality=='fdmn') %>% 
   filter(sample_type!='follow_up') %>% 
@@ -1739,7 +1481,6 @@ ari_ili_tests_df <- ari_ili_df %>%
                             ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>%
   mutate(roll_test=roll_mean((n),7,  align="right", fill = NA)) %>% 
   mutate(week=epiweek(date_of_case_detection)) %>% 
-  # filter(week>=19) %>% 
   ungroup()
 
 ari_ili_tests_total <- ari_ili_tests_df %>% 
@@ -1765,38 +1506,17 @@ ari_ili_tests_result <- ari_ili_df %>%
   pivot_wider(names_from=laboratory_result, values_from=prop) %>% 
   select(camp, positive,negative)
 
-# tests_gph <- ari_ili_df %>% 
-#   #filter(nationality=='fdmn') %>% 
-#   count(camp, laboratory_result) %>% 
-#   pivot_wider(names_from=laboratory_result, values_from=n) %>% 
-#   mutate(total=negative+positive) %>% 
-#   select(-negative) %>% 
-#   drop_na() %>% 
-#   group_by(camp) %>% 
-# mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
-#                      broom::tidy())) %>%
-#   unnest(rate) %>% 
-#   ungroup() %>% 
-#   mutate(camp=factor(camp)) %>% 
-#   ggplot(aes(x=fct_rev(camp), y=estimate)) +
-#   geom_point() +
-#   coord_flip() +
-#   geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
-#                 position = position_dodge(width = 0.1)) +
-#   theme_minimal() +
-#   labs(x='Camp', 
-#        y='% COVID-19 + samples', 
-#        title='Test postivity by camp', 
-#        subtitle='Average (mean) with 95% confidence intervals', 
-#        caption='Data source:ARI/ILI linelist') +
-#   scale_y_continuous(labels = scales::percent)  +
-#   theme(legend.position='top')
 
 
 
+```
 
+Column {data-width=400}
+-------------------------------------
 
+### Table of test results
 
+```{r test_camp_table}
 tests_table <- ari_ili_tests_total %>% 
   left_join(ari_ili_tests_7day, by='camp') %>% 
   left_join(ari_ili_tests_growth, by='camp') %>% 
@@ -1840,16 +1560,6 @@ tests_table <- ari_ili_tests_total %>%
     #table.font.size = "small"
   ) 
 
-
-```
-
-Column {data-width=400}
--------------------------------------
-
-### Table of test results
-
-```{r test_camp_pos_gph}
-
 tests_table
 
 ```
@@ -1862,8 +1572,7 @@ Column {data-width=600}
 
 ### Test positivity by age group
 
-```{r}
-
+```{r test_pos_agegrp_gph}
 
 
 tests_gph <- ari_ili_df %>%  
@@ -1898,7 +1607,7 @@ ggplotly(tests_gph)
 
 ### Number of tests per 10,000 people by age group
 
-```{r}
+```{r test_per10000_gph}
 
 population <- readxl::read_xlsx(here('data','block_population.xlsx'), sheet='Final', skip=1) %>% 
   clean_names %>%  
@@ -2030,7 +1739,7 @@ Row
 
 ### Number of reported deaths per week
 
-```{r}
+```{r ewars_wrangling}
 ewars_mort <- read.csv(here('data', 'community_mortality_20200804.csv')) %>% clean_names() %>% 
   mutate(year=as.numeric(isoyear)) %>% 
   mutate(week=as.numeric(isoweek)) %>% 
@@ -2042,8 +1751,11 @@ ewars_mort <- read.csv(here('data', 'community_mortality_20200804.csv')) %>% cle
                              #age_in_years>=5 & age_in_years<15 ~ '5 to 14',
                              age_in_years>=5 & age_in_years<60 ~ '5 to 59',
                              age_in_years>=60 ~'60 and over')) %>% 
-  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 59',  '60 and over', NA))) 
+  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 59',  '60 and over', NA)))
+```
 
+
+```{r ewars_mort_gph}
 ewars_mort_gph <- ewars_mort %>% 
   #filter(isoyear>2018) %>% 
   #filter(!(isoyear==2019 & isoweek<30)) %>% 
@@ -2069,7 +1781,7 @@ Col
 
 ### Deaths by age group
 
-```{r}
+```{r ewars_deaths_agegrp}
 death_age_gph <- ewars_mort %>%  
   count(age_group,year_wk) %>% 
   filter(!is.na(age_group)) %>% 
@@ -2092,7 +1804,7 @@ ggplotly(death_age_gph)
 
 ### Deaths by probable cause of death
 
-```{r}
+```{r ewars_cod}
 cause_death_gph <- ewars_mort %>%  
   count(probable_cause_of_death,year_wk) %>% 
   group_by(probable_cause_of_death) %>% 
@@ -2138,7 +1850,7 @@ Column
 
 
 
-```{r}
+```{r ewars_deaths_camp}
 
 ewars_mort_camp_gph <-  ewars_mort %>% 
     filter(isoyear>2018) %>% 
@@ -2174,7 +1886,7 @@ CHW - Camp-level {data-navmenu="All-cause mortality"}
 Community-based surveillance 
 =====================================  
 
-```{r}
+```{r cbs_wrangling}
 hbc_df <- read.csv(here('data', 'home_based_care_20200805.csv')) %>% 
   clean_names() %>% 
   mutate(max_week=max(week)) %>% 
@@ -2214,7 +1926,7 @@ Row  {data-height=500}
 
 ### Households visited
 
-```{r}
+```{r cbs_hhvisited_gph}
 hhvisit_gph <- hbc_df %>% 
   select(week, c1_total_hh_visited_week) %>% 
   filter(week>25) %>% 
@@ -2243,38 +1955,8 @@ p %>% layout(xaxis = x, yaxis = y)
 ### Proportion of total households reached by community health workers - By camp
 
 
-```{r}
-# hhvisit_camp_gph <- hbc_df %>% 
-#   select(week, camp, c1_total_hh_visited_week) %>% 
-#   ungroup() %>% 
-#   filter(week>25) %>% 
-#   mutate(camp=gsub('camp_', '', camp)) %>% 
-#   mutate(camp_number=str_extract(camp, "[[:digit:]]+")) %>% 
-#   mutate(camp_number=as.numeric(camp_number)) %>% 
-#   mutate(camp=reorder(camp, camp_number)) %>% 
-#   arrange(camp_number) %>% 
-#   select(-camp_number) %>% 
-#   group_by(week,camp) %>% 
-#   summarise(hhvisited=sum(c1_total_hh_visited_week, na.rm=TRUE)) %>% 
-#   ggplot(., aes(x=week, y=hhvisited)) +
-#   geom_line() +
-#   # scale_x_continuous(breaks = c(25, 26, 27, 28, 29)) +
-#   labs(x='Week', y='Households visited', title='Households visited- by camp') +
-#   theme_minimal() +
-#   facet_wrap(~camp)
+```{r cbs_hhvisited_bycamp_gph}
 
-# p <- ggplotly(hhvisit_camp_gph + ylab(" ") + xlab(" "))
-# x <- list(
-#   title = "Week"
-# )
-# y <- list(
-#   title = "Households visited"
-# )
-# p %>% layout(xaxis = x, yaxis = y)
-
-#hhvisit_camp_gph
-
- 
   population <- read.csv(here('data', 'block_level_population.csv'), skip=1) %>% 
     clean_names() %>% select(camp, total_families,total_individuals) %>%
     filter(camp!="") %>% 
@@ -2314,24 +1996,16 @@ p %>% layout(xaxis = x, yaxis = y)
     ungroup() %>% 
     left_join(population, by=c('camp'='camp')) %>% 
     arrange(camp_number) %>% 
-    ##select(-camp_number) %>% 
-    #mutate(camp=reorder(camp, camp_number)) %>% 
     select(week, camp, hhvisited,mild_ind, total_families,total_individuals, camp_number) %>% 
     mutate(prop_visited=hhvisited/total_families) %>% 
     mutate(prop_mild=mild_ind/total_individuals) %>% 
     mutate(camp=reorder(camp, camp_number)) %>% 
     filter(!is.na(prop_visited)) 
-    #mutate(prop_visited=(round(prop_visited,2))*100)
-    # mutate(prop_visited=scales::percent(prop_visited, accuracy=1), 
-    #        prop_mild=scales::percent(prop_mild,accuracy=1))
-  
+
     
 
 prop_visit_camp_gph <-  ggplot(camp_activity, aes(x=week, y=prop_visited)) +
     geom_col() +
-    #geom_line() +
-    #geom_text(aes(label=prop_visited)) +
-    #theme_minimal() +
     scale_y_continuous(labels = scales::percent) +
     facet_wrap(~camp) +
     theme(legend.position = "none") +
@@ -2350,7 +2024,7 @@ Row  {data-height=500}
 ### Individuals reporting mild symptoms
 
 
-```{r}
+```{r cbs_mildsymptoms_gph}
 symptoms_df <- hbc_df %>%
   filter(week>25) %>% 
   select(reporting_year, week, contains('sympt')) %>% 
@@ -2390,122 +2064,13 @@ symptoms_gph <- symptoms_df %>%
   scale_y_continuous(labels = scales::percent)
 
 ggplotly(symptoms_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
-#ggplotly(symptoms_gph)
-
-# total_consultations_gph <- symptoms_df %>%
-#   group_by(week, severity) %>%
-#   summarise(total_cases=sum(value,na.rm=TRUE)) %>%
-#   ggplot(aes(x=week, y=total_cases)) +
-#   geom_line() +
-#   theme_minimal() +
-#   scale_y_continuous(limits = c(0,NA)) +
-#   labs(x='Week', y='Total cases') +
-#   facet_wrap(~severity, ncol=1, scales="free")
-# 
-# # #ggplotly(total_consultations_gph)
-# # 
-# # total_consultations_gph
-# 
-# q <- ggplotly(total_consultations_gph + ylab(" ") + xlab(" "))
-# 
-# x2 <- list(
-#   title = "Week"
-# )
-# y2 <- list(
-#   title = "Total cases"
-# )
-# q %>% layout(xaxis = x2, yaxis = y2)
-
-# symptoms_df %>% 
-#   group_by(week, severity, age_grp, sex) %>% 
-#   summarise(total=sum(value,na.rm=TRUE)) %>% 
-#   pivot_wider(names_from=c(age_grp,sex), values_from=total) %>% 
-#   arrange(desc(week)) %>% 
-#   ungroup() %>% 
-#   filter(severity=='Mild') %>% 
-#   select(-severity) %>% 
-#   clean_names() %>% 
-#   select(week, contains('less_than_5'), contains('5_to_59'), contains('60_over')) %>% 
-#   rowwise %>% 
-#   mutate(total = sum(c_across(!week))) %>% 
-#   gt(rowname_col = c("week")) %>% 
-#   opt_row_striping(., row_striping = TRUE) %>% 
-#   tab_stubhead('Week') %>% 
-#   tab_spanner(
-#     label = "Under 5",
-#     columns = vars(less_than_5_male,less_than_5_female)) %>% 
-#   tab_spanner(
-#     label = "5 to 59",
-#     columns = vars(x5_to_59_male,x5_to_59_female)) %>% 
-#   tab_spanner(
-#     label = "60 and over",
-#     columns = vars(x60_over_male,x60_over_female)) %>% 
-#   cols_label(
-#     week = "Week",
-#     less_than_5_male = "Male",
-#     less_than_5_female = "Female",
-#     x5_to_59_male = "Male",
-#     x5_to_59_female = "Female",
-#     x60_over_male = "Male",
-#     x60_over_female = "Female", 
-#     total="Total")   
-
 
 
 ```
 
 ### Individuals reporting moderate/severe symptoms
 
-```{r}
-
-# symptoms_gph <- symptoms_df %>% 
-#   ungroup() %>% 
-#   group_by(severity,week, sex, age_group) %>% 
-#   summarise(total_cases=sum(value,na.rm=TRUE)) %>% 
-#   group_by(severity,week) %>% 
-#   mutate(prop=total_cases/sum(total_cases)) %>% 
-#   mutate(age_group=factor(age_group, levels=c('<5', '5-59', '>=60'))) %>% 
-#   mutate(age_group=fct_rev(age_group)) %>% 
-#   filter(severity=='Mild') %>% 
-#   ggplot(aes(x=week,y=prop, fill=interaction(sex,age_group))) +
-#   geom_col() +
-#   #facet_wrap(~severity, ncol=2) +
-#   theme_minimal() +
-#   labs(x='Week', y='Proportion of cases', fill='Sex & \n Age group') +
-#   scale_fill_brewer(palette="Dark2") +
-#   scale_y_continuous(labels = scales::percent)
-# 
-# ggplotly(symptoms_gph)
-
-# cbs_sex_gph <-  symptoms_df %>% 
-#   ungroup() %>% 
-#   group_by(severity,week, sex) %>% 
-#   summarise(total_cases=sum(value,na.rm=TRUE)) %>% 
-#   group_by(severity,week) %>% 
-#   mutate(prop=total_cases/sum(total_cases)) %>% 
-#   ggplot(aes(x=week,y=prop, color=sex)) +
-#   geom_line() +
-#   facet_wrap(~severity, ncol=2) +
-#   theme_minimal() +
-#     labs(x='Week', y='Proportion of cases', color='Sex') +
-#   scale_y_continuous(labels = scales::percent, limits=c(0,1))
-# 
-# 
-# cbs_age_gph <- symptoms_df %>% 
-#   ungroup() %>% 
-#   group_by(severity,week, age_group) %>% 
-#   summarise(total_cases=sum(value,na.rm=TRUE)) %>% 
-#   group_by(severity,week) %>% 
-#   mutate(prop=total_cases/sum(total_cases)) %>% 
-#   ungroup() %>% 
-#   ggplot(aes(x=week,y=prop, color=age_group)) +
-#   geom_line() +
-#   facet_wrap(~severity, ncol=2) +
-#   theme_minimal() +
-#   labs(x='Week', y='Proportion of cases', color='Age group') +
-#   scale_y_continuous(labels = scales::percent, limits=c(0,1))
-# 
-# cbs_sex_gph / cbs_age_gph & theme(legend.position = "top")
+```{r cbs_modsev_symptoms}
 
 symptoms_df %>% 
   group_by(week, severity, age_grp, sex) %>% 
@@ -2840,8 +2405,6 @@ quarantine_table <- quarantine_raw %>% clean_names() %>%
 
 
 quarantine_table
-
-#tables[[2]]
 
 ```
 
