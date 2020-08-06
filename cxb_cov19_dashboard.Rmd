@@ -1619,8 +1619,8 @@ Testing  {data-orientation=columns}
 
 ```{r testing}
 
-breaks <- c(-Inf,5,18,59,Inf)
-labs <- c('Under 5', '5 to 18', '18 to 59', '60 and over')
+breaks <- c(-Inf,5,59,Inf)
+labs <- c('Under 5', '5 to 59', '60 and over')
 
 ari_ili_df <- gsheet_data$ari_ili %>% 
   clean_names() %>% 
@@ -1725,8 +1725,6 @@ tests_gph <- ari_ili_df %>%
   theme_minimal() +
   labs(x='Age group', 
        y='% COVID-19 + samples', 
-       title='Test postivity by age group', 
-       subtitle='Average (mean) with 95% confidence intervals', 
        caption='Data source:ARI/ILI linelist') +
   scale_y_continuous(labels = scales::percent)  +
   theme(legend.position='top')
@@ -1813,12 +1811,12 @@ population <- readxl::read_xlsx(here('data','block_population.xlsx'), sheet='Fin
   select(-block) %>% 
   mutate(across(c(infant_below_1:x16), as.numeric)) %>% 
   mutate(age_0_5 = rowSums(.[4:7])) %>% 
-  mutate(age_5_17 = rowSums(.[8:11])) %>% 
-  mutate(age_18_59 = rowSums(.[12:13])) %>% 
+  mutate(age_5_59 = rowSums(.[8:13])) %>% 
+ # mutate(age_18_59 = rowSums(.[12:13])) %>% 
   mutate(age_over60 = rowSums(.[14:15])) %>% 
   select(camp, contains('total'), contains('age')) %>% 
   mutate(camp=gsub('_total', '', camp)) %>% 
-    mutate(camp=gsub('camp_', '', camp)) %>% 
+  mutate(camp=gsub('camp_', '', camp)) %>% 
   mutate(camp=trimws(camp)) 
 
 
@@ -1834,15 +1832,17 @@ age_group_pop <- population %>%  select(-c(total_families, total_individuals)) %
   mutate(age_group=labs) %>% 
   select(-name)
 
- tests_age_group_gph <- tests_age_group_df %>% 
+ tests_age_group_gph <-  tests_age_group_df %>% 
   left_join(age_group_pop, by='age_group') %>% 
+   filter(!is.na(age_group)) %>% 
   mutate(tests_per10000=(n/value)*10000) %>% 
-  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 18', '18 to 59', '60 and over'))) %>% 
+  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 59', '60 and over'))) %>% 
   ggplot(aes(x=age_group, y=tests_per10000, fill=age_group)) +
   geom_col() +
   theme_minimal() +
-   theme(legend.position="none") +
-   labs(x='Age groups', y='Tests per 10,000 people', fill='Age groups')
+  theme(legend.position="none") +
+  labs(x='Age groups', y='Tests per 10,000 people', fill='Age groups')
+
  
  ggplotly(tests_age_group_gph)
 ```
@@ -1942,10 +1942,10 @@ ewars_mort <- read.csv(here('data', 'community_mortality_20200804.csv')) %>% cle
   mutate(year_wk=yearweek(date)) %>% 
   arrange(year_wk)  %>% 
   mutate(age_group=case_when(age_in_years<5 ~ 'Under 5',
-                             age_in_years>=5 & age_in_years<15 ~ '5 to 14',
-                             age_in_years>=15 & age_in_years<60 ~ '15 to 60',
+                             #age_in_years>=5 & age_in_years<15 ~ '5 to 14',
+                             age_in_years>=5 & age_in_years<60 ~ '5 to 59',
                              age_in_years>=60 ~'60 and over')) %>% 
-  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 14', '15 to 60', '60 and over', NA))) 
+  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 59',  '60 and over', NA))) 
 
 ewars_mort_gph <- ewars_mort %>% 
   #filter(isoyear>2018) %>% 
@@ -1975,6 +1975,7 @@ Col
 ```{r}
 death_age_gph <- ewars_mort %>%  
   count(age_group,year_wk) %>% 
+  filter(!is.na(age_group)) %>% 
   group_by(age_group) %>% 
   mutate(deaths_roll=roll_mean((n),4, na.rm=TRUE, align="right", fill = NA)) %>% 
   ggplot(aes(x=year_wk, y=deaths_roll, color=fct_rev(age_group))) +
