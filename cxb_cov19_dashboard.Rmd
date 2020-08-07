@@ -1974,7 +1974,6 @@ p %>% layout(xaxis = x, yaxis = y)
     rename(camp=camp_link)
   
   
-  
   camp_activity <- hbc_df %>% 
     select(week, camp, c1_total_hh_visited_week, total_yellow_symptoms) %>% 
     ungroup() %>% 
