@@ -1448,7 +1448,7 @@ symptom_gph
 ```
  
 
-Testing  {data-orientation=columns}
+Testing {data-orientation=columns}
 =====================================  
 
 
