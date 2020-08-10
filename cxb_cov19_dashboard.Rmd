@@ -1887,7 +1887,7 @@ Community-based surveillance
 =====================================  
 
 ```{r cbs_wrangling}
-hbc_df <- read.csv(here('data', 'home_based_care_20200805.csv')) %>% 
+hbc_df <- read.csv(here('data', 'home_based_care_20200810.csv')) %>% 
   clean_names() %>% 
   mutate(max_week=max(week)) %>% 
   mutate(camp_number=str_extract(camp, "[[:digit:]]+")) %>% 
