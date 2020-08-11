@@ -1741,7 +1741,7 @@ Row
 ### Number of reported deaths per week
 
 ```{r ewars_wrangling}
-ewars_mort <- read.csv(here('data', 'community_mortality_20200804.csv')) %>% clean_names() %>% 
+ewars_mort <- read.csv(here('data', 'community_mortality_20200811.csv')) %>% clean_names() %>% 
   mutate(year=as.numeric(isoyear)) %>% 
   mutate(week=as.numeric(isoweek)) %>% 
   mutate(date=make_datetime(year=year) + weeks(week)) %>% 
@@ -1818,7 +1818,8 @@ cause_death_gph <- ewars_mort %>%
     scale_colour_brewer(palette = "Set2")
 
 
-ggplotly(cause_death_gph)
+ggplotly(cause_death_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+
 
 ```
 
