@@ -1747,6 +1747,7 @@ ewars_mort <- read.csv(here('data', 'community_mortality_20200811.csv')) %>% cle
   mutate(date=make_datetime(year=year) + weeks(week)) %>% 
   filter(date>=ymd('2019-07-01')) %>% 
   mutate(year_wk=yearweek(date)) %>% 
+    mutate(year_wk=year_wk-1) %>% 
   arrange(year_wk)  %>% 
   mutate(age_group=case_when(age_in_years<5 ~ 'Under 5',
                              #age_in_years>=5 & age_in_years<15 ~ '5 to 14',
