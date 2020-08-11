@@ -9,7 +9,8 @@ output:
   flexdashboard::flex_dashboard:
     orientation: rows
     theme: bootstrap
-
+editor_options: 
+  chunk_output_type: console
 ---
 ```{r global, include=FALSE}
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=TRUE)
