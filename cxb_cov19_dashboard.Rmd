@@ -620,7 +620,7 @@ Row {data-height=75}
 
 
 
-```{r, echo=FALSE,fig.cap="his dashboard was developed by WHO Cox’s Bazar in collaboration with the [UK Public Health Rapid Support Team](https://www.lshtm.ac.uk/research/centres-projects-groups/uk-phrst){target='_blank'}", fig.align='center'} 
+```{r, echo=FALSE,fig.cap="This dashboard was developed by WHO Cox’s Bazar in collaboration with the [UK Public Health Rapid Support Team](https://www.lshtm.ac.uk/research/centres-projects-groups/uk-phrst){target='_blank'}", fig.align='center'} 
 
 knitr::include_graphics(here('data', 'logo_comb.png'))
 
