@@ -1319,7 +1319,7 @@ godata_clean <- godata_wide %>%
 
 
 
-Column  {data-width=650}
+Column  {data-width=550}
 -------------------------------------
 
 
@@ -1384,7 +1384,7 @@ ggplotly(case_death_age_gph)
 
 
 
-Column {data-width=350}
+Column {data-width=450}
 -------------------------------------
 
 ### Detailed information on cases
@@ -1469,7 +1469,8 @@ ari_ili_df <- gsheet_data$ari_ili %>%
   mutate(camp_number=str_extract(camp, regexp)) %>% 
   mutate(camp_number=as.numeric(camp_number)) %>% 
   mutate(camp=reorder(camp,camp_number)) %>% 
-    mutate(age_group=cut(age,breaks = breaks, labels = labs, right = FALSE)) 
+  mutate(age=as.numeric(age)) %>% 
+  mutate(age_group=cut(age,breaks = breaks, labels = labs, right = FALSE)) 
 
 
 ari_ili_tests_df <- ari_ili_df %>% 
@@ -1741,7 +1742,7 @@ Row
 ### Number of reported deaths per week
 
 ```{r ewars_wrangling}
-ewars_mort <- read.csv(here('data', 'community_mortality_20200811.csv')) %>% clean_names() %>% 
+ewars_mort <- read.csv(here('data', 'community_mortality_20200818.csv')) %>% clean_names() %>% 
   mutate(year=as.numeric(isoyear)) %>% 
   mutate(week=as.numeric(isoweek)) %>% 
   mutate(date=make_datetime(year=year) + weeks(week)) %>% 
@@ -1890,7 +1891,7 @@ Community-based surveillance
 =====================================  
 
 ```{r cbs_wrangling}
-hbc_df <- read.csv(here('data', 'home_based_care_20200811.csv')) %>% 
+hbc_df <- read.csv(here('data', 'home_based_care_20200818.csv')) %>% 
   clean_names() %>% 
   mutate(max_week=max(week)) %>% 
   mutate(camp_number=str_extract(camp, "[[:digit:]]+")) %>% 
@@ -2057,9 +2058,9 @@ symptoms_gph <- symptoms_df %>%
   mutate(age_group=factor(age_group, levels=c('<5', '5-59', '>=60'))) %>%
   mutate(age_group=fct_rev(age_group)) %>%
   filter(severity=='Mild') %>%
-  ggplot(aes(x=week,y=prop, fill=interaction(sex,age_group))) +
-  geom_col() +
-  #facet_wrap(~severity, ncol=2) +
+  ggplot(aes(x=week,y=prop, fill=interaction(sex,age_group), label=total_cases)) +
+  geom_col(position = position_stack(), color = "black") +
+  geom_text(position = position_stack(vjust = .5)) +
   theme_minimal() +
   labs(x='Week', y='Proportion of cases', fill='Sex & \n Age group') +
   scale_fill_brewer(palette="Dark2") +
@@ -2122,7 +2123,7 @@ Row {data-height=650}
 <br>
 <br>
 
-<iframe width='100%' height='100%' src="https://app.powerbi.com/view?r=eyJrIjoiMzE2YmIzYzctMzdiOS00OWI1LWJkODgtZDkyZDdiNTkwNjRkIiwidCI6IjE1MjZjY2Q5LWQ2YjktNDM2MC1iOTk5LTlmMmY4MjE4M2RjNiIsImMiOjl9&pageName=ReportSection714cfb147cef00bc5ea9"  >
+<iframe width='100%' height='100%' src="https://app.powerbi.com/view?r=eyJrIjoiMzE2YmIzYzctMzdiOS00OWI1LWJkODgtZDkyZDdiNTkwNjRkIiwidCI6IjE1MjZjY2Q5LWQ2YjktNDM2MC1iOTk5LTlmMmY4MjE4M2RjNiIsImMiOjl9"  >
 </iframe>
 
 
@@ -2409,5 +2410,4 @@ quarantine_table <- quarantine_raw %>% clean_names() %>%
 quarantine_table
 
 ```
-
 
