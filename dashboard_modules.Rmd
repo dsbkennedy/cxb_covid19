@@ -12,6 +12,7 @@ output:
 editor_options: 
   chunk_output_type: console
 ---
+
 ```{r global, include=FALSE}
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=TRUE)
 ```
@@ -369,7 +370,7 @@ Column  {data-width=550}
 ```{r godata_epicurve}
 
 
-ggplotly(epi_curve)
+ggplotly(godata_epi_curve)
 
 ```
 
