@@ -31,9 +31,6 @@ vignettes/*.pdf
 *.Rds
 
 
-# R files
-*.R
-
 # Excel files
 *.xlsx
 
