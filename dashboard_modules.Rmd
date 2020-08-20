@@ -1,0 +1,646 @@
+---
+title: 'COVID-19  Dashboard:Cox’s Bazar, Bangladesh'
+knit: (function(input_file, encoding) {
+  out_dir <- 'docs';
+  rmarkdown::render(input_file,
+ encoding=encoding,
+ output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    theme: bootstrap
+editor_options: 
+  chunk_output_type: console
+---
+```{r global, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=TRUE)
+```
+
+```{r setup_import, include=FALSE}
+
+##Load required packages
+
+library(lubridate)
+library(here)
+library(data.table)
+library(dplyr)
+library(janitor)
+library(linelist)
+library(forcats)
+library(ggplot2)
+library(ggthemes)
+library(gt)
+library(tidyr)
+library(RcppRoll)
+library(scales)
+library(sf)
+library(patchwork)
+library(flexdashboard)
+library(plotly)
+library(ggupset)
+library(table1)
+library(ggpubr)
+library(htmltools)
+library(purrr)
+library(googlesheets4)
+library(here)
+library(tidyr)
+library(httr)
+library(jsonlite)
+library(magrittr)
+library(tibble)
+library(stringr)
+library(leaflet)
+library(tsibble)
+
+# prepare regular expression for extracting camp number from camp variable
+regexp <- "[[:digit:]]+"
+
+##Set ggplot to show numbers instead of scientific notation
+options(scipen=10000)
+
+```
+
+
+```{r, include=FALSE}
+source("modules/1_login.R", local = knitr::knit_global())
+source("modules/2_import_data.R", local = knitr::knit_global())
+source("modules/3_valuebox_wrangling.R", local = knitr::knit_global())
+source("modules/4_linelist_wrangling.R", local = knitr::knit_global())
+source("modules/sections/1_landing_page.R", local = knitr::knit_global())
+source("modules/sections/2_host_community.R", local = knitr::knit_global())
+source("modules/sections/3_fdmn_rohingya.R", local = knitr::knit_global())
+source("modules/sections/4_epidemiology.R", local = knitr::knit_global())
+source("modules/sections/5_testing.R", local = knitr::knit_global())
+source("modules/sections/6_cbs.R", local = knitr::knit_global())
+source("modules/sections/7_ewars_deaths.R", local = knitr::knit_global())
+source("modules/sections/8_sari_itc.R", local = knitr::knit_global())
+source("modules/sections/9_quarantine.R", local = knitr::knit_global())
+
+```
+
+
+
+Landing page
+=====================================  
+<br>
+
+Row {data-height=75}
+-------------------------------------
+
+### 
+
+```{r host_placeholder}
+host_placeholder
+
+```
+
+
+### Tests: Total (Last 7 days)
+
+```{r host_tests}
+host_tests_vb
+
+```
+
+### Cases: Total (Last 7 days)
+
+```{r host_cases}
+host_cases_vb
+
+```
+
+### Deaths: Total (Last 7 days)
+
+```{r host_deaths}
+host_deaths_vb
+
+```
+
+Row {data-height=75}
+-------------------------------------
+
+### 
+
+```{r fdmn_placeholder}
+
+fdmn_placeholder
+
+```
+
+
+
+### Tests: Total (Last 7 days)
+
+```{r fdmn_tests}
+
+fdmn_tests_vb
+
+```
+
+### Cases: Total (Last 7 days)
+
+```{r fdmn_cases}
+
+fdmn_cases_vb
+```
+
+### Deaths: Total (Last 7 days)
+
+```{r fdmn_deaths}
+
+fdmn_deaths_vb
+
+```
+
+
+
+
+Row {data-height=150}
+-------------------------------------
+
+### Tests
+
+```{r tests_table}
+
+all_tests_table
+
+```
+
+### Cases
+
+```{r cases_table}
+
+all_cases_table
+
+```
+
+### Deaths
+
+```{r deaths_table}
+
+all_deaths_table
+
+```
+
+
+Row {data-height=250}
+-------------------------------------
+
+### Cases by date  (Scales are different for each graph)
+
+
+```{r epicurve_bgd_host_fdmn}
+
+ggplotly(epi_curve)
+
+```
+
+
+### Test positivity trend
+
+```{r test postivity_trend}
+
+ggplotly(test_positivity_gph)
+
+```
+
+
+
+Row {data-height=75}
+-------------------------------------
+
+### Additional Resources
+
+
+  + [WHO Bangaladesh Rohingya Crisis](https://www.who.int/bangladesh/emergencies/Rohingyacrisis/bulletin-and-reports){target="_blank"}
+
+  + [SOPs](https://ln2.sync.com/dl/f29c53860/2hqhzj3x-q476hijz-sf8admz2-9b8793y9){target="_blank"}
+  
+  + [Field manuals](https://ln2.sync.com/dl/77f93df70/czt8mutv-8rcug6ge-erffrmd5-5s9i76c3){target="_blank"}
+  
+  + [Infographics](https://ln2.sync.com/dl/8da6ec810/f8q6b3c7-vgnyxh76-cepdkgqu-e2q4d9na){target="_blank"}
+  
+  + [Healthcare facility monitoring (Live Dashboard)](https://worldhealthorg.shinyapps.io/cxb_dru_dashboard){target="_blank"}
+  
+
+### Partners
+
+
+
+
+
+```{r, echo=FALSE,fig.cap="This dashboard was developed by WHO Cox’s Bazar in collaboration with the [UK Public Health Rapid Support Team](https://www.lshtm.ac.uk/research/centres-projects-groups/uk-phrst){target='_blank'}", fig.align='center'} 
+
+knitr::include_graphics(here('data', 'logo_comb.png'))
+
+##Time in Bangladesh
+s <- now("UTC-6")
+
+```
+
+
+
+
+
+
+### Contact details
+
+If you have any questions contact kennedyd@who.int
+
+
+
+
+Data updated at - "`r s`"
+
+
+
+
+
+Host community  {data-orientation=columns}
+=====================================  
+
+Row 
+-------------------------------------
+   
+### Table {data-height=500}
+
+
+```{r host_cases_deaths_table}
+
+summaryTable_host
+```   
+
+### Tests and cases over time {data-height=500}
+
+```{r host_tests_cases_gph}
+
+
+ggplotly(testing_host_gph)
+
+
+```
+
+
+
+Column 
+-------------------------------------
+
+
+### Map
+
+
+```{r host_map}
+
+case_host_map
+
+```
+
+
+ 
+ 
+Rohingya refugee/FDMN {data-orientation=columns}
+=====================================  
+
+Row 
+-------------------------------------
+   
+### Table {data-height=500}
+    
+```{r fdmn_table}
+
+summaryTable_fdmn
+```
+
+
+### Tests and cases over time {data-height=500}
+
+```{r fdmn_tests_cases}
+
+
+
+ggplotly(testing_fdmn_gph)
+```
+
+
+
+Column 
+-------------------------------------
+
+### Map
+
+```{r fdmn_map}
+
+case_fdmn_map
+
+```
+
+
+
+
+Epidemiology {data-orientation=columns}
+=====================================  
+
+Inputs {.sidebar}
+-------------------------------------
+
+<br>
+<br>
+
+This section displays data from GoData. The data are only for the FDMN/Rohingya population. 
+
+<br> 
+
+If there is a difference between the number of cases in this section and the number of cases on the "Landing page", the data have not 
+yet been added to GoData.
+
+
+<br>
+
+
+
+
+Column  {data-width=550}
+-------------------------------------
+
+
+### Epi curve of COVID-19 cases by gender
+
+```{r godata_epicurve}
+
+
+ggplotly(epi_curve)
+
+```
+
+
+### Cases and deaths by age group
+
+
+```{r godata_cases_deaths_agegrp}
+
+ggplotly(case_death_age_gph)
+ 
+```
+
+
+
+Column {data-width=450}
+-------------------------------------
+
+### Detailed information on cases
+
+```{r}
+
+godata_table
+
+```
+
+### Symptoms at presentation
+ 
+```{r symptom_gph}
+
+
+symptom_gph
+```
+ 
+
+Testing {data-orientation=columns}
+=====================================  
+
+
+Column {data-width=400}
+-------------------------------------
+
+### Table of test results
+
+```{r test_camp_table}
+
+
+tests_table
+
+```
+
+
+
+Column {data-width=600}
+-------------------------------------
+
+
+### Test positivity by age group
+
+```{r test_pos_agegrp_gph}
+
+
+ggplotly(tests_gph)
+```
+
+
+### Number of tests per 10,000 people by age group
+
+```{r test_per10000_gph}
+
+ ggplotly(tests_age_group_gph)
+
+```
+
+
+
+
+EWARS - Overall {data-navmenu="All-cause mortality"}  
+=====================================  
+
+Inputs {.sidebar}
+-------------------------------------
+
+<br>
+<br>
+
+<br> 
+
+Data from 2019 are only included from week 30. Before this week, there was low coverage of the data collection tool.  
+
+
+<br>
+
+
+Row 
+-------------------------------------
+
+
+### Number of reported deaths per week
+
+
+```{r ewars_mort_gph}
+
+
+ggplotly(ewars_mort_gph)
+
+```
+
+
+Col 
+-------------------------------------
+
+### Deaths by age group
+
+```{r ewars_deaths_agegrp}
+
+
+ggplotly(death_age_gph)
+
+```
+
+
+
+
+
+### Deaths by probable cause of death
+
+```{r ewars_cod}
+ggplotly(cause_death_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.4))
+```
+
+
+
+EWARS - Camp-level {data-navmenu="All-cause mortality"}  
+=====================================  
+
+Inputs {.sidebar}
+-------------------------------------
+
+<br>
+<br>
+
+<br> 
+
+Data from 2019 are only included from week 30. Before this week, there was low coverage of the data collection tool. 
+
+<br>
+
+At the camp-level, spikes are likely due to an increase in partners reporting to the tool not an increase in the number of people dying.   
+
+
+
+Column 
+-------------------------------------
+
+
+### Number of reported deaths per week by camp
+
+
+
+```{r ewars_deaths_camp}
+ggplotly(ewars_mort_camp_gph)
+```
+
+
+Community-based surveillance 
+=====================================  
+
+
+Inputs {.sidebar}
+-------------------------------------
+
+<br>
+<br>
+
+
+Community Health Workers/Volunteers (CHWs) are an outreach workforce consisting of approximately 1400 women and men, primarily Rohingya, who live near or inside the camps. CHWs are each assigned fixed, unique geographic areas with approximately 160 households, which are visited once every two weeks since mid 2018.
+
+<br>
+
+The CHWs use a KoBo Toolbox-based tool, the Community Health Workers Reporting Tool (CHW-RT), to collect data on household indicators.  
+
+
+<br>
+
+
+
+Row  {data-height=500}
+-------------------------------------
+
+<br>
+<br>
+
+
+### Households visited
+
+```{r cbs_hhvisited_gph}
+
+
+p <- ggplotly(hhvisit_gph + ylab(" ") + xlab(" "))
+
+x <- list(
+  title = "Week"
+)
+y <- list(
+  title = "Households visited"
+)
+p %>% layout(xaxis = x, yaxis = y)
+
+
+```
+
+### Proportion of total households reached by community health workers - By camp
+
+
+```{r cbs_hhvisited_bycamp_gph}
+ggplotly(prop_visit_camp_gph)
+```
+
+
+Row  {data-height=500}
+-------------------------------------
+
+
+### Individuals reporting mild symptoms
+
+
+```{r cbs_mildsymptoms_gph}
+ggplotly(mild_symptoms_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+```
+
+### Individuals reporting moderate/severe symptoms
+
+```{r cbs_modsev_symptoms}
+modsev_symptoms_tbl
+```
+
+Clinical case management  
+=====================================  
+
+Row {data-height=650}
+-------------------------------------
+
+
+
+<br>
+<br>
+
+<iframe width='100%' height='100%' src="https://app.powerbi.com/view?r=eyJrIjoiMzE2YmIzYzctMzdiOS00OWI1LWJkODgtZDkyZDdiNTkwNjRkIiwidCI6IjE1MjZjY2Q5LWQ2YjktNDM2MC1iOTk5LTlmMmY4MjE4M2RjNiIsImMiOjl9"  >
+</iframe>
+
+
+SARI ITC & Isolation  {data-orientation=rows}
+=====================================  
+
+<br>
+<br>
+
+```{r sari_itc}
+
+dru_gt_table
+ 
+```
+
+
+Quarantine  {data-orientation=rows}
+=====================================  
+
+
+```{r qurantine}
+quarantine_table
+
+```
+
