@@ -19,7 +19,7 @@ fdmn_raw <- gsheet_data$fdmn %>%
 host_raw <- gsheet_data$host %>% 
   clean_names() %>% 
   janitor::remove_empty() %>% 
-  mutate(population_group='Host')
+  mutate(nationality='Host')
 
 ##Bind FDMN and host data
 all_cases_raw <- fdmn_raw %>% 
