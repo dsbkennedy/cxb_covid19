@@ -1,7 +1,7 @@
 
 # WRANGLING ---------------------------------------------------------------
 
-ewars_mort <- read.csv(here('data', 'community_mortality_20200820.csv')) %>% clean_names() %>% 
+ewars_mort <- read.csv(here('data', 'community_mortality.csv')) %>% clean_names() %>% 
   mutate(year=as.numeric(isoyear)) %>% 
   mutate(week=as.numeric(isoweek)) %>% 
   mutate(date=make_datetime(year=year) + weeks(week)) %>% 

@@ -30,6 +30,8 @@ vignettes/*.pdf
 # Rds files
 *.Rds
 
+# Login files 
+*login.R
 
 # Excel files
 *.xlsx
