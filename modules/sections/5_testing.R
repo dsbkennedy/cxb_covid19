@@ -66,7 +66,7 @@ tests_table <- ari_ili_tests_total %>%
   arrange(camp_number) %>% 
   select(-camp_number) %>% 
   select(-c(growth,negative)) %>% 
-  mutate(camp=sub("0+", "", camp)) %>% 
+  mutate(camp=sub("^0+", "", camp)) %>% 
   gt() %>% 
   opt_row_striping(., row_striping = TRUE) %>% 
   fmt_percent(
