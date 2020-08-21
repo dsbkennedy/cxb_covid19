@@ -18,7 +18,8 @@ fdmn_raw <- gsheet_data$fdmn %>%
 ##Import host data 
 host_raw <- gsheet_data$host %>% 
   clean_names() %>% 
-  janitor::remove_empty()
+  janitor::remove_empty() %>% 
+  mutate(population_group='Host')
 
 ##Bind FDMN and host data
 all_cases_raw <- fdmn_raw %>% 
@@ -33,8 +34,8 @@ all_cases_linelist <- all_cases_raw %>% clean_dates( force_Date  = all_date_cols
   mutate(population_group=case_when(grepl('host', nationality, ignore.case=T)~ 'Host community',
                                     grepl('fdmn', nationality, ignore.case=T) ~ 'Rohingya refugee/FDMN')) %>% 
   mutate(upazilla=case_when(upazilla=='CXB Sadar' ~ 'Sadar', 
-                            TRUE~upazilla)) %>% 
-  filter(!(is.na(population_group))) 
+                            TRUE~upazilla)) 
+  #filter(!(is.na(population_group))) 
 
 
 ## Testing data
