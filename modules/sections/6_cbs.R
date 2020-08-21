@@ -21,7 +21,6 @@ hhvisit_gph <- hbc_df %>%
   geom_col() +
   labs(title='Households visited') +
   #labs(x='', y='Households visited') +
-  #scale_x_continuous(breaks = c(25, 26, 27, 28, 29)) +
   theme_minimal() 
 
 
