@@ -8,7 +8,6 @@ hbc_df <- read.csv(here('data', 'home_based_care.csv')) %>%
   mutate(camp_number=as.numeric(camp_number)) %>% 
   mutate(camp=reorder(camp,camp_number)) %>% 
   filter(week>25)  
-#filter(week<max_week)
 
 
 # HOUSEHOLDS-VISITED ------------------------------------------------------
