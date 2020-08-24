@@ -2,7 +2,7 @@ num_vars <- c('number_of_functional_sari_beds', 'number_of_currently_filled_sari
               'number_of_functional_isolation_beds_non_sari','number_of_currently_filled_isolation_beds_non_sari','number_of_expected_isolation_discharges_in_next_24_hours_non_sari' )
 
 clean_fn <- function(x){
-  ifelse(x == "NULL", NA,x)
+  ifelse(grepl("NULL", x),0,x)
 }
 
 
@@ -10,7 +10,10 @@ clean_fn <- function(x){
 dru_gt_table <- dru_raw %>%
   clean_names() %>% 
   select(timestamp,facility_name, camp, agency_in_charge, currently_accepting_patient_severity, 
-         able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply, contains('sari'), contains('isolation')) %>% 
+         able_to_manage_special_needs_of_covid_19_cases_tick_all_that_apply, contains('sari'), contains('isolation')) %>%
+ # mutate(number_of_expected_sari_discharges_in_next_24_hours=ifelse(grepl("NULL", number_of_expected_sari_discharges_in_next_24_hours),0,number_of_expected_sari_discharges_in_next_24_hours)) %>% 
+ mutate(across(num_vars,clean_fn)) %>% 
+ #mutate(number_of_expected_sari_discharges_in_next_24_hours=ifelse(is.null(number_of_expected_sari_discharges_in_next_24_hours),0,number_of_expected_sari_discharges_in_next_24_hours)) %>% 
   mutate(mild=ifelse(grepl('Mild', currently_accepting_patient_severity) , '+', ''),
          moderate=ifelse(grepl('Moderate', currently_accepting_patient_severity) , '+', ''),
          severe=ifelse(grepl('Severe', currently_accepting_patient_severity) , '+', ''),
