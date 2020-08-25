@@ -20,6 +20,7 @@ hhvisit_gph <- hbc_df %>%
   ggplot(., aes(x=week, y=hhvisited)) +
   geom_col() +
   labs(title='Households visited') +
+  scale_x_continuous(breaks=pretty_breaks()) +
   #labs(x='', y='Households visited') +
   theme_minimal() 
 
@@ -78,6 +79,7 @@ prop_visit_camp_gph <-  ggplot(camp_activity, aes(x=week, y=prop_visited)) +
   facet_wrap(~camp) +
   theme(legend.position = "none") +
   theme_minimal() +
+  scale_x_continuous(breaks=pretty_breaks()) +
   labs(y='Households visited (%)', x='Week')
 
 
@@ -119,7 +121,8 @@ mild_symptoms_gph <- symptoms_df %>%
   theme_minimal() +
   labs(x='Week', y='Proportion of cases', fill='Sex & \n Age group') +
   scale_fill_brewer(palette="Dark2") +
-  scale_y_continuous(labels = scales::percent)
+  scale_y_continuous(labels = scales::percent) +
+  scale_x_continuous(breaks=pretty_breaks())
 
 
 # MODERATE-SEVERE-TABLE ---------------------------------------------------
