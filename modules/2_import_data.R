@@ -34,7 +34,8 @@ all_cases_linelist <- all_cases_raw %>% clean_dates( force_Date  = all_date_cols
   mutate(population_group=case_when(grepl('host', nationality, ignore.case=T)~ 'Host community',
                                     grepl('fdmn', nationality, ignore.case=T) ~ 'Rohingya refugee/FDMN')) %>% 
   mutate(upazilla=case_when(upazilla=='CXB Sadar' ~ 'Sadar', 
-                            TRUE~upazilla)) 
+                            TRUE~upazilla)) %>% 
+  mutate(date_of_case_detection=coalesce(date_of_case_detection, date_of_lab_result_received))
   #filter(!(is.na(population_group))) 
 
 

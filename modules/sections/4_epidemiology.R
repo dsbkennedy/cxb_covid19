@@ -20,6 +20,11 @@ godata_wide <- cases %>%
   remove_empty(c("rows", "cols")) 
 
 
+##Get GoData ID from FDMN sheet 
+
+godata_case_id <- fdmn_raw %>% clean_names() %>% filter(!is.na(go_data_case_id)) %>%  pull(go_data_case_id)
+
+
 ###Clean up GoData
 
 ##Define age groups for GoData
@@ -29,18 +34,19 @@ age_labs <- c(paste(seq(0, 50, by = 10), seq(9, 59, by = 10),
 godata_clean <- godata_wide %>% 
   #Ethnicity
   mutate(population_group=coalesce(questionnaire_answers_nationality_value,questionnaire_answers_nationality_2_value,questionnaire_answers_cif_nationality_value)) %>% 
-  filter(population_group=='FDMN')  %>% 
+  filter(visual_id %in% godata_case_id) %>% 
+  #filter(population_group=='FDMN')  %>% 
   #Test result
   mutate(lab_result=coalesce(questionnaire_answers_lab_result_value,questionnaire_answers_result_2_value)) %>% 
   #Some records don't have lab data in GoData. These are dropped when filter==positive
-  mutate(lab_result=case_when(visual_id %in% c("CXB3310283", "CXB3310414", 
-                                               "CXB5310154", "CXB4950010",
-                                               "CXB3310590", "CXB5310243",
-                                               "CXB2120064","CXB3310451", 
-                                               "CXB3310542", "CXB3310603", 
-                                               "CXB3830005","CXB2008001") ~ 'Positive',
-                              TRUE ~ lab_result)) %>% 
-  filter(lab_result=='Positive') %>% 
+  # mutate(lab_result=case_when(visual_id %in% c("CXB3310283", "CXB3310414", 
+  #                                              "CXB5310154", "CXB4950010",
+  #                                              "CXB3310590", "CXB5310243",
+  #                                              "CXB2120064","CXB3310451", 
+  #                                              "CXB3310542", "CXB3310603", 
+  #                                              "CXB3830005","CXB2008001") ~ 'Positive',
+  #                             TRUE ~ lab_result)) %>% 
+  # filter(lab_result=='Positive') %>% 
   #Dates
   mutate(date_of_reporting = guess_dates(date_of_reporting),
          #date_of_data_entry = guess_dates(createdat),
