@@ -90,8 +90,8 @@ response_cases <- GET(paste0(url,"api/outbreaks/",outbreak_id,"/cases"),
 json_cases <- content(response_cases, as = "text")
 
 
-cases <- as_tibble(fromJSON(json_cases, flatten = TRUE)) %>% 
-  select(-c(firstName,middleName,lastName, addresses))
+cases <- as_tibble(fromJSON(json_cases, flatten = TRUE)) 
+  #select(-c(firstName,middleName,lastName, addresses))
 
 
 #Save populations as objects for processing later on 
