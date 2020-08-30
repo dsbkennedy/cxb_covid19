@@ -238,18 +238,19 @@ test_positivity_gph <- test_nationality %>%
   filter(name %in% c('host', 'fdmn','host_positive', 'fdmn_positive')) %>% 
   mutate(week=epiweek(date_format)) %>% 
   filter(week>=19) %>% 
-  mutate(population_group=factor(population_group)) %>% 
+  mutate(population_group=factor(population_group, 
+                                 labels=c('Host', 'FDMN'))) %>% 
   mutate(indicator=case_when(grepl('positive', name) ~ 'Case', 
                              TRUE ~ 'Test')) %>% 
   select(-c(name)) %>% 
   pivot_wider(names_from=indicator) %>% 
   group_by(population_group) %>% 
-  mutate(tests_roll=roll_mean((Test),7, na.rm=TRUE, align="right", fill = NA)) %>% 
-  mutate(cases_roll=roll_mean((Case),7, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(tests_roll=roll_mean((Test),7,  align="right", fill = 0)) %>% 
+  mutate(cases_roll=roll_mean((Case),7, align="right", fill = 0)) %>% 
   mutate(pos_roll=cases_roll/tests_roll) %>% 
   ggplot(., aes(x=date_format, y=pos_roll, color=population_group)) +
   geom_line()  +
-  scale_fill_manual(values=c("#ED7D31","#4472C4")) +
+  scale_color_manual(values=c("#ED7D31","#4472C4")) +
   scale_x_date(date_breaks = '14 day', date_minor_breaks = '7 day',
                date_labels = '%d-%m') +
   scale_y_continuous(labels = scales::percent) +
@@ -257,5 +258,5 @@ test_positivity_gph <- test_nationality %>%
   labs(caption="Data source: Lab data",
        x = "Date of test",
        y = "Test positivity (%) (7-day average)",
-       color="Population group") +
+       color="") +
   theme_minimal()
