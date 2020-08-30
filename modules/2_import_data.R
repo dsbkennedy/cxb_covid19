@@ -13,7 +13,8 @@ fdmn_raw <- gsheet_data$fdmn %>%
   janitor::remove_empty() %>% 
   mutate(date_of_death=janitor::excel_numeric_to_date(date_of_death)) %>% 
   #select(-date_of_death) %>% 
-  mutate(camp_of_residence=as.character(camp_of_residence))
+  mutate(camp_of_residence=as.character(camp_of_residence)) %>%
+  mutate(nationality='FDMN')
 
 ##Import host data 
 host_raw <- gsheet_data$host %>% 
