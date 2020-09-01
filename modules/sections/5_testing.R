@@ -1,8 +1,8 @@
 
 # WRANGLING ---------------------------------------------------------------
 
-breaks <- c(-Inf,5,59,Inf)
-labs <- c('Under 5', '5 to 59', '60 and over')
+breaks <- c(-Inf,17,59,Inf)
+labs <- c('0-17', '18-59', '60 and over')
 
 ari_ili_df <- gsheet_data$ari_ili %>% 
   clean_names() %>% 
@@ -138,9 +138,8 @@ population <- readxl::read_xlsx(here('data','block_population.xlsx'), sheet='Fin
   filter(!camp=='grand_total') %>% 
   select(-block) %>% 
   mutate(across(c(infant_below_1:x16), as.numeric)) %>% 
-  mutate(age_0_5 = rowSums(.[4:7])) %>% 
-  mutate(age_5_59 = rowSums(.[8:13])) %>% 
-  # mutate(age_18_59 = rowSums(.[12:13])) %>% 
+  mutate(age_0_18 = rowSums(.[4:11])) %>% 
+  mutate(age_18_59 = rowSums(.[12:13])) %>% 
   mutate(age_over60 = rowSums(.[14:15])) %>% 
   select(camp, contains('total'), contains('age')) %>% 
   mutate(camp=gsub('_total', '', camp)) %>% 
@@ -156,7 +155,7 @@ tests_age_group_df <- ari_ili_df %>%
 
 age_group_pop <- population %>%  select(-c(total_families, total_individuals)) %>% 
   summarise(across(contains('age'), sum)) %>% 
-  pivot_longer(age_0_5:age_over60) %>% 
+  pivot_longer(age_0_18:age_over60) %>% 
   mutate(age_group=labs) %>% 
   select(-name)
 
@@ -164,7 +163,7 @@ tests_age_group_gph <-  tests_age_group_df %>%
   left_join(age_group_pop, by='age_group') %>% 
   filter(!is.na(age_group)) %>% 
   mutate(tests_per10000=(n/value)*10000) %>% 
-  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 59', '60 and over'))) %>% 
+  mutate(age_group=factor(age_group, levels=c('0-17', '18-59', '60 and over'))) %>% 
   ggplot(aes(x=age_group, y=tests_per10000, fill=age_group)) +
   geom_col() +
   theme_minimal() +
