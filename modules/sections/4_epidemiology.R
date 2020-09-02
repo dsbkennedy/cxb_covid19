@@ -34,10 +34,13 @@ age_labs <- c(paste(seq(0, 50, by = 10), seq(9, 59, by = 10),
 godata_clean <- godata_wide %>% 
   #Ethnicity
   mutate(population_group=coalesce(questionnaire_answers_nationality_value,questionnaire_answers_nationality_2_value,questionnaire_answers_cif_nationality_value)) %>% 
-  filter(visual_id %in% godata_case_id) %>% 
+  mutate(lab_result=coalesce(questionnaire_answers_lab_result_value,questionnaire_answers_result_2_value)) %>% 
+  mutate(fdmn_positive=case_when(visual_id %in% godata_case_id ~ 1,
+                                 (population_group=='FDMN' & lab_result=='Positive') ~ 1)) %>% 
+  filter(fdmn_positive==1) %>% 
+  #filter(visual_id %in% godata_case_id) %>% 
   #filter(population_group=='FDMN')  %>% 
   #Test result
-  mutate(lab_result=coalesce(questionnaire_answers_lab_result_value,questionnaire_answers_result_2_value)) %>% 
   #Some records don't have lab data in GoData. These are dropped when filter==positive
   # mutate(lab_result=case_when(visual_id %in% c("CXB3310283", "CXB3310414", 
   #                                              "CXB5310154", "CXB4950010",

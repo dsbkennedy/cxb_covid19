@@ -386,7 +386,7 @@ ggplotly(case_death_age_gph)
 
 
 
-Column {data-width=450}
+Column {data-width=350}
 -------------------------------------
 
 ### Detailed information on cases
