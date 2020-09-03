@@ -82,18 +82,20 @@ testing_host_gph <-  test_nationality %>%
   filter(name %in% c('host', 'host_positive')) %>% 
   mutate(name_fac=factor(name,levels=c('host', 'host_positive'), 
                          labels=c('Tests', 'Cases'))) %>% 
-  ggplot(., aes(x=date_format, y=value, fill=name_fac)) +
+  mutate(week=isoweek(date_format)) %>% 
+  group_by(name_fac,week) %>% 
+  summarise(value=sum(value,na.rm=TRUE)) %>% 
+  ggplot(., aes(x=week, y=value, fill=name_fac)) +
   geom_bar(stat="identity",position ="identity")   +
   scale_fill_manual(values=c("#ED7D31","#4472C4")) +
-  scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
-               date_labels = '%d-%m') +
+  # scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
+  #              date_labels = '%d-%m') +
   labs(caption="Data source: Lab data",
-       x = "Date",
+       x = "Week",
        y = "Count",
        fill="") +
   theme_minimal()
 
-ggplotly(testing_host_gph)
 
 ## ---- map 
 

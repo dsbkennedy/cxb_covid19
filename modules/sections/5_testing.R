@@ -100,33 +100,175 @@ tests_table <- ari_ili_tests_total %>%
   ) 
 
 
-# TEST-POSITIVITY ---------------------------------------------------------
+# TEST-POSITIVITY TABLE ---------------------------------------------------
 
-tests_gph <- ari_ili_df %>%  
-  filter(!laboratory_result %in% c('n_a','not_done')) %>% 
-  filter(nationality=='fdmn') %>% 
-  count(age_group, laboratory_result) %>% 
-  filter(!is.na(age_group)) %>% 
-  pivot_wider(names_from=laboratory_result, values_from=n) %>% 
-  mutate(total=negative+positive) %>% 
-  select(-negative) %>% 
-  drop_na() %>% 
-  group_by(age_group) %>% 
+tests_agegrp_tbl <- ari_ili_df %>%
+  filter(!laboratory_result %in% c('n_a','not_done')) %>%
+  filter(nationality=='fdmn') %>%
+  count(age_group, laboratory_result) %>%
+  filter(!is.na(age_group)) %>%
+  pivot_wider(names_from=laboratory_result, values_from=n) %>%
+  mutate(total=negative+positive) %>%
+  select(-negative) %>%
+  drop_na() %>%
+  group_by(age_group) %>%
   mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
                        broom::tidy())) %>%
-  unnest(rate) %>% 
-  ungroup() %>% 
-  ggplot(aes(x=age_group, y=estimate)) +
-  geom_point() +
-  #coord_flip() +
-  geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
-                position = position_dodge(width = 0.1)) +
-  theme_minimal() +
-  labs(x='Age group', 
-       y='% COVID-19 + samples', 
-       caption='Data source:ARI/ILI linelist') +
-  scale_y_continuous(labels = scales::percent)  +
-  theme(legend.position='top')
+  unnest(rate) %>%
+  ungroup() 
+
+
+
+tests_sex_tbl <- ari_ili_df %>%
+  filter(!laboratory_result %in% c('n_a','not_done')) %>%
+  filter(nationality=='fdmn') %>%
+  count(sex, laboratory_result) %>%
+  filter(!is.na(sex)) %>%
+  mutate(sex=case_when(sex=='m' ~ 'Male', 
+                       sex=='f' ~ 'Female')) %>% 
+  pivot_wider(names_from=laboratory_result, values_from=n) %>%
+  mutate(total=negative+positive) %>%
+  select(-negative) %>%
+  drop_na() %>%
+  group_by(sex) %>%
+  mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
+                       broom::tidy())) %>%
+  unnest(rate) %>%
+  ungroup() 
+
+
+tests_pos_tbl <- tests_agegrp_tbl %>% bind_rows(tests_sex_tbl) %>% 
+  mutate(indicator=case_when(is.na(age_group) ~ "Sex", 
+                             TRUE ~ "Age group")) %>% 
+  mutate(age_group=as.character(age_group)) %>% 
+  mutate(value=coalesce(age_group, sex)) %>% 
+  select(indicator,value, positive, total, estimate, conf.low, conf.high) %>% 
+  group_by(indicator) %>% 
+  mutate(estimate=round(estimate*100,2)) %>% 
+  mutate(error=paste0(round(conf.low*100,2),'-',round(conf.high*100,2))) %>% 
+  select(-c(conf.low, conf.high)) %>% 
+  gt() %>% 
+  opt_row_striping(., row_striping = TRUE) %>% 
+  # fmt_percent(
+  #   columns = 5:7,
+  #   decimals = 1
+  # ) %>% 
+  cols_label(
+    value = "",
+    total = "Tests",
+    positive = "Cases",
+    estimate = "Positivity (%)",
+    error = "LCI-UCI"
+  ) 
+
+# TEST-POSITIVITY ---------------------------------------------------------
+
+# tests_age_group <- ari_ili_df %>%
+#   filter(!laboratory_result %in% c('n_a','not_done')) %>%
+#   filter(nationality=='fdmn') %>%
+#   count(age_group, laboratory_result) %>%
+#   filter(!is.na(age_group)) %>%
+#   pivot_wider(names_from=laboratory_result, values_from=n) %>%
+#   mutate(total=negative+positive) %>%
+#   select(-negative) %>%
+#   drop_na() %>%
+#   group_by(age_group) %>%
+#   mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
+#                        broom::tidy())) %>%
+#   unnest(rate) %>%
+#   ungroup() %>%
+#   ggplot(aes(x=age_group, y=estimate)) +
+#   geom_point() +
+#   #coord_flip() +
+#   geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
+#                 position = position_dodge(width = 0.1)) +
+#   theme_minimal() +
+#   labs(x='Age group',
+#        y='% COVID-19 + samples',
+#        caption='Data source:ARI/ILI linelist') +
+#   scale_y_continuous(labels = scales::percent)  +
+#   theme(legend.position='top')
+
+
+
+# tests_agegrp_gph <- ari_ili_df %>%
+#   filter(!laboratory_result %in% c('n_a','not_done')) %>%
+#   filter(nationality=='fdmn') %>%
+#   count(age_group, laboratory_result) %>%
+#   filter(!is.na(age_group)) %>%
+#   pivot_wider(names_from=laboratory_result, values_from=n) %>%
+#   mutate(total=negative+positive) %>%
+#   select(-negative) %>%
+#   drop_na() %>%
+#   group_by(age_group) %>%
+#   mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
+#                        broom::tidy())) %>%
+#   unnest(rate) %>%
+#   ungroup() %>% 
+#   ggplot(aes(x=age_group, y=estimate)) +
+#   geom_col() +
+#   coord_flip() +
+#   geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
+#                 position = position_dodge(width = 0.1)) +
+#   theme_minimal() +
+#   labs(x='Age group',
+#        y='% COVID-19 + samples',
+#        caption='Data source:ARI/ILI linelist') +
+#   scale_y_continuous(labels = scales::percent)  +
+#   theme(legend.position='top')
+# 
+# 
+# tests_sex_gph <- ari_ili_df %>%
+#   filter(!laboratory_result %in% c('n_a','not_done')) %>%
+#   filter(nationality=='fdmn') %>%
+#   count(sex, laboratory_result) %>%
+#   filter(!is.na(sex)) %>%
+#   mutate(sex=case_when(sex=='m' ~ 'Male', 
+#                        sex=='f' ~ 'Female')) %>% 
+#   pivot_wider(names_from=laboratory_result, values_from=n) %>%
+#   mutate(total=negative+positive) %>%
+#   select(-negative) %>%
+#   drop_na() %>%
+#   group_by(sex) %>%
+#   mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
+#                        broom::tidy())) %>%
+#   unnest(rate) %>%
+#   ungroup() %>% 
+#   ggplot(aes(x=sex, y=estimate)) +
+#   geom_col() +
+#   coord_flip() +
+#   geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
+#                 position = position_dodge(width = 0.1)) +
+#   theme_minimal() +
+#   scale_fill_brewer(palette="Dark2", na.value="blue") +
+#   labs(x='Sex',
+#        y='% COVID-19 + samples',
+#        caption='Data source:ARI/ILI linelist') +
+#   scale_y_continuous(labels = scales::percent)  +
+#   theme(legend.position='top')
+# 
+# tests_agegrp_gph +  tests_sex_gph
+
+week_test_df <- ari_ili_df %>%  
+  filter(!laboratory_result %in% c('n_a','not_done')) %>% 
+  filter(nationality=='fdmn') %>% 
+  filter(!sample_type %in% c('follow_up', 'humanitarian_worker')) %>% 
+  #filter(date_of_case_detection>=ymd('2020-05-01')) %>% 
+  mutate(week=isoweek(date_of_case_detection)) %>% 
+  #mutate(week=date2week(date_of_case_detection,week_start = "sun", floor_day = TRUE)) %>% 
+  select(week,date_of_case_detection, laboratory_result, age) %>% 
+  filter(week>19) %>% 
+  #mutate(week=factor(week, levels=unique(week))) %>% 
+  filter(laboratory_result %in% c('positive', 'negative')) 
+
+tests_gph <- ggplot(week_test_df, aes(x=week, y=age)) + 
+  geom_jitter(colour="lightblue", alpha=0.5, width=0.1) +
+  geom_point(stat="summary", fun.y="mean") + 
+  geom_errorbar(stat="summary", fun.data="mean_se", fun.args = list(mult = 1.96), width=0) +
+  labs(x="Week", y="Age (mean + 95%CI)") +
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=45, hjust=1)) +
+  scale_y_continuous(breaks=seq(0,100,10))
 
 
 # TEST-AGE GROUP ----------------------------------------------------------

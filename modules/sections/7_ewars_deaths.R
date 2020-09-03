@@ -11,10 +11,10 @@ ewars_mort <- read.csv(here('data', 'community_mortality.csv')) %>% clean_names(
   arrange(year_wk)  %>% 
   filter(year_wk<max(year_wk)) %>% 
   mutate(age_group=case_when(age_in_years<5 ~ 'Under 5',
-                             #age_in_years>=5 & age_in_years<15 ~ '5 to 14',
-                             age_in_years>=5 & age_in_years<60 ~ '5 to 59',
+                             age_in_years>=5 & age_in_years<18 ~ '5 to 18',
+                             age_in_years>=18 & age_in_years<60 ~ '18 to 59',
                              age_in_years>=60 ~'60 and over')) %>% 
-  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 59',  '60 and over', NA)))
+  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 18', '18 to 59',  '60 and over', NA)))
 
 
 # WEEKLY-DEATHS -----------------------------------------------------------
