@@ -1,15 +1,12 @@
 
 # WRANGLING ---------------------------------------------------------------
 
-breaks <- c(-Inf,17,59,Inf)
-labs <- c('0-17', '18-59', '60 and over')
-
 ari_ili_df <- gsheet_data$ari_ili %>% 
   clean_names() %>% 
   clean_data() %>% 
   mutate(camp=gsub('camp_', '', camp)) %>% 
   filter(nationality=='fdmn') %>% 
-  filter(sample_type!='follow_up') %>% 
+  filter(sample_type!=c('follow_up', 'humanitarian_worker')) %>% 
   filter(laboratory_result %in% c('positive', 'negative')) %>% 
   mutate(camp_number=str_extract(camp, regexp)) %>% 
   mutate(camp_number=as.numeric(camp_number)) %>% 
