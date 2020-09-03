@@ -188,7 +188,7 @@ all_deaths_table
 Row {data-height=250}
 -------------------------------------
 
-### Cases by date  (Scales are different for each graph)
+### Cases by week  (Scales are different for each graph)
 
 
 ```{r epicurve_bgd_host_fdmn}

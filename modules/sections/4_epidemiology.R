@@ -210,14 +210,15 @@ godata_clean <- godata_wide %>%
 # EPICURVE-GENDER -------------------------------------------------------------------
 
 godata_epi_curve <- godata_clean %>% 
-  count(date_symptom_onset_final, sex) %>% 
+  mutate(week=isoweek(date_symptom_onset_final)) %>% 
+  count(week, sex) %>% 
   ggplot(.) +
-  geom_col(aes(x = date_symptom_onset_final, y = n, fill=sex)) +
-  scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
-               date_labels = '%d-%m') +
+  geom_col(aes(x = week, y = n, fill=sex)) +
+  # scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
+  #              date_labels = '%d-%m') +
   theme_minimal() +
-  scale_fill_brewer(palette="Dark2") +
-  labs(x = "Date of symptom onset",
+  scale_fill_brewer(palette="Dark2", na.value="blue") +
+  labs(x = "Week of symptom onset",
        y = "Number of cases", fill='')
 
 

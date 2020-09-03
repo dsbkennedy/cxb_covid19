@@ -221,15 +221,16 @@ all_deaths_table <- table_calc_comb %>%
 
 epi_curve <- table_final_df %>% 
   mutate(week=epiweek(date)) %>% 
+  group_by(population_group,week) %>% 
+  summarise(new_cases=sum(new_cases,na.rm=TRUE)) %>% 
   ggplot(.) +
-  geom_col(aes(x = date, y = new_cases)) +
-  scale_x_date(date_breaks = '14 day', date_minor_breaks = '7 day',
-               date_labels = '%d-%m') +
+  geom_col(aes(x = week, y = new_cases)) +
+  # scale_x_date(date_breaks = '14 day', date_minor_breaks = '7 day',
+  #              date_labels = '%d-%m') +
   theme_minimal() +
-  labs(x = "Date case reported",
+  labs(x = "Week case reported",
        y = "Number of cases") +
   facet_wrap(~ population_group, scales="free_y", ncol=1)
-
 
 
 # TEST-POSITIVITY ---------------------------------------------------------
