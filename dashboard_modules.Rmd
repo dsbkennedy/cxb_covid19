@@ -60,6 +60,10 @@ regexp <- "[[:digit:]]+"
 ##Set ggplot to show numbers instead of scientific notation
 options(scipen=10000)
 
+breaks <- c(-Inf,17,59,Inf)
+labs <- c('0-17', '18-59', '60 and over')
+
+
 ```
 
 
@@ -212,7 +216,7 @@ Row {data-height=75}
 -------------------------------------
 
 ### Additional Resources
-
+  + [Situation Reports](https://ln2.sync.com/dl/f33b85a60/99r3nuhb-zebna3tg-kun4acy3-mvyxqv56)
 
   + [WHO Bangaladesh Rohingya Crisis](https://www.who.int/bangladesh/emergencies/Rohingyacrisis/bulletin-and-reports){target="_blank"}
 
