@@ -365,7 +365,7 @@ yet been added to GoData.
 
 
 
-Column  {data-width=550}
+Column  {data-width=500}
 -------------------------------------
 
 
@@ -390,7 +390,7 @@ ggplotly(case_death_age_gph)
 
 
 
-Column {data-width=350}
+Column {data-width=400}
 -------------------------------------
 
 ### Detailed information on cases
