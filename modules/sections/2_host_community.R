@@ -115,7 +115,7 @@ host_pal_cases_bins <-c(0, 100, 250, 500, 1000, 2500)
 host_pal_deaths_bins <-c(0, 5, 10, 25, 50)
 
 
-host_pal_cases <- colorBin( "YlGn", bins=host_pal_cases_bins, na.color = "grey", pretty=FALSE)
+host_pal_cases <- colorBin( "YlOrRd", bins=host_pal_cases_bins, na.color = "grey", pretty=FALSE)
 host_pal_deaths <- colorBin( "PuRd", bins=host_pal_deaths_bins, na.color = "grey", pretty=FALSE)
 
 
@@ -138,7 +138,7 @@ case_host_map <- leaflet(case_shp_host) %>%
               popup=host_popup,
               weight = 1,
               fillOpacity = .6, group="Cases") %>% 
-  addLegend(pal = host_pal_cases, values = ~total_cases, title = "Cases", group="Cases") %>% 
+  addLegend(pal = host_pal_cases, values = ~total_cases, title = "Cases", group="Cases", na.label="No reported cases") %>% 
   addPolygons(data=case_shp_host,
               color="black",
               fillColor = ~ host_pal_deaths(total_deaths),
@@ -147,7 +147,7 @@ case_host_map <- leaflet(case_shp_host) %>%
               popup=host_popup,
               weight = 1,
               fillOpacity = .6, group="Deaths") %>% 
-  addLegend(pal = host_pal_deaths, values = ~total_deaths, title = "Deaths", group="Deaths") %>% 
+  addLegend(pal = host_pal_deaths, values = ~total_deaths, title = "Deaths", group="Deaths", na.label="No reported deaths") %>% 
   addLayersControl(baseGroups = c("Cases", "Deaths"), 
                    position = "topleft",
                    options = layersControlOptions(collapsed=F)) %>% hideGroup("Deaths")

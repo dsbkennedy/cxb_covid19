@@ -134,7 +134,7 @@ fdmn_pal_cases_bins <-c(0, 1, 2, 5, 10, 20)
 fdmn_pal_deaths_bins <-c(0, 1, 2)
 
 
-fdmn_pal_cases <- colorBin( "YlGn", bins=fdmn_pal_cases_bins, na.color = "grey", pretty=FALSE)
+fdmn_pal_cases <- colorBin( "YlOrRd", bins=fdmn_pal_cases_bins, na.color = "grey", pretty=FALSE)
 fdmn_pal_deaths <- colorBin( "PuRd", bins=fdmn_pal_deaths_bins, na.color = "grey", pretty=FALSE)
 
 
@@ -161,7 +161,7 @@ leaflet(case_shp_fdmn) %>%
               popup=fdmn_popup,
               weight = 1,
               fillOpacity = .6, group="Cases") %>% 
-  addLegend(pal = fdmn_pal_cases, values = ~total_cases, title = "Cases", group="Cases") %>% 
+  addLegend(pal = fdmn_pal_cases, values = ~total_cases, title = "Cases", group="Cases", na.label="No reported cases") %>% 
   addPolygons(data=case_shp_fdmn,
               color="black",
               fillColor = ~ fdmn_pal_deaths(total_deaths),
@@ -170,7 +170,7 @@ leaflet(case_shp_fdmn) %>%
               popup=fdmn_popup,
               weight = 1,
               fillOpacity = .6, group="Deaths") %>% 
-  addLegend(pal = fdmn_pal_deaths, values = ~total_deaths, title = "Deaths", group="Deaths") %>% 
+  addLegend(pal = fdmn_pal_deaths, values = ~total_deaths, title = "Deaths", group="Deaths", na.label="No reported deaths") %>% 
   addLayersControl(baseGroups = c("Cases", "Deaths"), 
                    position = "topleft",
                    options = layersControlOptions(collapsed=F)) %>% hideGroup("Deaths")
