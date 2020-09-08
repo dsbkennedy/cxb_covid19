@@ -111,17 +111,17 @@ mild_symptoms_gph <- symptoms_df %>%
   group_by(severity,week, sex, age_group) %>%
   summarise(total_cases=sum(value,na.rm=TRUE)) %>%
   group_by(severity,week) %>%
-  mutate(prop=total_cases/sum(total_cases)) %>%
+  #mutate(prop=total_cases/sum(total_cases)) %>%
   mutate(age_group=factor(age_group, levels=c('<5', '5-59', '>=60'))) %>%
   mutate(age_group=fct_rev(age_group)) %>%
   filter(severity=='Mild') %>%
-  ggplot(aes(x=week,y=prop, fill=interaction(sex,age_group), label=total_cases)) +
+  ggplot(aes(x=week,y=total_cases, fill=interaction(sex,age_group), label=total_cases)) +
   geom_col(position = position_stack(), color = "black") +
   geom_text(position = position_stack(vjust = .5)) +
   theme_minimal() +
-  labs(x='Week', y='Proportion of cases', fill='Sex & \n Age group') +
+  labs(x='Week', y='Number of cases', fill='Sex & \n Age group') +
   scale_fill_brewer(palette="Dark2") +
-  scale_y_continuous(labels = scales::percent) +
+  #scale_y_continuous(labels = scales::percent) +
   scale_x_continuous(breaks=pretty_breaks())
 
 
