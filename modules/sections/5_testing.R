@@ -16,13 +16,12 @@ ari_ili_df <- gsheet_data$ari_ili %>%
 
 
 ari_ili_tests_df <- ari_ili_df %>% 
-  
   count(date_of_case_detection,camp) %>% 
   complete(date_of_case_detection,camp, fill = list(n = 0)) %>% 
   group_by(camp) %>%
-  mutate(cumulative_cases=cumsum(n)) %>%
-  mutate(case_growth=ifelse(lag(cumulative_cases,7)>10, 
-                            ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>%
+  mutate(cumulative_tests=cumsum(n)) %>%
+  mutate(case_growth=ifelse(lag(cumulative_tests,7)>10, 
+                            ((cumulative_tests/lag(cumulative_tests,7))^(1/7))-1,NA)) %>%
   mutate(roll_test=roll_mean((n),7,  align="right", fill = NA)) %>% 
   mutate(week=epiweek(date_of_case_detection)) %>% 
   ungroup()
