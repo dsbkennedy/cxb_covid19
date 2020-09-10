@@ -84,16 +84,20 @@ tests_table <- ari_ili_tests_total %>%
     positive = "Test positivity (%)",
     #n_a = 'Result missing'
   ) %>% 
+  tab_options(
+    container.overflow.x = TRUE,
+    container.overflow.y = TRUE,
+    grand_summary_row.background.color = "lightblue") 
   # tab_spanner(
   #   label = "Test results",
   #   columns = 5:5,
   # ) %>% 
-  tab_options(
-    container.height = px(1000),
-    container.overflow.y = TRUE
-    #container.width = px(1000),
-    #table.font.size = "small"
-  ) 
+  # tab_options(
+  #   container.height = px(1000),
+  #   container.overflow.y = TRUE
+  #   #container.width = px(1000),
+  #   #table.font.size = "small"
+  # ) 
 
 
 # TEST-POSITIVITY TABLE ---------------------------------------------------
