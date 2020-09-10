@@ -20,7 +20,7 @@ ari_ili_tests_df <- ari_ili_df %>%
   complete(date_of_case_detection,camp, fill = list(n = 0)) %>% 
   group_by(camp) %>%
   mutate(cumulative_tests=cumsum(n)) %>%
-  mutate(case_growth=ifelse(lag(cumulative_tests,7)>10, 
+  mutate(test_growth=ifelse(lag(cumulative_tests,7)>10, 
                             ((cumulative_tests/lag(cumulative_tests,7))^(1/7))-1,NA)) %>%
   mutate(roll_test=roll_mean((n),7,  align="right", fill = NA)) %>% 
   mutate(week=epiweek(date_of_case_detection)) %>% 
@@ -36,9 +36,9 @@ ari_ili_tests_7day <- ari_ili_tests_df %>%
   summarise(tests_7day=sum(n, na.rm=TRUE))
 
 ari_ili_tests_growth <- ari_ili_tests_df %>% 
-  select(camp, case_growth) %>% 
+  select(camp, test_growth) %>% 
   group_by(camp) %>% 
-  summarise(growth=last(case_growth))
+  summarise(growth=last(test_growth))
 
 ari_ili_tests_result <- ari_ili_df %>% 
   filter(nationality=='fdmn') %>% 
@@ -257,11 +257,12 @@ week_test_df <- ari_ili_df %>%
   #mutate(week=factor(week, levels=unique(week))) %>% 
   filter(laboratory_result %in% c('positive', 'negative')) 
 
-tests_gph <- ggplot(week_test_df, aes(x=week, y=age)) + 
-  geom_jitter(colour="lightblue", alpha=0.5, width=0.1) +
-  geom_point(stat="summary", fun.y="mean") + 
-  geom_errorbar(stat="summary", fun.data="mean_se", fun.args = list(mult = 1.96), width=0) +
-  labs(x="Week", y="Age (mean + 95%CI)") +
+tests_gph <- ggplot(week_test_df, aes(x=week, y=age, group=factor(week))) + 
+  #geom_jitter(colour="lightblue", alpha=0.5, width=0.1) +
+  #geom_point(stat="summary", fun.y="mean") + 
+  geom_boxplot(alpha = 0.80) +
+  #geom_errorbar(stat="summary", fun.data="mean_se", fun.args = list(mult = 1.96), width=0) +
+  labs(x="Week", y="Age (median with interquartile range)") +
   theme_bw() +
   theme(axis.text.x=element_text(angle=45, hjust=1)) +
   scale_y_continuous(breaks=seq(0,100,10))

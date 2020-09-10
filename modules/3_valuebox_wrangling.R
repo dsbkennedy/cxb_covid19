@@ -40,6 +40,7 @@ bgd_data <- fread('https://covid.ourworldindata.org/data/owid-covid-data.csv') %
   select(date=date_format, new_tests,new_cases,new_deaths,population) %>% 
   mutate(population_group='Bangladesh')
 
+
 #Get first date from Bangladesh data
 first_date <- min(bgd_data$date)
 #Last date is today

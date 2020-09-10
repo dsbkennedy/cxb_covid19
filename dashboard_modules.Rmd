@@ -426,7 +426,7 @@ tests_table
 
 ```
 
-### Mean age of samples tested by week
+### Median age of samples tested by week
 
 ```{r test_pos_agegrp_gph}
 
