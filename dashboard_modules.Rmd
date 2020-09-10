@@ -53,6 +53,7 @@ library(tibble)
 library(stringr)
 library(leaflet)
 library(tsibble)
+library(DT)
 
 # prepare regular expression for extracting camp number from camp variable
 regexp <- "[[:digit:]]+"

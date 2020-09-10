@@ -52,6 +52,53 @@ ari_ili_tests_result <- ari_ili_df %>%
 
 # TABLE -------------------------------------------------------------------
 
+# tests_table <- ari_ili_tests_total %>% 
+#   left_join(ari_ili_tests_7day, by='camp') %>% 
+#   left_join(ari_ili_tests_growth, by='camp') %>% 
+#   left_join(ari_ili_tests_result, by='camp') %>% 
+#   mutate(camp=trimws(camp)) %>% 
+#   mutate(camp_number=str_extract(camp, regexp)) %>% 
+#   mutate(camp_number=as.numeric(camp_number)) %>% 
+#   arrange(camp_number) %>% 
+#   select(-camp_number) %>% 
+#   select(-c(growth,negative)) %>% 
+#   mutate(camp=sub("^0+", "", camp)) %>% 
+#   gt() %>% 
+#   opt_row_striping(., row_striping = TRUE) %>% 
+#   fmt_percent(
+#     columns = 4:4,
+#     decimals = 1
+#   ) %>% 
+#   fmt_missing(
+#     columns = 2:4,
+#     missing_text = "0%"
+#   ) %>% 
+#   cols_label(
+#     camp = "Camp",
+#     tests_total = "Total tests",
+#     tests_7day = "Tests in last 7 days",
+#     #growth = "7-day growth(%)",
+#     # negative = "Negative",
+#     #not_done = "Not complete",
+#     # pending = "Pending", 
+#     positive = "Test positivity (%)",
+#     #n_a = 'Result missing'
+#   ) %>% 
+#   tab_options(
+#     container.overflow.x = TRUE,
+#     container.overflow.y = TRUE,
+#     grand_summary_row.background.color = "lightblue") 
+#   # tab_spanner(
+#   #   label = "Test results",
+#   #   columns = 5:5,
+#   # ) %>% 
+#   # tab_options(
+#   #   container.height = px(1000),
+#   #   container.overflow.y = TRUE
+#   #   #container.width = px(1000),
+#   #   #table.font.size = "small"
+#   # ) 
+
 tests_table <- ari_ili_tests_total %>% 
   left_join(ari_ili_tests_7day, by='camp') %>% 
   left_join(ari_ili_tests_growth, by='camp') %>% 
@@ -63,41 +110,13 @@ tests_table <- ari_ili_tests_total %>%
   select(-camp_number) %>% 
   select(-c(growth,negative)) %>% 
   mutate(camp=sub("^0+", "", camp)) %>% 
-  gt() %>% 
-  opt_row_striping(., row_striping = TRUE) %>% 
-  fmt_percent(
-    columns = 4:4,
-    decimals = 1
-  ) %>% 
-  fmt_missing(
-    columns = 2:4,
-    missing_text = "0%"
-  ) %>% 
-  cols_label(
-    camp = "Camp",
-    tests_total = "Total tests",
-    tests_7day = "Tests in last 7 days",
-    #growth = "7-day growth(%)",
-    # negative = "Negative",
-    #not_done = "Not complete",
-    # pending = "Pending", 
-    positive = "Test positivity (%)",
-    #n_a = 'Result missing'
-  ) %>% 
-  tab_options(
-    container.overflow.x = TRUE,
-    container.overflow.y = TRUE,
-    grand_summary_row.background.color = "lightblue") 
-  # tab_spanner(
-  #   label = "Test results",
-  #   columns = 5:5,
-  # ) %>% 
-  # tab_options(
-  #   container.height = px(1000),
-  #   container.overflow.y = TRUE
-  #   #container.width = px(1000),
-  #   #table.font.size = "small"
-  # ) 
+  mutate(positive=scales::percent(positive,accuracy=0.1)) %>% 
+  datatable(., 
+            extensions = 'Buttons',
+            colnames=c('Camp', 'Total tests', 'Tests (last 7 days)', 'Test positvity'),
+            options = list(pageLength = 20,dom = 'Bfrtip', 
+                           columnDefs = list(list(className = 'dt-center', targets = 1:4)),
+                           buttons = c('csv')))
 
 
 # TEST-POSITIVITY TABLE ---------------------------------------------------
