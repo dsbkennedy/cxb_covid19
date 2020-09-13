@@ -4,7 +4,7 @@ quar_vars <- c('new_admissions_in_the_last_24_hours_individuals', 'current_occup
                'cumulative_contacts_individuals','cumulative_new_arrivals_travellers_individuals', 
                'number_of_rooms_shelters_currently_functional', 'number_of_rooms_shelters_currently_filled')  
 
-quarantine_table <- quarantine_raw %>% clean_names() %>% 
+quarantine_table <- quarantine_raw %>% 
   filter(!is.na(facility_name)) %>% 
   select(location_of_facility, facility_name,supporting_agency, 
          contains("individuals") ,
@@ -87,4 +87,56 @@ quarantine_table <- quarantine_raw %>% clean_names() %>%
     container.overflow.x = TRUE,
     container.overflow.y = TRUE,
     grand_summary_row.background.color = "white")
+
+
+###Additional summary of information
+
+quarantine_valuebox_df <- quarantine_raw %>% 
+  filter(timestamp=='Totals') %>% 
+  # select(new_admissions_in_the_last_24_hours_individuals)
+  # select(new_admissions_24h)
+  select(new_admissions_in_the_last_24_hours_individuals, cumulative_new_arrivals_travellers_individuals, 
+         current_occupancy_individuals, cumulative_contacts_individuals, 
+         number_of_rooms_shelters_currently_functional,number_of_rooms_shelters_currently_filled)
+
+#New admissions
+new_admissions_24h <- quarantine_valuebox_df %>%  
+  pull(new_admissions_in_the_last_24_hours_individuals)
+  
+new_admissions_24h_vb <- valueBox(
+  format(new_admissions_24h, big.mark = ","),
+  icon= "fas users",
+  color= "#ED7D31"
+)
+
+#Cumulative travellers
+cumulative_travellers <- quarantine_valuebox_df %>%  
+  pull(cumulative_new_arrivals_travellers_individuals)
+
+cumulative_travellers_vb <- valueBox(
+  format(cumulative_travellers, big.mark = ","),
+  icon= "fas fa-users",
+  color= "#ED7D31"
+)
+
+#Current number in quarantine
+current_quarantine <- quarantine_valuebox_df %>%  
+  pull(current_occupancy_individuals)
+
+current_quarantine_vb <- valueBox(
+  format(current_quarantine, big.mark = ","),
+  icon= "fas fa-house-user",
+  color= "#ED7D31"
+)
+
+#Cumulative contacts
+cumulative_contacts <- quarantine_valuebox_df %>%  
+  pull(cumulative_contacts_individuals)
+
+cumulative_contacts_vb <- valueBox(
+  format(cumulative_contacts, big.mark = ","),
+  icon= "fas fa-users",
+  color= "#ED7D31"
+)
+
 

@@ -366,7 +366,7 @@ yet been added to GoData.
 
 
 
-Column  {data-width=500}
+Column  {data-width=400}
 -------------------------------------
 
 
@@ -391,7 +391,7 @@ ggplotly(case_death_age_gph)
 
 
 
-Column {data-width=400}
+Column {data-width=500}
 -------------------------------------
 
 ### Detailed information on cases
@@ -653,6 +653,50 @@ dru_gt_table
 Quarantine  {data-orientation=rows}
 =====================================  
 
+Row {data-height=75}
+-------------------------------------
+
+### Number of new admissions (individuals) in last 24 hours
+
+```{r quar_newadmission}
+new_admissions_24h_vb
+
+```
+
+### Cumulative travellers/new arrivals quarantined to date 
+
+```{r cumulative_travellers}
+cumulative_travellers_vb
+```
+
+
+Row {data-height=75}
+-------------------------------------
+
+### Current number of quarantined individuals
+
+```{r quarantined_ind}
+current_quarantine_vb
+```
+
+
+### Cumulative contacts quarantined to date
+
+```{r cumulative_contacts}
+current_quarantine_vb
+```
+
+
+### Occupancy
+
+```{r}
+gauge(quarantine_valuebox_df$number_of_rooms_shelters_currently_filled,0,
+      quarantine_valuebox_df$number_of_rooms_shelters_currently_functional)
+```
+
+
+Row 
+-------------------------------------
 
 ```{r qurantine}
 quarantine_table

@@ -14,8 +14,10 @@ host_placeholder <- valueBox(
 
 ##Host community tests
 
-host_tests <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_tests)
-host_tests_7day <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_tests_7day)
+host_tests <- table_calc_comb %>%  
+  filter(population_group=='Host community') %>%  pull(total_tests)
+host_tests_7day <- table_calc_comb %>%  
+  filter(population_group=='Host community') %>%  pull(total_tests_7day)
 
 host_tests_vb <- valueBox(
   format(paste0(host_tests,' (', host_tests_7day, ')'), big.mark = ","),

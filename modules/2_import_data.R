@@ -55,7 +55,7 @@ test_nationality <- tests_data %>%
 
 ##DRU data
 dru_raw <- gsheet_data$dru %>% clean_names() %>%   mutate(facility_name=gsub(":([[:alpha:]])", ": \\1", facility_name)) 
-quarantine_raw <- gsheet_data$quarantine %>% clean_names() %>% filter(!is.na(facility_name))
+quarantine_raw <- gsheet_data$quarantine %>% clean_names()
 
 
 ### Camp population file
