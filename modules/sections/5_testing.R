@@ -35,6 +35,27 @@ ari_ili_tests_7day <- ari_ili_tests_df %>%
   group_by(camp) %>% 
   summarise(tests_7day=sum(n, na.rm=TRUE))
 
+ari_ili_cases_7day_df <- ari_ili_df %>% 
+  filter(date_of_case_detection>=today()-7) %>% 
+  filter(laboratory_result=='positive') %>% 
+  count(date_of_case_detection,camp) %>% 
+  complete(date_of_case_detection,camp, fill = list(n = 0)) %>% 
+  group_by(camp) %>%
+  summarise(cases_7day=sum(n, na.rm=TRUE))
+
+  # mutate(cumulative_cases=cumsum(n)) %>%
+  # mutate(case_growth=ifelse(lag(cumulative_cases,7)>10, 
+  #                           ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>%
+  # mutate(roll_cases=roll_mean((n),7,  align="right", fill = NA)) %>% 
+  # mutate(week=epiweek(date_of_case_detection)) %>% 
+  # ungroup()
+
+# ari_ili_cases_7day <- ari_ili_tests_df %>% 
+#   filter(date_of_case_detection>=today()-7) %>% 
+#   filter(laboratory_result=='positive') %>% 
+#   group_by(camp) %>% 
+#   summarise(cases_7day=sum(n, na.rm=TRUE))
+
 ari_ili_tests_growth <- ari_ili_tests_df %>% 
   select(camp, test_growth) %>% 
   group_by(camp) %>% 
@@ -100,6 +121,7 @@ ari_ili_tests_result <- ari_ili_df %>%
 #   # ) 
 
 tests_table <- ari_ili_tests_total %>% 
+  #left_join(ari_ili_cases_7day_df, by='camp') %>% 
   left_join(ari_ili_tests_7day, by='camp') %>% 
   left_join(ari_ili_tests_growth, by='camp') %>% 
   left_join(ari_ili_tests_result, by='camp') %>% 
