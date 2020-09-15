@@ -3,7 +3,7 @@
 
 ewars_mort <- read.csv(here('data', 'community_mortality.csv')) %>% clean_names() %>% 
   mutate(year=as.numeric(isoyear)) %>% 
-  mutate(week=as.numeric(i_isoweek)) %>% 
+  mutate(week=as.numeric(isoweek)) %>% 
   mutate(date=make_datetime(year=year) + weeks(week)) %>% 
   filter(date>=ymd('2019-07-01')) %>% 
   mutate(year_wk=yearweek(date)) %>% 
@@ -21,10 +21,10 @@ ewars_mort <- read.csv(here('data', 'community_mortality.csv')) %>% clean_names(
 
 ewars_mort_gph <- ewars_mort %>% 
   filter(!camp_zone=='') %>% 
-  count(isoyear, i_isoweek, year_wk) %>%
+  count(isoyear, isoweek, year_wk) %>%
   arrange(year_wk) %>% 
   mutate(deaths_roll=roll_mean((n),4, na.rm=TRUE, align="right", fill = NA)) %>% 
-  ggplot(., aes(x=i_isoweek, y=deaths_roll, color=factor(isoyear))) +
+  ggplot(., aes(x=isoweek, y=deaths_roll, color=factor(isoyear))) +
   geom_line() +
   theme_minimal() +
   scale_y_continuous(limits=c(0,40)) +
@@ -66,7 +66,7 @@ cause_death_gph <- ewars_mort %>%
 
 ewars_mort_camp_gph <-  ewars_mort %>% 
   filter(isoyear>2018) %>% 
-  filter(!(isoyear==2019 & i_isoweek<30)) %>% 
+  filter(!(isoyear==2019 & isoweek<30)) %>% 
   filter(!camp_zone=='') %>% 
   count(isoyear, year_wk, camp_zone) %>% 
   mutate(camp_number=str_extract(camp_zone, "[[:digit:]]+")) %>% 
