@@ -683,11 +683,13 @@ current_quarantine_vb
 ### Cumulative contacts quarantined to date
 
 ```{r cumulative_contacts}
-current_quarantine_vb
+cumulative_contacts_vb
 ```
 
 
-### Occupancy
+Row {data-height=75}
+-------------------------------------
+### Overall occupancy
 
 ```{r}
 gauge(quarantine_valuebox_df$number_of_rooms_shelters_currently_filled,0,
