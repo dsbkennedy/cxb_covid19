@@ -96,6 +96,8 @@ fdmn_deaths_vb <- valueBox(
 all_tests_table <- table_calc_comb %>% 
   ungroup() %>%
   select(population_group, contains('test')) %>% 
+  select(population_group, total_tests,total_tests_pm, test_pos, 
+         total_tests_7day, total_tests_pm_7day, test_pos_7day) %>% 
   gt(rowname_col = "population_group") %>% 
   tab_stubhead(label = "Population group") %>% 
   cols_label(
@@ -103,7 +105,8 @@ all_tests_table <- table_calc_comb %>%
     total_tests_pm = "Per million",
     total_tests_7day = "Last 7 days", 
     total_tests_pm_7day   = "Per million",
-    test_pos = "Test positivity" 
+    test_pos = "Test positivity" ,
+    test_pos_7day = "Test positivity" 
   ) %>% 
   tab_style(
     style = list(
@@ -124,7 +127,7 @@ all_tests_table <- table_calc_comb %>%
     columns = gt::everything()
   ) %>% 
   fmt_percent(
-    columns = vars(test_pos),
+    columns = vars(test_pos,test_pos_7day),
     decimals = 1
   ) %>% 
   fmt_number(

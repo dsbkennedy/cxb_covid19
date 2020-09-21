@@ -130,8 +130,8 @@ case_shp_fdmn <- table_calc_comb_subloc %>%
   mutate(total_cases=ifelse(total_cases==0, NA, total_cases)) %>% 
   mutate(total_deaths=ifelse(total_deaths==0, NA, total_deaths))
 
-fdmn_pal_cases_bins <-c(0, 1, 2, 5, 10, 20)
-fdmn_pal_deaths_bins <-c(0, 1, 2)
+fdmn_pal_cases_bins <-c(1, 5, 10, 20,40)
+fdmn_pal_deaths_bins <-c(1, 2)
 
 
 fdmn_pal_cases <- colorBin( "YlOrRd", bins=fdmn_pal_cases_bins, na.color = "grey", pretty=FALSE)

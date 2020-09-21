@@ -95,6 +95,7 @@ table_calc_comb <- table_totals %>%
   left_join(table_7day, by='population_group') %>% 
   left_join(growth_rate, by='population_group') %>% 
   mutate(test_pos=total_cases/total_tests, 
+         test_pos_7day=total_cases_7day/total_tests_7day,
          cfr=total_deaths/total_cases)
 
 rm(table_totals,table_7day,growth_rate)
