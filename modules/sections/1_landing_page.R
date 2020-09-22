@@ -105,8 +105,8 @@ all_tests_table <- table_calc_comb %>%
     total_tests_pm = "Per million",
     total_tests_7day = "Last 7 days", 
     total_tests_pm_7day   = "Per million",
-    test_pos = "Test positivity" ,
-    test_pos_7day = "Test positivity" 
+    test_pos = "% positive" ,
+    test_pos_7day = "% positive" 
   ) %>% 
   tab_style(
     style = list(
