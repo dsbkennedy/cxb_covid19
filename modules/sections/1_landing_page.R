@@ -97,7 +97,8 @@ all_tests_table <- table_calc_comb %>%
   ungroup() %>%
   select(population_group, contains('test')) %>% 
   select(population_group, total_tests,total_tests_pm, test_pos, 
-         total_tests_7day, total_tests_pm_7day, test_pos_7day) %>% 
+         total_tests_7day, total_tests_pm_7day, test_pos_7day) %>%
+  mutate(test_pos_7day=ifelse(test_pos_7day>0.5,NA,test_pos_7day)) %>% 
   gt(rowname_col = "population_group") %>% 
   tab_stubhead(label = "Population group") %>% 
   cols_label(
