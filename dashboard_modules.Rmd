@@ -441,11 +441,11 @@ ggplotly(tests_gph)
 Row {data-height=300}
 -------------------------------------
 
-### Test positivity table
+### Test positivity graph
 
 ```{r test_pos_table}
 
-tests_pos_tbl
+ggplotly(test_pos_age_sex_gph)
 
 ```
 
