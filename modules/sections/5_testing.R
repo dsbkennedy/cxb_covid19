@@ -315,42 +315,59 @@ tests_gph <- ggplot(week_test_df, aes(x=week, y=age, group=factor(week))) +
 
 # TEST-AGE GROUP ----------------------------------------------------------
 
-population <- readxl::read_xlsx(here('data','block_population.xlsx'), sheet='Final', skip=1) %>% 
-  clean_names %>%  
-  clean_data() %>% 
-  filter(grepl('total', camp)) %>% 
-  filter(!camp=='grand_total') %>% 
-  select(-block) %>% 
-  mutate(across(c(infant_below_1:x16), as.numeric)) %>% 
-  mutate(age_0_18 = rowSums(.[4:11])) %>% 
-  mutate(age_18_59 = rowSums(.[12:13])) %>% 
-  mutate(age_over60 = rowSums(.[14:15])) %>% 
-  select(camp, contains('total'), contains('age')) %>% 
-  mutate(camp=gsub('_total', '', camp)) %>% 
-  mutate(camp=gsub('camp_', '', camp)) %>% 
-  mutate(camp=trimws(camp)) 
+# population <- readxl::read_xlsx(here('data','block_population.xlsx'), sheet='Final', skip=1) %>% 
+#   clean_names %>%  
+#   clean_data() %>% 
+#   filter(grepl('total', camp)) %>% 
+#   filter(!camp=='grand_total') %>% 
+#   select(-block) %>% 
+#   mutate(across(c(infant_below_1:x16), as.numeric)) %>% 
+#   mutate(age_0_18 = rowSums(.[4:11])) %>% 
+#   mutate(age_18_59 = rowSums(.[12:13])) %>% 
+#   mutate(age_over60 = rowSums(.[14:15])) %>% 
+#   select(camp, contains('total'), contains('age')) %>% 
+#   mutate(camp=gsub('_total', '', camp)) %>% 
+#   mutate(camp=gsub('camp_', '', camp)) %>% 
+#   mutate(camp=trimws(camp)) 
 
+age_group_sex_pop <- read.csv(here('data','age_sex_population.csv')) %>% select(-X) %>% mutate(age_group=case_when(age_group=='0_10' ~ '0-9',
+                                                                                                                   age_group=='10_19' ~ '10-19',
+                                                                                                                   age_group=='20_29' ~ '20-29',
+                                                                                                                   age_group=='30_39' ~ '30-39',
+                                                                                                                   age_group=='40_49' ~ '40-49',
+                                                                                                                   age_group=='50plus' ~ '50+',
+                                                                                                                   TRUE ~ age_group))
+
+age_group_pop <- age_group_sex_pop %>% group_by(age_group) %>% summarise(population=sum(population,na.rm=TRUE))
+
+age_labs_decade <- c(paste(seq(0, 40, by = 10), seq(9, 49, by = 10),
+                           sep = "-"), paste(50, "+", sep = ""))
 
 tests_age_group_df <- ari_ili_df %>%  
   filter(!laboratory_result %in% c('n_a','not_done')) %>% 
   filter(nationality=='fdmn') %>% 
+  mutate(age_group=cut(age,breaks = c(seq(0, 50, by = 10), Inf), labels = age_labs_decade, right = FALSE)) %>% 
+  select(age_group) %>% 
+  #mutate(age_group=fct_explicit_na(age_group_decade, na_level = "(Age missing)")) %>% 
   count(age_group, .drop=FALSE) 
 
 
-age_group_pop <- population %>%  select(-c(total_families, total_individuals)) %>% 
-  summarise(across(contains('age'), sum)) %>% 
-  pivot_longer(age_0_18:age_over60) %>% 
-  mutate(age_group=labs) %>% 
-  select(-name)
+# age_group_pop <- population %>%  select(-c(total_families, total_individuals)) %>% 
+#   summarise(across(contains('age'), sum)) %>% 
+#   pivot_longer(age_0_18:age_over60) %>% 
+#   mutate(age_group=labs) %>% 
+#   select(-name)
 
-tests_age_group_gph <-  tests_age_group_df %>% 
-  left_join(age_group_pop, by='age_group') %>% 
+tests_age_group_gph <-  
+  tests_age_group_df %>% 
+  left_join(age_group_pop, by=c('age_group'='age_group')) %>% 
   filter(!is.na(age_group)) %>% 
-  mutate(tests_per10000=(n/value)*10000) %>% 
-  mutate(age_group=factor(age_group, levels=c('0-17', '18-59', '60 and over'))) %>% 
+  mutate(tests_per10000=(n/population)*10000) %>% 
+  #mutate(age_group=factor(age_group, levels=c('0-17', '18-59', '60 and over'))) %>% 
   ggplot(aes(x=age_group, y=tests_per10000, fill=age_group)) +
   geom_col() +
   theme_minimal() +
   theme(legend.position="none") +
+  scale_fill_brewer(palette="Dark2", na.value="blue") +
   labs(x='Age groups', y='Tests per 10,000 people', fill='Age groups')
 
