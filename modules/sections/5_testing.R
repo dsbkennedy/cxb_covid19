@@ -143,9 +143,21 @@ tests_table <- ari_ili_tests_total %>%
 
 # TEST-POSITIVITY TABLE ---------------------------------------------------
 
+age_labs_decade <- c(paste(seq(0, 40, by = 10), seq(9, 49, by = 10),
+                           sep = "-"), paste(50, "+", sep = ""))
+
+# tests_age_group_df <- ari_ili_df %>%  
+#   filter(!laboratory_result %in% c('n_a','not_done')) %>% 
+#   filter(nationality=='fdmn') %>% 
+#   mutate(age_group=cut(age,breaks = c(seq(0, 50, by = 10), Inf), labels = age_labs_decade, right = FALSE)) %>% 
+#   select(age_group) %>% 
+#   #mutate(age_group=fct_explicit_na(age_group_decade, na_level = "(Age missing)")) %>% 
+#   count(age_group, .drop=FALSE) 
+
 tests_agegrp_tbl <- ari_ili_df %>%
   filter(!laboratory_result %in% c('n_a','not_done')) %>%
   filter(nationality=='fdmn') %>%
+  mutate(age_group=cut(age,breaks = c(seq(0, 50, by = 10), Inf), labels = age_labs_decade, right = FALSE)) %>% 
   count(age_group, laboratory_result) %>%
   filter(!is.na(age_group)) %>%
   pivot_wider(names_from=laboratory_result, values_from=n) %>%
@@ -178,29 +190,53 @@ tests_sex_tbl <- ari_ili_df %>%
   ungroup() 
 
 
-tests_pos_tbl <- tests_agegrp_tbl %>% bind_rows(tests_sex_tbl) %>% 
+# tests_pos_tbl <- tests_agegrp_tbl %>% bind_rows(tests_sex_tbl) %>% 
+#   mutate(indicator=case_when(is.na(age_group) ~ "Sex", 
+#                              TRUE ~ "Age group")) %>% 
+#   mutate(age_group=as.character(age_group)) %>% 
+#   mutate(value=coalesce(age_group, sex)) %>% 
+#   select(indicator,value, positive, total, estimate, conf.low, conf.high) %>% 
+#   group_by(indicator) %>% 
+#   mutate(estimate=round(estimate*100,2)) %>% 
+#   mutate(error=paste0(round(conf.low*100,2),'-',round(conf.high*100,2))) %>% 
+#   select(-c(conf.low, conf.high)) %>% 
+#   gt() %>% 
+#   opt_row_striping(., row_striping = TRUE) %>% 
+#   # fmt_percent(
+#   #   columns = 5:7,
+#   #   decimals = 1
+#   # ) %>% 
+#   cols_label(
+#     value = "",
+#     total = "Tests",
+#     positive = "Cases",
+#     estimate = "Positivity (%)",
+#     error = "LCI-UCI"
+#   ) 
+
+test_pos_age_sex <-  tests_agegrp_tbl %>% bind_rows(tests_sex_tbl) %>% 
   mutate(indicator=case_when(is.na(age_group) ~ "Sex", 
                              TRUE ~ "Age group")) %>% 
   mutate(age_group=as.character(age_group)) %>% 
   mutate(value=coalesce(age_group, sex)) %>% 
-  select(indicator,value, positive, total, estimate, conf.low, conf.high) %>% 
-  group_by(indicator) %>% 
-  mutate(estimate=round(estimate*100,2)) %>% 
-  mutate(error=paste0(round(conf.low*100,2),'-',round(conf.high*100,2))) %>% 
-  select(-c(conf.low, conf.high)) %>% 
-  gt() %>% 
-  opt_row_striping(., row_striping = TRUE) %>% 
-  # fmt_percent(
-  #   columns = 5:7,
-  #   decimals = 1
-  # ) %>% 
-  cols_label(
-    value = "",
-    total = "Tests",
-    positive = "Cases",
-    estimate = "Positivity (%)",
-    error = "LCI-UCI"
-  ) 
+  select(indicator,value, positive, total, estimate, conf.low, conf.high) 
+
+test_pos_age_sex_gph <- test_pos_age_sex %>% 
+  ungroup() %>% 
+  #filter(indicator=='Sex') %>% 
+  ggplot(aes(x=fct_rev(value), y=estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
+                position = position_dodge(width = 0.1)) +
+  theme_minimal() +
+  labs(x='',
+       y='% COVID-19 + samples',
+       title = 'Test positivity by age group and sex',
+       caption='Data source:IEDCR Field Lab') +
+  scale_y_continuous(labels = scales::percent, limits=c(0,0.06))  +
+  expand_limits(x = 0, y = 0)
+  #coord_flip()
+
 
 # TEST-POSITIVITY ---------------------------------------------------------
 
