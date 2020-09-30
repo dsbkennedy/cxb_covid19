@@ -115,10 +115,11 @@ testing_fdmn_gph <-  test_nationality %>%
 shp_file_fdmn <- read_sf(list.files(here('data','shapefiles'), 
                                     pattern='1.shp$', 
                                     full.names = T)) %>% 
-  
   clean_names() %>% 
   mutate(merge_col = case_when(code=='KRC' ~ 'Kutupalong RC',
-                               code=='NRC' ~ 'Nyapara RC', 
+                               code=='NRC' ~ 'Nyapara RC',
+                               code=='4E' ~ '4 Ext',
+                               code=='20E' ~ '20 Ext',
                                TRUE ~ code))
 
 case_shp_fdmn <- table_calc_comb_subloc %>% 
@@ -126,9 +127,11 @@ case_shp_fdmn <- table_calc_comb_subloc %>%
   filter(!location %in% c('Ukhia', 'Teknaf')) %>% 
   mutate(code=location) %>% 
   select(code,total_cases, total_deaths) %>% 
-  left_join(shp_file_fdmn,.,by=c('merge_col'='code')) %>% 
+  full_join(shp_file_fdmn,.,by=c('merge_col'='code')) %>% 
   mutate(total_cases=ifelse(total_cases==0, NA, total_cases)) %>% 
   mutate(total_deaths=ifelse(total_deaths==0, NA, total_deaths))
+
+#case_shp_fdmn %>% filter(is.na())
 
 fdmn_pal_cases_bins <-c(1, 5, 10, 20,40)
 fdmn_pal_deaths_bins <-c(1, 2)
@@ -146,8 +149,6 @@ fdmn_popup <- paste(
   , "<br><strong>Deaths: </strong>"
   , case_shp_fdmn$total_deaths
 )
-
-
 
 
 case_fdmn_map <- 

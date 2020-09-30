@@ -27,10 +27,6 @@ godata_case_id <- fdmn_raw %>% clean_names() %>% filter(!is.na(go_data_case_id))
 
 ###Clean up GoData
 
-##Define age groups for GoData
-age_labs <- c(paste(seq(0, 50, by = 10), seq(9, 59, by = 10),
-                    sep = "-"), paste(60, "+", sep = ""))
-
 godata_clean <- godata_wide %>% 
   #Ethnicity
   mutate(population_group=coalesce(questionnaire_answers_nationality_value,questionnaire_answers_nationality_2_value,questionnaire_answers_cif_nationality_value)) %>% 
@@ -63,7 +59,7 @@ godata_clean <- godata_wide %>%
     #is.na(age_years) && is.na(age_months) ~  NA_integer_,
     TRUE ~ as.integer(age_years))) %>%
   #Age group
-  mutate(age_group=cut(age_years,breaks = c(seq(0, 60, by = 10), Inf), labels = age_labs, right = FALSE)) %>%
+  mutate(age_group=cut(age_years,breaks = c(seq(0, 50, by = 10), Inf), labels = age_labs, right = FALSE)) %>%
   mutate(age_group=fct_explicit_na(age_group, na_level = "(outcome missing)")) %>% 
   #Classification
   filter(classification != "lng_reference_data_category_case_classification_not_a_case_discarded") %>%
@@ -245,7 +241,7 @@ case_death_age_gph <-  case_age %>%
   geom_bar(stat = "identity", position = "dodge", width = 0.7) +
   labs(x = "Age group", y = "Count", fill = '') +
   theme_minimal() +
-  scale_y_continuous(breaks=seq(0,max_cases,2)) +
+  scale_y_continuous(breaks=seq(0,max_cases,10)) +
   scale_fill_brewer(palette="Dark2") +
   geom_text(
     aes(label = ifelse(n>0,n,''), y = n + 0.05),

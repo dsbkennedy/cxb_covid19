@@ -224,14 +224,14 @@ test_pos_age_sex <-  tests_agegrp_tbl %>% bind_rows(tests_sex_tbl) %>%
 test_pos_age_sex_gph <- test_pos_age_sex %>% 
   ungroup() %>% 
   #filter(indicator=='Sex') %>% 
-  ggplot(aes(x=fct_rev(value), y=estimate)) +
+  ggplot(aes(x=value, y=estimate)) +
   geom_point() +
   geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
                 position = position_dodge(width = 0.1)) +
   theme_minimal() +
   labs(x='',
        y='% COVID-19 + samples',
-       title = 'Test positivity by age group and sex',
+      # title = 'Test positivity by age group and sex',
        caption='Data source:IEDCR Field Lab') +
   scale_y_continuous(labels = scales::percent, limits=c(0,0.06))  +
   expand_limits(x = 0, y = 0)
@@ -366,15 +366,7 @@ tests_gph <- ggplot(week_test_df, aes(x=week, y=age, group=factor(week))) +
 #   mutate(camp=gsub('camp_', '', camp)) %>% 
 #   mutate(camp=trimws(camp)) 
 
-age_group_sex_pop <- read.csv(here('data','age_sex_population.csv')) %>% select(-X) %>% mutate(age_group=case_when(age_group=='0_10' ~ '0-9',
-                                                                                                                   age_group=='10_19' ~ '10-19',
-                                                                                                                   age_group=='20_29' ~ '20-29',
-                                                                                                                   age_group=='30_39' ~ '30-39',
-                                                                                                                   age_group=='40_49' ~ '40-49',
-                                                                                                                   age_group=='50plus' ~ '50+',
-                                                                                                                   TRUE ~ age_group))
 
-age_group_pop <- age_group_sex_pop %>% group_by(age_group) %>% summarise(population=sum(population,na.rm=TRUE))
 
 age_labs_decade <- c(paste(seq(0, 40, by = 10), seq(9, 49, by = 10),
                            sep = "-"), paste(50, "+", sep = ""))

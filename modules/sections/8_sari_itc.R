@@ -32,6 +32,10 @@ dru_gt_table <- dru_raw %>%
          number_of_functional_isolation_beds_non_sari,number_of_currently_filled_isolation_beds_non_sari, prop_filled_iso, number_of_expected_isolation_discharges_in_next_24_hours_non_sari, 
          count_beds, filled_beds, prop_filled_total, timestamp) %>% 
   mutate_if(is.numeric, funs(ifelse(is.na(.), 0, .))) %>% 
+  mutate(camp_number=str_extract(camp, "[[:digit:]]+")) %>% 
+  mutate(camp_number=as.numeric(camp_number)) %>% 
+  arrange(camp_number) %>% 
+  select(-camp_number) %>% 
   gt() %>% 
   opt_row_striping(., row_striping = TRUE) %>% 
   tab_spanner(
