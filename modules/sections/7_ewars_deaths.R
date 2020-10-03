@@ -23,12 +23,12 @@ ewars_mort_gph <- ewars_mort %>%
   filter(!camp_zone=='') %>% 
   count(isoyear, isoweek, year_wk) %>%
   arrange(year_wk) %>% 
-  mutate(deaths_roll=roll_mean((n),4, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(deaths_roll=roll_mean((n),2, na.rm=TRUE, align="right", fill = NA)) %>% 
   ggplot(., aes(x=isoweek, y=deaths_roll, color=factor(isoyear))) +
   geom_line() +
   theme_minimal() +
   scale_y_continuous(limits=c(0,40)) +
-  labs(x='Week', y='Deaths (4-week average)', color='Year')
+  labs(x='Week', y='Deaths (2-week average)', color='Year')
 
 
 # WEEKLY-DEATHS-AGEGRP ----------------------------------------------------
@@ -38,12 +38,12 @@ death_age_gph <- ewars_mort %>%
   filter(!is.na(age_group)) %>% 
   arrange(year_wk)  %>% 
   group_by(age_group) %>% 
-  mutate(deaths_roll=roll_mean((n),4, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(deaths_roll=roll_mean((n),2, na.rm=TRUE, align="right", fill = NA)) %>% 
   ggplot(aes(x=year_wk, y=deaths_roll, color=fct_rev(age_group))) +
   geom_line() +
   theme_minimal() +
   scale_y_continuous(limits=c(0,40)) +
-  labs(x='Week', y='Deaths (4-week average)', color='Age group') +
+  labs(x='Week', y='Deaths (2-week average)', color='Age group') +
   scale_colour_brewer(palette = "Set1")
 
 
@@ -53,12 +53,12 @@ cause_death_gph <- ewars_mort %>%
   count(probable_cause_of_death,year_wk) %>% 
   arrange(year_wk)  %>% 
   group_by(probable_cause_of_death) %>% 
-  mutate(deaths_roll=roll_mean((n),4, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(deaths_roll=roll_mean((n),2, na.rm=TRUE, align="right", fill = NA)) %>% 
   ggplot(aes(x=year_wk, y=deaths_roll, color=fct_rev(probable_cause_of_death))) +
   geom_line() +
   theme_minimal() +
   scale_y_continuous(limits=c(0,40)) +
-  labs(x='Week', y='Deaths (4-week average)', color='Probable cause of death') +
+  labs(x='Week', y='Deaths (2-week average)', color='Probable cause of death') +
   scale_colour_brewer(palette = "Set2")
 
 
@@ -75,7 +75,7 @@ ewars_mort_camp_gph <-  ewars_mort %>%
   mutate(camp_zone=reorder(camp_zone, camp_number)) %>% 
   #arrange(year_wk)  %>% 
   group_by(camp_zone) %>% 
-  mutate(deaths_roll=roll_mean((n),4, na.rm=TRUE, align="right", fill = NA)) %>% 
+  mutate(deaths_roll=roll_mean((n),2, na.rm=TRUE, align="right", fill = NA)) %>% 
   ggplot(., aes(x=year_wk, y=deaths_roll, color=camp_zone)) +
   geom_line() +
   scale_x_yearweek(date_breaks = '120 days') +
@@ -83,4 +83,4 @@ ewars_mort_camp_gph <-  ewars_mort %>%
   facet_wrap(~camp_zone) +
   theme_minimal() +
   theme(legend.position="none")+
-  labs(x='Week', y='Deaths (4-week average)')
+  labs(x='Week', y='Deaths (2-week average)')
