@@ -73,15 +73,21 @@ camp_activity <- hbc_df %>%
 
 
 
-prop_visit_camp_gph <-  ggplot(camp_activity, aes(x=week, y=prop_visited)) +
-  geom_col() +
-  scale_y_continuous(labels = scales::percent) +
-  facet_wrap(~camp) +
-  theme(legend.position = "none") +
-  theme_minimal() +
-  scale_x_continuous(breaks=pretty_breaks()) +
-  labs(y='Households visited (%)', x='Week')
+# prop_visit_camp_gph <-  ggplot(camp_activity, aes(x=week, y=prop_visited)) +
+#   geom_col() +
+#   scale_y_continuous(labels = scales::percent) +
+#   facet_wrap(~camp) +
+#   theme(legend.position = "none") +
+#   theme_minimal() +
+#   scale_x_continuous(breaks=pretty_breaks()) +
+#   labs(y='Households visited (%)', x='Week')
 
+prop_visit_camp_gph <- camp_activity %>% select(camp, week, prop_visited) %>% 
+  ggplot(.,aes(x=fct_rev(camp),y=prop_visited)) +
+  geom_boxplot(outlier.shape=NA) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(y='Households visited (%)', x='Camp') +
+  coord_flip() 
 
 # MILD-SYMPTOMS -----------------------------------------------------------
 
@@ -127,36 +133,55 @@ mild_symptoms_gph <- symptoms_df %>%
 
 # MODERATE-SEVERE-TABLE ---------------------------------------------------
 
-modsev_symptoms_tbl <- symptoms_df %>% 
-  group_by(week, severity, age_grp, sex) %>% 
-  summarise(total=sum(value,na.rm=TRUE)) %>% 
-  pivot_wider(names_from=c(age_grp,sex), values_from=total) %>% 
-  arrange(desc(week)) %>% 
-  ungroup() %>% 
-  filter(!severity=='Mild') %>% 
-  select(-severity) %>% 
-  clean_names() %>% 
-  select(week, contains('less_than_5'), contains('5_to_59'), contains('60_over')) %>% 
-  rowwise %>% 
-  mutate(total = sum(c_across(!week))) %>% 
-  gt(rowname_col = c("week")) %>% 
-  opt_row_striping(., row_striping = TRUE) %>% 
-  tab_stubhead('Week') %>% 
-  tab_spanner(
-    label = "Under 5",
-    columns = vars(less_than_5_male,less_than_5_female)) %>% 
-  tab_spanner(
-    label = "5 to 59",
-    columns = vars(x5_to_59_male,x5_to_59_female)) %>% 
-  tab_spanner(
-    label = "60 and over",
-    columns = vars(x60_over_male,x60_over_female)) %>% 
-  cols_label(
-    week = "Week",
-    less_than_5_male = "Male",
-    less_than_5_female = "Female",
-    x5_to_59_male = "Male",
-    x5_to_59_female = "Female",
-    x60_over_male = "Male",
-    x60_over_female = "Female", 
-    total="Total")  
+# modsev_symptoms_tbl <- symptoms_df %>% 
+#   group_by(week, severity, age_grp, sex) %>% 
+#   summarise(total=sum(value,na.rm=TRUE)) %>% 
+#   pivot_wider(names_from=c(age_grp,sex), values_from=total) %>% 
+#   arrange(desc(week)) %>% 
+#   ungroup() %>% 
+#   filter(!severity=='Mild') %>% 
+#   select(-severity) %>% 
+#   clean_names() %>% 
+#   select(week, contains('less_than_5'), contains('5_to_59'), contains('60_over')) %>% 
+#   rowwise %>% 
+#   mutate(total = sum(c_across(!week))) %>% 
+#   gt(rowname_col = c("week")) %>% 
+#   opt_row_striping(., row_striping = TRUE) %>% 
+#   tab_stubhead('Week') %>% 
+#   tab_spanner(
+#     label = "Under 5",
+#     columns = vars(less_than_5_male,less_than_5_female)) %>% 
+#   tab_spanner(
+#     label = "5 to 59",
+#     columns = vars(x5_to_59_male,x5_to_59_female)) %>% 
+#   tab_spanner(
+#     label = "60 and over",
+#     columns = vars(x60_over_male,x60_over_female)) %>% 
+#   cols_label(
+#     week = "Week",
+#     less_than_5_male = "Male",
+#     less_than_5_female = "Female",
+#     x5_to_59_male = "Male",
+#     x5_to_59_female = "Female",
+#     x60_over_male = "Male",
+#     x60_over_female = "Female", 
+#     total="Total")  
+
+
+modsev_symptoms_gph <- symptoms_df %>%
+  ungroup() %>%
+  group_by(severity,week, sex, age_group) %>%
+  summarise(total_cases=sum(value,na.rm=TRUE)) %>%
+  group_by(severity,week) %>%
+  #mutate(prop=total_cases/sum(total_cases)) %>%
+  mutate(age_group=factor(age_group, levels=c('<5', '5-59', '>=60'))) %>%
+  mutate(age_group=fct_rev(age_group)) %>%
+  filter(!severity=='Mild') %>%
+  ggplot(aes(x=week,y=total_cases, fill=interaction(sex,age_group), label=ifelse(total_cases>0,total_cases,NA))) +
+  geom_col(position = position_stack(), color = "black") +
+  geom_text(position = position_stack(vjust = .5)) +
+  theme_minimal() +
+  labs(x='Week', y='Number of cases', fill='Sex & \n Age group') +
+  scale_fill_brewer(palette="Dark2") +
+  #scale_y_continuous(labels = scales::percent) +
+  scale_x_continuous(breaks=pretty_breaks())

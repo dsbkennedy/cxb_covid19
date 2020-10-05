@@ -620,7 +620,8 @@ ggplotly(mild_symptoms_gph) %>% layout(legend = list(orientation = "h", x = 0.4,
 ### Individuals reporting moderate/severe symptoms
 
 ```{r cbs_modsev_symptoms}
-modsev_symptoms_tbl
+#modsev_symptoms_tbl
+ggplotly(modsev_symptoms_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
 ```
 
 <!---
