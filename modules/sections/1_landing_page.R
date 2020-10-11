@@ -226,7 +226,7 @@ all_deaths_table <- table_calc_comb %>%
 # EPICURVE ----------------------------------------------------------------
 
 epi_curve <- table_final_df %>% 
-  mutate(week=epiweek(date)) %>% 
+  mutate(week=isoweek(date)) %>% 
   group_by(population_group,week) %>% 
   summarise(new_cases=sum(new_cases,na.rm=TRUE)) %>% 
   ggplot(.) +
