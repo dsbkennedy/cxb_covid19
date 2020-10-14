@@ -271,7 +271,7 @@ epi_curve <- table_final_df %>%
 test_pos_df <- gsheet_data$ari_ili %>% 
   clean_names() %>% 
   clean_data() %>% 
-  mutate(camp=gsub('camp_', '', camp)) %>% 
+  mutate(camp=gsub('camp_', '', camp_patients_residence)) %>% 
   filter(nationality %in% c('fdmn', 'host')) %>% 
   filter(sample_type!=c('follow_up', 'humanitarian_worker')) %>% 
   filter(laboratory_result %in% c('positive', 'negative')) %>% 

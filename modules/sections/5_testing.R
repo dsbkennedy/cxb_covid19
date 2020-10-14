@@ -4,7 +4,7 @@
 ari_ili_df <- gsheet_data$ari_ili %>% 
   clean_names() %>% 
   clean_data() %>% 
-  mutate(camp=gsub('camp_', '', camp)) %>% 
+  mutate(camp=gsub('camp_', '', camp_patients_residence)) %>% 
   filter(nationality=='fdmn') %>% 
   filter(sample_type!=c('follow_up', 'humanitarian_worker')) %>% 
   filter(laboratory_result %in% c('positive', 'negative')) %>% 
