@@ -54,7 +54,9 @@ library(stringr)
 library(leaflet)
 library(tsibble)
 library(DT)
-
+library(tidyjson)
+library(wesanderson)
+# library(conflicted)
 # prepare regular expression for extracting camp number from camp variable
 regexp <- "[[:digit:]]+"
 
@@ -82,6 +84,7 @@ source("modules/sections/6_cbs.R", local = knitr::knit_global())
 source("modules/sections/7_ewars_deaths.R", local = knitr::knit_global())
 source("modules/sections/8_sari_itc.R", local = knitr::knit_global())
 source("modules/sections/9_quarantine.R", local = knitr::knit_global())
+source("modules/sections/10_ccm.R", local = knitr::knit_global())
 
 ```
 
@@ -241,8 +244,9 @@ Row {data-height=75}
 knitr::include_graphics(here('data', 'logo_comb.png'))
 
 ##Time in Bangladesh
-s <- now("UTC-6")
+#s <- now("UTC-6")
 
+s <- now()
 ```
 
 
@@ -639,7 +643,7 @@ Row {data-height=650}
 <iframe width='100%' height='100%' src="https://app.powerbi.com/view?r=eyJrIjoiMzE2YmIzYzctMzdiOS00OWI1LWJkODgtZDkyZDdiNTkwNjRkIiwidCI6IjE1MjZjY2Q5LWQ2YjktNDM2MC1iOTk5LTlmMmY4MjE4M2RjNiIsImMiOjl9&pageName=ReportSectiond926854c343336265a7a"  >
 </iframe>
 
----->
+
 
 SARI ITC & Isolation  {data-orientation=rows}
 =====================================  
@@ -653,6 +657,47 @@ dru_gt_table
  
 ```
 
+---->
+
+Facility table {data-navmenu="Clinical Case Management"}  
+=====================================  
+
+```{r facility_summary}
+facility_summary
+```
+
+Demographics {data-navmenu="Clinical Case Management"}  
+=====================================
+
+Row {data-height=800}
+-------------------------------------
+
+### Admissions in last 24 hours by nationality
+
+```{r nationality_gph}
+ggplotly(nationality_gph)
+```
+
+### Activity in last 24 hours by gender
+
+```{r gender_gph}
+ggplotly(gender_gph)
+```
+
+Trends {data-navmenu="Clinical Case Management"}  
+=====================================
+
+```{r severity}
+ggplotly(severity_gph)
+```
+
+
+Contact information {data-navmenu="Clinical Case Management"}  
+=====================================
+
+```{r contact_info}
+contact_info
+```
 
 Quarantine  {data-orientation=rows}
 =====================================  
