@@ -661,6 +661,7 @@ dru_gt_table
 
 Facility table {data-navmenu="Clinical Case Management"}  
 =====================================  
+<br>
 
 ```{r facility_summary}
 facility_summary
@@ -687,8 +688,19 @@ ggplotly(gender_gph)
 Trends {data-navmenu="Clinical Case Management"}  
 =====================================
 
+Row {data-height=800}
+-------------------------------------
+
+### Severity
+
 ```{r severity}
 ggplotly(severity_gph)
+```
+
+### Total beds
+
+```{r total_beds}
+ggplotly(total_beds)
 ```
 
 
@@ -701,6 +713,7 @@ contact_info
 
 Quarantine  {data-orientation=rows}
 =====================================  
+<br>
 
 Row {data-height=75}
 -------------------------------------
