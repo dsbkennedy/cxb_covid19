@@ -120,27 +120,53 @@ ari_ili_tests_result <- ari_ili_df %>%
 #   #   #table.font.size = "small"
 #   # ) 
 
-tests_table <- ari_ili_tests_total %>% 
-  #left_join(ari_ili_cases_7day_df, by='camp') %>% 
-  left_join(ari_ili_tests_7day, by='camp') %>% 
-  left_join(ari_ili_tests_growth, by='camp') %>% 
-  left_join(ari_ili_tests_result, by='camp') %>% 
-  mutate(camp=trimws(camp)) %>% 
-  mutate(camp_number=str_extract(camp, regexp)) %>% 
-  mutate(camp_number=as.numeric(camp_number)) %>% 
-  arrange(camp_number) %>% 
-  select(-camp_number) %>% 
-  select(-c(growth,negative)) %>% 
-  mutate(camp=sub("^0+", "", camp)) %>% 
-  mutate(positive=scales::percent(positive,accuracy=0.1)) %>% 
+# tests_table <- ari_ili_tests_total %>% 
+#   #left_join(ari_ili_cases_7day_df, by='camp') %>% 
+#   left_join(ari_ili_tests_7day, by='camp') %>% 
+#   left_join(ari_ili_tests_growth, by='camp') %>% 
+#   left_join(ari_ili_tests_result, by='camp') %>% 
+#   mutate(camp=trimws(camp)) %>% 
+#   mutate(camp_number=str_extract(camp, regexp)) %>% 
+#   mutate(camp_number=as.numeric(camp_number)) %>% 
+#   arrange(camp_number) %>% 
+#   select(-camp_number) %>% 
+#   select(-c(growth,negative)) %>% 
+#   mutate(camp=sub("^0+", "", camp)) %>% 
+#   mutate(positive=scales::percent(positive,accuracy=0.1)) %>% 
+#   datatable(., 
+#             extensions = 'Buttons',
+#             colnames=c('Camp', 'Total tests', 'Tests (last 7 days)', 'Test positvity'),
+#             options = list(pageLength = 20,dom = 'Bfrtip', 
+#                            columnDefs = list(list(className = 'dt-center', targets = 1:4)),
+#                            buttons = c('csv')))
+
+tests_df <- tests_data %>% 
+  filter(!date=='Total') %>% 
+  mutate(date_upd=excel_numeric_to_date(as.numeric(date))) %>% 
+  select(-c('date','outside_cx_b')) %>% 
+  mutate(week=isoweek(date_upd)) %>% 
+  select(-date_upd) %>% 
+  pivot_longer(-week) %>% 
+  group_by(week,name) %>% 
+  summarise(total=sum(value,na.rm=TRUE)) %>% 
+  ungroup() %>% 
+  dplyr::arrange(desc(week))
+
+fdmn_tests <- tests_df %>% 
+  filter(grepl('fdmn', name)) %>% 
+  mutate(name=case_when(name=='fdmn' ~ 'TESTS', 
+                        TRUE ~ 'CASES')) %>% 
+  pivot_wider(names_from=name, values_from=total) %>% 
+  rename(WEEK=week) 
+
+tests_table <- fdmn_tests %>% 
   datatable(., 
             extensions = 'Buttons',
-            colnames=c('Camp', 'Total tests', 'Tests (last 7 days)', 'Test positvity'),
+            colnames=c('Week', 'Tests', 'Cases'),
+            rownames=FALSE,
             options = list(pageLength = 20,dom = 'Bfrtip', 
-                           columnDefs = list(list(className = 'dt-center', targets = 1:4)),
+                          # columnDefs = list(list(className = 'dt-center', targets = 1:3)),
                            buttons = c('csv')))
-
-
 # TEST-POSITIVITY TABLE ---------------------------------------------------
 
 age_labs_decade <- c(paste(seq(0, 40, by = 10), seq(9, 49, by = 10),
