@@ -703,13 +703,15 @@ ggplotly(severity_gph)
 ggplotly(total_beds)
 ```
 
-
+<!---
 Contact information {data-navmenu="Clinical Case Management"}  
 =====================================
 
 ```{r contact_info}
 contact_info
 ```
+
+--->
 
 Quarantine  {data-orientation=rows}
 =====================================  
