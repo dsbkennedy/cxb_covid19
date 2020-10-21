@@ -7,9 +7,9 @@ cxb_cases_subloc <- all_cases_linelist %>%
 #Deaths
 cxb_deaths_subloc <- all_cases_linelist %>% 
   filter(x30_day_outcome=='Death') %>% 
-  group_by(population_group,date_of_case_detection,upazilla, camp_of_residence) %>% 
+  group_by(population_group,date_of_death,upazilla, camp_of_residence) %>% 
   summarise(n = n(),.groups = 'drop') %>% 
-  select(date=date_of_case_detection, population_group,upazilla, camp_of_residence, new_deaths=n)
+  select(date=date_of_death, population_group,upazilla, camp_of_residence, new_deaths=n)
 
 cxb_cases_deaths_subloc <- cxb_cases_subloc %>% 
   full_join(cxb_deaths_subloc, by=c('population_group', 'date', 'upazilla', 'camp_of_residence')) %>% 
@@ -47,7 +47,8 @@ table_7day_subloc <- cxb_cases_deaths_subloc %>%
 ##Growth rate needs values larger than 10 so FDMN communities don't reach this criteria
 growth_rate_subloc <- cxb_cases_deaths_subloc %>% 
   group_by(population_group,location) %>% 
-  complete(date = seq.Date(min(date), max(date), by="day")) %>% 
+  filter(!is.na(date)) %>% 
+  complete(date = seq.Date(min(date), max(date,na.rm=TRUE), by="day")) %>% 
   mutate(new_cases=coalesce(new_cases,0)) %>% 
   #group_by(location) %>% 
   mutate(cumulative_cases=cumsum(new_cases)) %>% 

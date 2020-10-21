@@ -9,7 +9,7 @@ gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%
 
 ##Import FDMN data 
 fdmn_raw <- gsheet_data$fdmn %>% 
-  clean_names() %>% 
+  clean_names() %>%
   janitor::remove_empty() %>% 
   mutate(date_of_death=janitor::excel_numeric_to_date(date_of_death)) %>% 
   #select(-date_of_death) %>% 
