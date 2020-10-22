@@ -81,8 +81,13 @@ fdmn_cases_vb <- valueBox(
 
 ##Deaths
 
-fdmn_deaths <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_deaths)
-fdmn_deaths_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_deaths_7day)
+fdmn_deaths <- table_calc_comb %>%  
+  filter(population_group=='Rohingya refugee/FDMN') %>%  
+  pull(total_deaths)
+
+fdmn_deaths_7day <- table_calc_comb %>%  
+  filter(population_group=='Rohingya refugee/FDMN') %>%  
+  pull(total_deaths_7day)
 
 fdmn_deaths_vb <- valueBox(
   format(paste0(fdmn_deaths,' (', fdmn_deaths_7day, ')'), big.mark = ","),
