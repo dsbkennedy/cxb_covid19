@@ -202,7 +202,7 @@ godata_clean <- godata_wide %>%
                                 grepl('no', questionnaire_answers_attended_occasion, ignore.case=T)  ~'No')) %>% 
   mutate(social_event=factor(social_event, levels=c('Yes', 'No'))) 
 
-
+#saveRDS(godata_clean, here('data', 'godata.rds'))
 # EPICURVE-GENDER -------------------------------------------------------------------
 
 godata_epi_curve <- godata_clean %>% 
