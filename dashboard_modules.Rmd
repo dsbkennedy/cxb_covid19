@@ -82,9 +82,9 @@ source("modules/sections/4_epidemiology.R", local = knitr::knit_global())
 source("modules/sections/5_testing.R", local = knitr::knit_global())
 source("modules/sections/6_cbs.R", local = knitr::knit_global())
 source("modules/sections/7_ewars_deaths.R", local = knitr::knit_global())
-source("modules/sections/8_sari_itc.R", local = knitr::knit_global())
+#source("modules/sections/8_sari_itc.R", local = knitr::knit_global())
 source("modules/sections/9_quarantine.R", local = knitr::knit_global())
-source("modules/sections/10_ccm.R", local = knitr::knit_global())
+source("modules/sections/8_ccm.R", local = knitr::knit_global())
 
 ```
 
@@ -422,10 +422,9 @@ Testing {data-orientation=row}
 Row {data-height=700}
 -------------------------------------
 
-### Tests by camp
+### Tests and cases by week
 
 ```{r test_camp_table}
-
 
 tests_table
 
@@ -628,36 +627,7 @@ ggplotly(mild_symptoms_gph) %>% layout(legend = list(orientation = "h", x = 0.4,
 ggplotly(modsev_symptoms_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
 ```
 
-<!---
-Clinical case management  
-=====================================  
 
-Row {data-height=650}
--------------------------------------
-
-
-
-<br>
-<br>
-
-<iframe width='100%' height='100%' src="https://app.powerbi.com/view?r=eyJrIjoiMzE2YmIzYzctMzdiOS00OWI1LWJkODgtZDkyZDdiNTkwNjRkIiwidCI6IjE1MjZjY2Q5LWQ2YjktNDM2MC1iOTk5LTlmMmY4MjE4M2RjNiIsImMiOjl9&pageName=ReportSectiond926854c343336265a7a"  >
-</iframe>
-
-
-
-SARI ITC & Isolation  {data-orientation=rows}
-=====================================  
-
-<br>
-<br>
-
-```{r sari_itc}
-
-dru_gt_table
- 
-```
-
----->
 
 Facility table {data-navmenu="Clinical Case Management"}  
 =====================================  
@@ -691,7 +661,7 @@ Trends {data-navmenu="Clinical Case Management"}
 Row {data-height=800}
 -------------------------------------
 
-### Severity
+### Severity with 7-day rolling average
 
 ```{r severity}
 ggplotly(severity_gph)
