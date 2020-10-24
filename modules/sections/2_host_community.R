@@ -111,7 +111,7 @@ case_shp_host <- table_calc_comb_subloc %>%
 
 #Define colour palettes based on available data
 #This will need to be updated as cases increase
-host_pal_cases_bins <-c(0, 100, 250, 500, 1000, 2500)
+host_pal_cases_bins <-c(0, 125, 250, 500, 1000, 2000, 4000)
 host_pal_deaths_bins <-c(0, 5, 10, 25, 50)
 
 
