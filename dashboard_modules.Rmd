@@ -670,7 +670,7 @@ ggplotly(severity_gph)
 ### Total beds
 
 ```{r total_beds}
-ggplotly(total_beds)
+#ggplotly(total_beds)
 ```
 
 <!---
