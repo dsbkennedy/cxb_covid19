@@ -82,9 +82,8 @@ source("modules/sections/4_epidemiology.R", local = knitr::knit_global())
 source("modules/sections/5_testing.R", local = knitr::knit_global())
 source("modules/sections/6_cbs.R", local = knitr::knit_global())
 source("modules/sections/7_ewars_deaths.R", local = knitr::knit_global())
-#source("modules/sections/8_sari_itc.R", local = knitr::knit_global())
-source("modules/sections/9_quarantine.R", local = knitr::knit_global())
 source("modules/sections/8_ccm.R", local = knitr::knit_global())
+source("modules/sections/9_quarantine.R", local = knitr::knit_global())
 
 ```
 
@@ -206,11 +205,12 @@ ggplotly(epi_curve)
 ```
 
 
-### Test positivity trend
+### Admissions & Discharges
 
 ```{r test postivity_trend}
 
-ggplotly(test_positivity_gph)
+ggplotly(adm_dis_gph)
+#ggplotly(test_positivity_gph)
 
 ```
 
@@ -658,7 +658,7 @@ ggplotly(gender_gph)
 Trends {data-navmenu="Clinical Case Management"}  
 =====================================
 
-Row {data-height=800}
+Col {data-height=800}
 -------------------------------------
 
 ### Severity with 7-day rolling average
@@ -670,18 +670,10 @@ ggplotly(severity_gph)
 ### Total beds
 
 ```{r total_beds}
-#ggplotly(total_beds)
+ggplotly(total_beds_gph)
 ```
 
-<!---
-Contact information {data-navmenu="Clinical Case Management"}  
-=====================================
 
-```{r contact_info}
-contact_info
-```
-
---->
 
 Quarantine  {data-orientation=rows}
 =====================================  

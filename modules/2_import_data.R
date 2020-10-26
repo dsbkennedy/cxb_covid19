@@ -100,13 +100,15 @@ host_population <-  2805491
 fdmn_population <-  859205 
 
 # population by age and sex
-age_group_sex_pop <- read.csv(here('data','age_sex_population.csv')) %>% select(-X) %>% mutate(age_group=case_when(age_group=='0_10' ~ '0-9',
-                                                                                                                   age_group=='10_19' ~ '10-19',
-                                                                                                                   age_group=='20_29' ~ '20-29',
-                                                                                                                   age_group=='30_39' ~ '30-39',
-                                                                                                                   age_group=='40_49' ~ '40-49',
-                                                                                                                   age_group=='50plus' ~ '50+',
-                                                                                                                   TRUE ~ age_group))
+age_group_sex_pop <- read.csv(here('data','age_sex_population.csv')) %>% 
+  select(-X) %>% 
+  mutate(age_group=case_when(age_group=='0_10' ~ '0-9',
+                             age_group=='10_19' ~ '10-19',
+                             age_group=='20_29' ~ '20-29',
+                             age_group=='30_39' ~ '30-39',
+                             age_group=='40_49' ~ '40-49',
+                             age_group=='50plus' ~ '50+',
+                             TRUE ~ age_group))
 
 ##Define age groups for GoData
 age_labs <- c(paste(seq(0, 40, by = 10), seq(9, 49, by = 10),
