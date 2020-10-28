@@ -78,7 +78,7 @@ source("modules/4_linelist_wrangling.R", local = knitr::knit_global())
 source("modules/sections/1_landing_page.R", local = knitr::knit_global())
 source("modules/sections/2_host_community.R", local = knitr::knit_global())
 source("modules/sections/3_fdmn_rohingya.R", local = knitr::knit_global())
-#source("modules/sections/4_epidemiology.R", local = knitr::knit_global())
+source("modules/sections/4_epidemiology.R", local = knitr::knit_global())
 source("modules/sections/5_testing.R", local = knitr::knit_global())
 source("modules/sections/6_cbs.R", local = knitr::knit_global())
 source("modules/sections/7_ewars_deaths.R", local = knitr::knit_global())
@@ -353,6 +353,75 @@ Column
 case_fdmn_map
 
 ```
+
+
+Epidemiology {data-orientation=columns}
+=====================================  
+
+Inputs {.sidebar}
+-------------------------------------
+
+<br>
+<br>
+
+This section displays data from GoData. The data are only for the FDMN/Rohingya population. 
+
+<br> 
+
+If there is a difference between the number of cases in this section and the number of cases on the "Landing page", the data have not 
+yet been added to GoData.
+
+
+<br>
+
+
+
+
+Column  {data-width=400}
+-------------------------------------
+
+
+### Epi curve of COVID-19 cases by gender
+
+```{r godata_epicurve}
+
+
+ggplotly(godata_epi_curve)
+
+```
+
+
+### Cases and deaths by age group
+
+
+```{r godata_cases_deaths_agegrp}
+
+ggplotly(case_death_age_gph)
+ 
+```
+
+
+
+Column {data-width=500}
+-------------------------------------
+
+### Detailed information on cases
+
+```{r}
+
+godata_table
+
+```
+
+### Symptoms at presentation
+ 
+```{r symptom_gph}
+
+
+symptom_gph
+```
+ 
+
 
 
 Testing {data-orientation=row}
