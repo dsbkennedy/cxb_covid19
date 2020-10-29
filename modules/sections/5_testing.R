@@ -425,3 +425,35 @@ tests_age_group_gph <-
   scale_fill_brewer(palette="Dark2", na.value="blue") +
   labs(x='Age groups', y='Tests per 10,000 people', fill='Age groups')
 
+###TEST POSITIVTY GRAPH
+test_positivity_gph <- tests_df %>% 
+  #filter(grepl('fdmn|host', name)) %>% 
+  # mutate(name=case_when(name=='fdmn' ~ 'TESTS', 
+  #                       TRUE ~ 'CASES')) %>% 
+  pivot_wider(names_from=name, values_from=total) %>% 
+  pivot_longer(-week) %>% 
+  mutate(indicator=ifelse(grepl('positive',name), 'cases', 'tests')) %>% 
+  mutate(population_group=ifelse(grepl('fdmn', name), 'FDMN', 'HOST')) %>% 
+  select(-name) %>% 
+  group_by(population_group) %>% 
+  select(week,indicator,population_group,value) %>% 
+  pivot_wider(names_from=indicator, values_from=value) %>% 
+  #group_by(population_group) %>% 
+  filter(cases>0) %>% 
+  filter(week>19) %>% 
+  filter(week<max(week, na.rm=TRUE)) %>% 
+  mutate(pos=map2(cases,tests, ~ prop.test(.x, .y, conf.level=0.95) %>% 
+                    broom::tidy())) %>% 
+  unnest(pos) %>% 
+  ggplot(aes(x=week, y=estimate, color=population_group)) +
+  geom_line() +
+  #geom_col(position='dodge') + 
+  geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
+                position = position_dodge(width = 0.6)) +
+  scale_color_manual(values=c("#4472C4", "#ED7D31")) +
+  scale_y_continuous(labels = scales::percent)  +
+  theme_minimal() +
+  labs(x='Week', 
+       y='% COVID-19 positive samples', 
+       color='',
+       caption='Data source:IEDCR FIELD LAB')
