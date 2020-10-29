@@ -214,11 +214,11 @@ ggplotly(epi_curve)
 ```
 
 
-### Admissions & Discharges
+### Patients admitted by severity with 7-day rolling average
 
-```{r test postivity_trend}
+```{r patients_admitted}
 
-ggplotly(adm_dis_gph)
+ggplotly(severity_gph)
 #ggplotly(test_positivity_gph)
 
 ```
@@ -674,6 +674,7 @@ ggplotly(nationality_gph)
 ggplotly(gender_gph)
 ```
 
+<!---
 Trends {data-navmenu="Clinical Case Management"}  
 =====================================
 
@@ -693,6 +694,7 @@ ggplotly(total_beds_gph)
 ```
 
 
+--->
 
 Quarantine  {data-orientation=rows}
 =====================================  
