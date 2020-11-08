@@ -441,7 +441,7 @@ test_positivity_gph <- tests_df %>%
   #group_by(population_group) %>% 
   filter(cases>0) %>% 
   filter(week>19) %>% 
-  filter(week<max(week, na.rm=TRUE)) %>% 
+  #filter(week<max(week, na.rm=TRUE)) %>% 
   mutate(pos=map2(cases,tests, ~ prop.test(.x, .y, conf.level=0.95) %>% 
                     broom::tidy())) %>% 
   unnest(pos) %>% 
