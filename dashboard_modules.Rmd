@@ -214,7 +214,7 @@ ggplotly(epi_curve)
 ```
 
 
-### Patients admitted by severity with 7-day rolling average
+### Patients admitted by severity with 3-day rolling average
 
 ```{r patients_admitted}
 
