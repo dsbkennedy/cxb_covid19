@@ -662,11 +662,14 @@ Demographics {data-navmenu="Clinical Case Management"}
 Row {data-height=800}
 -------------------------------------
 
+<!---
 ### Admissions in last 24 hours by nationality
 
 ```{r nationality_gph}
 ggplotly(nationality_gph)
 ```
+
+--->
 
 ### Activity in last 24 hours by gender
 
