@@ -27,7 +27,7 @@ ewars_mort_gph <- ewars_mort %>%
   ggplot(., aes(x=isoweek, y=deaths_roll, color=factor(isoyear))) +
   geom_line() +
   theme_minimal() +
-  scale_y_continuous(limits=c(0,50)) +
+  scale_y_continuous(limits=c(0,60)) +
   labs(x='Week', y='Deaths (2-week average)', color='Year')
 
 
