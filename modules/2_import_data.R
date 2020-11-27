@@ -20,6 +20,8 @@ fdmn_raw <- gsheet_data$fdmn %>%
 host_raw <- gsheet_data$host %>% 
   clean_names() %>% 
   janitor::remove_empty() %>% 
+  select(-c(date_of_specimen_collection,date_of_lab_result_received,date_of_death)) %>% 
+  #mutate(date_of_specimen_collection=dmy(date_of_specimen_collection)) %>% 
   mutate(nationality='Host')
 
 ##Bind FDMN and host data
