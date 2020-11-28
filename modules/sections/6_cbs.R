@@ -84,7 +84,7 @@ camp_activity <- hbc_df %>%
 
 prop_visit_camp_gph <- camp_activity %>% select(camp, week, prop_visited) %>% 
   ggplot(.,aes(x=fct_rev(camp),y=prop_visited)) +
-  geom_boxplot(outlier.shape=NA) +
+  geom_boxplot() +
   theme_minimal() +
   scale_y_continuous(labels = scales::percent) +
   labs(y='Households visited (%)', x='Camp') 
