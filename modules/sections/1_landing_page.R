@@ -18,31 +18,47 @@ host_tests <- table_calc_comb %>%
   filter(population_group=='Host community') %>%  pull(total_tests)
 host_tests_7day <- table_calc_comb %>%  
   filter(population_group=='Host community') %>%  pull(total_tests_7day)
+host_tests_1day <- table_1day %>%  
+  filter(population_group=='Host community') %>%  pull(total_tests_1day)
 
 host_tests_vb <- valueBox(
-  format(paste0(host_tests,' (', host_tests_7day, ')'), big.mark = ","),
+  format(paste0(host_tests,' - ', host_tests_7day, ' - ', host_tests_1day), big.mark = ","),
   icon= "fas fa-vials",
   color= "#ED7D31"
 )
 
 ##Host community cases
 
-host_cases <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_cases)
-host_cases_7day <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_cases_7day)
+host_cases <- table_calc_comb %>%  
+  filter(population_group=='Host community') %>%  
+  pull(total_cases)
+host_cases_7day <- table_calc_comb %>%  
+  filter(population_group=='Host community') %>%  
+  pull(total_cases_7day)
+host_cases_1day <- table_1day %>%  
+  filter(population_group=='Host community') %>%  pull(total_cases_1day)
 
 host_cases_vb <- valueBox(
-  format(paste0(host_cases,' (', host_cases_7day, ')'), big.mark = ","),
+  format(paste0(host_cases,' - ', host_cases_7day, ' - ', host_cases_1day), big.mark = ","),
   icon = "fas fa-user-md",
   color= "#ED7D31"
 )
 
 ##Host community deaths
 
-host_deaths <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_deaths)
-host_deaths_7day <- table_calc_comb %>%  filter(population_group=='Host community') %>%  pull(total_deaths_7day)
+host_deaths <- table_calc_comb %>%  
+  filter(population_group=='Host community') %>%  
+  pull(total_deaths)
+host_deaths_7day <- table_calc_comb %>%  
+  filter(population_group=='Host community') %>%  
+  pull(total_deaths_7day)
+host_deaths_1day <- table_1day %>%  
+  filter(population_group=='Host community') %>%  
+  pull(total_deaths_1day)
+
 
 host_deaths_vb <- valueBox(
-  format(paste0(host_deaths,' (', host_deaths_7day, ')'), big.mark = ","),
+  format(paste0(host_deaths,' - ', host_deaths_7day, ' - ', host_deaths_1day), big.mark = ","),
   icon = "fas fa-procedures",
   color= "#ED7D31"
 )
@@ -59,22 +75,36 @@ fdmn_placeholder <- valueBox(
 
 #Testing 
 
-fdmn_tests <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_tests)
-fdmn_tests_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_tests_7day)
+fdmn_tests <- table_calc_comb %>%  
+  filter(population_group=='Rohingya refugee/FDMN') %>%  
+  pull(total_tests)
+fdmn_tests_7day <- table_calc_comb %>%  
+  filter(population_group=='Rohingya refugee/FDMN') %>%  
+  pull(total_tests_7day)
+fdmn_tests_1day <- table_1day %>%  
+  filter(population_group=='Rohingya refugee/FDMN') %>%  
+  pull(total_tests_1day)
 
 fdmn_tests_vb <- valueBox(
-  format(paste0(fdmn_tests,' (', fdmn_tests_7day, ')'), big.mark = ","),
+  format(paste0(fdmn_tests,' - ', fdmn_tests_7day, ' - ', fdmn_tests_1day), big.mark = ","),
   icon= "fas fa-vials",
   color= "#4472C4"
 )
 
 ##Cases
 
-fdmn_cases <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_cases)
-fdmn_cases_7day <- table_calc_comb %>%  filter(population_group=='Rohingya refugee/FDMN') %>%  pull(total_cases_7day)
+fdmn_cases <- table_calc_comb %>%  
+  filter(population_group=='Rohingya refugee/FDMN') %>%  
+  pull(total_cases)
+fdmn_cases_7day <- table_calc_comb %>%  
+  filter(population_group=='Rohingya refugee/FDMN') %>%  
+  pull(total_cases_7day)
+fdmn_cases_1day <- table_1day %>%  
+  filter(population_group=='Rohingya refugee/FDMN') %>%  
+  pull(total_cases_1day)
 
 fdmn_cases_vb <- valueBox(
-  format(paste0(fdmn_cases,' (', fdmn_cases_7day, ')'), big.mark = ","),
+  format(paste0(fdmn_cases,' - ', fdmn_cases_7day, ' - ', fdmn_cases_1day), big.mark = ","),
   icon = "fas fa-user-md",
   color= "#4472C4"
 )
@@ -89,8 +119,12 @@ fdmn_deaths_7day <- table_calc_comb %>%
   filter(population_group=='Rohingya refugee/FDMN') %>%  
   pull(total_deaths_7day)
 
+fdmn_deaths_1day <- table_1day %>%  
+  filter(population_group=='Rohingya refugee/FDMN') %>%  
+  pull(total_deaths_1day)
+
 fdmn_deaths_vb <- valueBox(
-  format(paste0(fdmn_deaths,' (', fdmn_deaths_7day, ')'), big.mark = ","),
+  format(paste0(fdmn_deaths,' - ', fdmn_deaths_7day, ' - ', fdmn_deaths_1day), big.mark = ","),
   icon = "fas fa-procedures",
   color= "#4472C4"
 )
@@ -232,6 +266,7 @@ all_deaths_table <- table_calc_comb %>%
 
 epi_curve <- table_final_df %>% 
   mutate(week=isoweek(date)) %>% 
+  #mutate(year_week=yearweek(date)) %>% 
   group_by(population_group,week) %>% 
   summarise(new_cases=sum(new_cases,na.rm=TRUE)) %>% 
   ggplot(.) +

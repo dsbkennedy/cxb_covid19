@@ -357,14 +357,15 @@ week_test_df <- ari_ili_df %>%
   filter(nationality=='fdmn') %>% 
   filter(!sample_type %in% c('follow_up', 'humanitarian_worker')) %>% 
   #filter(date_of_case_detection>=ymd('2020-05-01')) %>% 
-  mutate(week=isoweek(date_of_case_detection)) %>% 
+ # mutate(week=isoweek(date_of_case_detection)) %>% 
+  mutate(year_week=yearweek(date_of_case_detection)) %>% 
   #mutate(week=date2week(date_of_case_detection,week_start = "sun", floor_day = TRUE)) %>% 
-  select(week,date_of_case_detection, laboratory_result, age) %>% 
-  filter(week>19) %>% 
+  select(year_week,date_of_case_detection, laboratory_result, age) %>% 
+  #filter(week>19) %>% 
   #mutate(week=factor(week, levels=unique(week))) %>% 
   filter(laboratory_result %in% c('positive', 'negative')) 
 
-tests_gph <- ggplot(week_test_df, aes(x=week, y=age, group=factor(week))) + 
+tests_gph <- ggplot(week_test_df, aes(x=year_week, y=age, group=factor(year_week))) + 
   #geom_jitter(colour="lightblue", alpha=0.5, width=0.1) +
   #geom_point(stat="summary", fun.y="mean") + 
   geom_boxplot(alpha = 0.80) +

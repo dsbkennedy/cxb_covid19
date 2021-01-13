@@ -22,7 +22,10 @@ godata_wide <- cases %>%
 
 ##Get GoData ID from FDMN sheet 
 
-godata_case_id <- fdmn_raw %>% clean_names() %>% filter(!is.na(go_data_case_id)) %>%  pull(go_data_case_id)
+godata_case_id <- fdmn_raw %>% 
+  clean_names() %>% 
+  filter(!is.na(go_data_case_id)) %>%  
+  pull(go_data_case_id)
 
 
 ###Clean up GoData
@@ -59,7 +62,8 @@ godata_clean <- godata_wide %>%
     #is.na(age_years) && is.na(age_months) ~  NA_integer_,
     TRUE ~ as.integer(age_years))) %>%
   #Age group
-  mutate(age_group=cut(age_years,breaks = c(seq(0, 50, by = 10), Inf), labels = age_labs, right = FALSE)) %>%
+  #mutate(age_group=cut(age_years,breaks = c(seq(0, 50, by = 10), Inf), labels = age_labs, right = FALSE)) %>%
+  mutate(age_group=cut(age_years,breaks=breaks, labels=labs, right=FALSE)) %>% 
   mutate(age_group=fct_explicit_na(age_group, na_level = "(outcome missing)")) %>% 
   #Classification
   filter(classification != "lng_reference_data_category_case_classification_not_a_case_discarded") %>%
@@ -72,25 +76,26 @@ godata_clean <- godata_wide %>%
   mutate(sex = case_when(
     grepl('_male', gender, ignore.case=TRUE) ~ "Male",
     grepl('_female', gender, ignore.case=TRUE) ~ "Female", 
-    visual_id=="CXB3310202" ~ 'Female',
-  )) %>% 
-  mutate(sex=factor(sex, levels=c('Male', 'Female'))) %>% 
+    visual_id=="CXB3310202" ~ 'Female')) %>%
+  mutate(sex=ifelse(is.na(sex), 'Missing', sex)) %>% 
+  mutate(sex=factor(sex, levels=c('Male', 'Female', 'Missing'))) %>% 
   #Updated this classification to match survey
   #updated to "outcome"
   mutate(outcome = case_when(
-    grepl('alive', outcome_id, ignore.case=TRUE) ~ "Alive",
+    grepl('alive', outcome_id, ignore.case=TRUE) ~ "Not recovered",
     grepl('deceased', outcome_id, ignore.case=TRUE) ~ "Dead",
     grepl('recovered', outcome_id, ignore.case=TRUE) ~ "Recovered",
     #grepl('death', questionnaire_answers_outcome, ignore.case=TRUE) ~ "dead",
-    grepl('healthy', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "Alive",
-    grepl('not recovered', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "Alive",
+    grepl('healthy', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "Not recovered",
+    grepl('not recovered', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "Not recovered",
     grepl('$recovered', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "Recovered",
     questionnaire_answers_msf_outcome_value=='Recovered' ~ 'Recovered',
     questionnaire_answers_outcome_2_value=='Recovered' ~ 'Recovered',
     grepl('death', questionnaire_answers_outcome_2_value, ignore.case=TRUE) ~ "Dead", 
-    visual_id %in% c("CXB3310414","CXB3310590","CXB2120064") ~ 'Alive',
+    visual_id %in% c("CXB3310414","CXB3310590","CXB2120064") ~ 'Not recovered',
   )) %>%
-  #     mutate(outcome=fct_explicit_na(outcome, na_level = "(Outcome missing)"))  %>% 
+  mutate(outcome=fct_explicit_na(outcome, na_level = "Missing"))  %>% 
+  mutate(outcome=factor(outcome, levels=c('Recovered', 'Not recovered', 'Dead', 'Missing'))) %>% 
   #Status at detection
   mutate(detection_status = questionnaire_answers_status_at_detection_value) %>%
   #Risk level
@@ -105,12 +110,13 @@ godata_clean <- godata_wide %>%
     grepl('other', date_ranges_typeId, ignore.case=TRUE) ~ "other",
     grepl('isolation', date_ranges_typeId, ignore.case=TRUE) ~ "isolation"
   )) %>%
-  mutate(pregnant = case_when(grepl('trimester', pregnancy_status, ignore.case=TRUE) ~ "Yes",
-                              grepl('yes',questionnaire_answers_pregnant,ignore.case=TRUE)~ "Yes",
-                              (sex=='Female' & age_years>=15) ~ 'No',
+  mutate(pregnant = case_when(grepl('trimester', pregnancy_status, ignore.case=TRUE) ~ "Pregnant",
+                              grepl('yes',questionnaire_answers_pregnant,ignore.case=TRUE)~ "Pregnant",
+                              (sex=='Female' & age_years>=15) ~ 'Not pregnant',
                               sex=='Male' ~ 'Not applicable',
                               age_years<15 ~ 'Not applicable',
                               age_years>50 ~ 'Not applicable')) %>% 
+  mutate(pregnant=factor(pregnant, levels=c('Pregnant', 'Not pregnant', 'Not applicable'))) %>% 
   #Symptoms
   #Cough
   mutate(cough=case_when(grepl('cough',questionnaire_answers_respiratory_symptoms_value,ignore.case=TRUE)~1,
@@ -241,7 +247,8 @@ case_death_age_gph <-  case_age %>%
   geom_bar(stat = "identity", position = "dodge", width = 0.7) +
   labs(x = "Age group", y = "Count", fill = '') +
   theme_minimal() +
-  scale_y_continuous(breaks=seq(0,max_cases,10)) +
+  #scale_y_continuous(breaks=pretty_breaks(n=5)) %>% 
+  #scale_y_continuous(breaks=seq(0,max_cases,10)) +
   scale_fill_brewer(palette="Dark2") +
   geom_text(
     aes(label = ifelse(n>0,n,''), y = n + 0.05),
@@ -261,17 +268,17 @@ label(godata_clean$status) <- "Status"
 #label(godata_clean$risk_level) <- "Risk level"
 label(godata_clean$onset_sample) <- "Symptom onest to sample taken (days)"
 label(godata_clean$health_facility_name) <- "Health facility"
-label(godata_clean$outcome) <- "Patient outcome"
+label(godata_clean$outcome) <- "Patient outcome at 30 days"
 label(godata_clean$contact_cov19) <- "Did the case have contact with a suspected or confirmed COVID-19 case?"
 label(godata_clean$any_comorb) <- "Did the case report a pre-existing condition?"
 label(godata_clean$detection_status) <- "Status at detection"
 label(godata_clean$social_event) <- "Did the case attend a social event/mass gathering before developing symptoms?"
 label(godata_clean$any_comorb) <- "Did the case report at least 1 co-morbidity?"
-
+label(godata_clean$pregnant) <- "Pregnancy status"
 
 godata_table <- table1(~ age_years  + sex  + 
          detection_status +
-         outcome + any_comorb + contact_cov19 + social_event
+         outcome + pregnant + any_comorb + contact_cov19 + social_event
        , data=godata_clean, topclass="Rtable1-zebra",footnote="Data source: GoData") 
 
 

@@ -6,6 +6,7 @@ quar_vars <- c('new_admissions_in_the_last_24_hours_individuals', 'current_occup
 
 quarantine_table <- quarantine_raw %>% 
   filter(!is.na(facility_name)) %>% 
+  filter(!facility_name=='UNHCR/BRAC Camp 4Ext Block I') %>% 
   select(location_of_facility, facility_name,supporting_agency, 
          contains("individuals") ,
          number_of_rooms_shelters_currently_functional,number_of_rooms_shelters_currently_filled, timestamp) %>% 

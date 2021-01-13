@@ -67,10 +67,13 @@ table_totals <- table_final_df %>%
          total_deaths_pm=(total_deaths/population)*1*10E5) %>% 
   select(-population)
 
-#7-day
+last_week <- isoweek(today())-1
+#last epi week
 table_7day <- table_final_df %>% 
   # ungroup() %>% 
-  filter(date > today() -7) %>% 
+  #filter(date > today() -7) %>% 
+  mutate(epi_week=isoweek(date)) %>% 
+  filter(epi_week==53) %>% 
   group_by(population_group, population) %>% 
   summarise(total_tests_7day=sum(new_tests, na.rm=TRUE),
             total_cases_7day=sum(new_cases, na.rm=TRUE),
@@ -79,6 +82,17 @@ table_7day <- table_final_df %>%
          total_cases_pm_7day=(total_cases_7day/population)*1*10E5,
          total_deaths_pm_7day=(total_deaths_7day/population)*1*10E5)%>% 
   select(-population)
+
+table_1day <- table_final_df %>% 
+  complete(date,population_group, fill=list(new_tests=0)) %>% 
+  filter(date==today() -2) %>% 
+  replace_na(list(new_tests=0, new_cases=0,new_deaths=0)) %>% 
+  filter(!population_group=='Bangladesh') %>% 
+  group_by(population_group, population) %>% 
+  summarise(total_tests_1day=sum(new_tests, na.rm=TRUE),
+            total_cases_1day=sum(new_cases, na.rm=TRUE),
+            total_deaths_1day=sum(new_deaths, na.rm=TRUE)) %>% 
+  select(population_group, total_tests_1day, total_cases_1day, total_deaths_1day)
 
 #Growth rate
 

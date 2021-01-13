@@ -95,10 +95,11 @@ testing_fdmn_gph <-  test_nationality %>%
   filter(name %in% c('fdmn', 'fdmn_positive')) %>% 
   mutate(name_fac=factor(name,levels=c('fdmn', 'fdmn_positive'), 
                          labels=c('Tests', 'Cases'))) %>% 
-  mutate(week=isoweek(date_format)) %>% 
-  group_by(name_fac,week) %>% 
+  #mutate(week=isoweek(date_format)) %>% 
+  mutate(year_week=yearweek(date_format)) %>% 
+  group_by(name_fac,year_week) %>% 
   summarise(value=sum(value,na.rm=TRUE)) %>% 
-  ggplot(., aes(x=week, y=value, fill=name_fac)) +
+  ggplot(., aes(x=year_week, y=value, fill=name_fac)) +
   geom_bar(stat="identity",position ="identity")   +
   scale_fill_manual(values=c("#ED7D31","#4472C4")) +
   # scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
@@ -120,7 +121,8 @@ shp_file_fdmn <- read_sf(list.files(here('data','shapefiles'),
                                code=='NRC' ~ 'Nyapara RC',
                                code=='4E' ~ '4 Ext',
                                code=='20E' ~ '20 Ext',
-                               TRUE ~ code))
+                               TRUE ~ code)) %>% 
+  filter(!code=='CKL')
 
 case_shp_fdmn <- table_calc_comb_subloc %>% 
   filter(population_group=='Rohingya refugee/FDMN') %>% 
@@ -133,7 +135,7 @@ case_shp_fdmn <- table_calc_comb_subloc %>%
 
 #case_shp_fdmn %>% filter(is.na())
 
-fdmn_pal_cases_bins <-c(1, 5, 10, 25,50)
+fdmn_pal_cases_bins <-c(1, 5, 10, 25,60)
 fdmn_pal_deaths_bins <-c(1, 2, 5)
 
 

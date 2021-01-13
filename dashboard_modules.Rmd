@@ -14,7 +14,7 @@ editor_options:
 ---
 
 ```{r global, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=FALSE)
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=TRUE)
 ```
 
 ```{r setup_import, include=FALSE}
@@ -63,8 +63,8 @@ regexp <- "[[:digit:]]+"
 ##Set ggplot to show numbers instead of scientific notation
 options(scipen=10000)
 
-breaks <- c(-Inf,17,59,Inf)
-labs <- c('0-17', '18-59', '60 and over')
+breaks <- c(-Inf,4,14,59,Inf)
+labs <- c('0-4','5-14', '15-59', '60 and over')
 
 
 ```
@@ -78,7 +78,7 @@ source("modules/4_linelist_wrangling.R", local = knitr::knit_global())
 source("modules/sections/1_landing_page.R", local = knitr::knit_global())
 source("modules/sections/2_host_community.R", local = knitr::knit_global())
 source("modules/sections/3_fdmn_rohingya.R", local = knitr::knit_global())
-source("modules/sections/4_epidemiology.R", local = knitr::knit_global())
+#source("modules/sections/4_epidemiology.R", local = knitr::knit_global())
 source("modules/sections/5_testing.R", local = knitr::knit_global())
 source("modules/sections/6_cbs.R", local = knitr::knit_global())
 source("modules/sections/7_ewars_deaths.R", local = knitr::knit_global())
@@ -104,21 +104,21 @@ host_placeholder
 ```
 
 
-### Tests: Total (Last 7 days)
+### **Tests**: Total - Last week - Last 24 hours
 
 ```{r host_tests}
 host_tests_vb
 
 ```
 
-### Cases: Total (Last 7 days)
+### **Cases**: Total - Last week - Last 24 hours
 
 ```{r host_cases}
 host_cases_vb
 
 ```
 
-### Deaths: Total (Last 7 days)
+### **Deaths**: Total - Last week - Last 24 hours
 
 ```{r host_deaths}
 host_deaths_vb
@@ -144,7 +144,7 @@ fdmn_placeholder
 
 
 
-### Tests: Total (Last 7 days)
+### **Tests**: Total - Last week - Last 24 hours
 
 ```{r fdmn_tests}
 
@@ -152,14 +152,14 @@ fdmn_tests_vb
 
 ```
 
-### Cases: Total (Last 7 days)
+### **Cases**: Total - Last week - Last 24 hours
 
 ```{r fdmn_cases}
 
 fdmn_cases_vb
 ```
 
-### Deaths: Total (Last 7 days)
+### **Deaths**: Total - Last week - Last 24 hours
 
 ```{r fdmn_deaths}
 fdmn_deaths_vb
@@ -355,6 +355,8 @@ case_fdmn_map
 ```
 
 
+<!----
+
 Epidemiology {data-orientation=columns}
 =====================================  
 
@@ -422,7 +424,7 @@ symptom_gph
 ```
  
 
-
+--->
 
 Testing {data-orientation=row}
 =====================================  
@@ -526,6 +528,7 @@ Col
 
 
 ggplotly(death_age_gph)
+#death_age_gph
 
 ```
 
@@ -537,6 +540,7 @@ ggplotly(death_age_gph)
 
 ```{r ewars_cod}
 ggplotly(cause_death_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.4))
+#cause_death_gph
 ```
 
 
@@ -593,11 +597,9 @@ The CHWs use a KoBo Toolbox-based tool, the Community Health Workers Reporting T
 
 <br>
 
-
-
-Row  {data-height=500}
+Row 
 -------------------------------------
-
+   
 <br>
 <br>
 
@@ -620,11 +622,11 @@ p %>% layout(xaxis = x, yaxis = y)
 
 ```
 
-### Proportion of total households reached by community health workers - By camp
+### Households visited and % residents with mild symptoms by camp {data-height=500}
 
 
-```{r cbs_hhvisited_bycamp_gph}
-ggplotly(prop_visit_camp_gph)
+```{r cbs_prop_visit_camp_table}
+prop_visit_camp_table
 ```
 
 

@@ -11,10 +11,11 @@ ewars_mort <- read.csv(here('data', 'community_mortality.csv')) %>% clean_names(
   arrange(year_wk)  %>% 
   filter(year_wk<max(year_wk)) %>% 
   mutate(age_group=case_when(age_in_years<5 ~ 'Under 5',
-                             age_in_years>=5 & age_in_years<18 ~ '5 to 18',
-                             age_in_years>=18 & age_in_years<60 ~ '18 to 59',
-                             age_in_years>=60 ~'60 and over')) %>% 
-  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 18', '18 to 59',  '60 and over', NA)))
+                             age_in_years>=5 & age_in_years<15 ~ '5 to 14',
+                             age_in_years>=15 & age_in_years<60 ~ '15 to 59',
+                             age_in_years>=60 ~'60 and over', 
+                             TRUE ~ 'Age missing')) %>% 
+  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 14', '15 to 59',  '60 and over', 'Age missing')))
 
 
 # WEEKLY-DEATHS -----------------------------------------------------------
@@ -24,10 +25,10 @@ ewars_mort_gph <- ewars_mort %>%
   count(isoyear, isoweek, year_wk) %>%
   arrange(year_wk)  %>% 
   mutate(deaths_roll=roll_mean((n),2, na.rm=TRUE, align="right", fill = NA)) %>% 
-  ggplot(., aes(x=isoweek, y=deaths_roll, color=factor(isoyear))) +
+  ggplot(., aes(x=year_wk, y=deaths_roll, color=factor(isoyear))) +
   geom_line() +
   theme_minimal() +
-  scale_y_continuous(limits=c(0,60)) +
+  scale_y_continuous(limits=c(0,70)) +
   labs(x='Week', y='Deaths (2-week average)', color='Year')
 
 
@@ -39,10 +40,11 @@ death_age_gph <- ewars_mort %>%
   arrange(year_wk)  %>% 
   group_by(age_group) %>% 
   mutate(deaths_roll=roll_mean((n),2, na.rm=TRUE, align="right", fill = NA)) %>% 
-  ggplot(aes(x=year_wk, y=deaths_roll, color=fct_rev(age_group))) +
+  ggplot(aes(x=year_wk, y=deaths_roll, color=(age_group))) +
+  #geom_col() +
   geom_line() +
   theme_minimal() +
-  scale_y_continuous(limits=c(0,40)) +
+  scale_y_continuous(limits=c(0,60)) +
   labs(x='Week', y='Deaths (2-week average)', color='Age group') +
   scale_colour_brewer(palette = "Set1")
 
@@ -56,8 +58,9 @@ cause_death_gph <- ewars_mort %>%
   mutate(deaths_roll=roll_mean((n),2, na.rm=TRUE, align="right", fill = NA)) %>% 
   ggplot(aes(x=year_wk, y=deaths_roll, color=fct_rev(probable_cause_of_death))) +
   geom_line() +
+  #geom_col() +
   theme_minimal() +
-  scale_y_continuous(limits=c(0,40)) +
+  scale_y_continuous(limits=c(0,60)) +
   labs(x='Week', y='Deaths (2-week average)', color='Probable cause of death') +
   scale_colour_brewer(palette = "Set2")
 
@@ -77,6 +80,7 @@ ewars_mort_camp_gph <-  ewars_mort %>%
   group_by(camp_zone) %>% 
   mutate(deaths_roll=roll_mean((n),2, na.rm=TRUE, align="right", fill = NA)) %>% 
   ggplot(., aes(x=year_wk, y=deaths_roll, color=camp_zone)) +
+  #geom_col() +
   geom_line() +
   scale_x_yearweek(date_breaks = '120 days') +
   scale_y_continuous(breaks=seq(0,10,2)) +

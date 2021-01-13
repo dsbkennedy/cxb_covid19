@@ -82,14 +82,60 @@ camp_activity <- hbc_df %>%
 #   scale_x_continuous(breaks=pretty_breaks()) +
 #   labs(y='Households visited (%)', x='Week')
 
-prop_visit_camp_gph <- camp_activity %>% select(camp, week, prop_visited) %>% 
-  filter(prop_visited<1.2) %>% 
-  ggplot(.,aes(x=(camp),y=prop_visited)) +
-  geom_boxplot() +
-  theme_minimal() +
-  scale_y_continuous(labels = scales::percent) +
-  labs(y='Households visited (%)', x='Camp') 
-  #coord_flip() 
+# prop_visit_camp_gph <- camp_activity %>% select(camp, week, prop_visited) %>% 
+#   filter(prop_visited<1.2) %>% 
+#   ggplot(.,aes(x=(camp),y=prop_visited)) +
+#   geom_boxplot() +
+#   theme_minimal() +
+#   scale_y_continuous(labels = scales::percent) +
+#   labs(y='Households visited (%)', x='Camp') 
+#   #coord_flip() 
+
+camp_activity_df <- camp_activity %>% select(camp, week, prop_visited,prop_mild)
+
+camp_activity_average <- camp_activity_df %>% 
+  filter(week>=(max(week)-8)) %>% 
+  filter(prop_visited<=1.2) %>% 
+  group_by(camp) %>% 
+  mutate(average_visited=mean(prop_visited)) %>% 
+  mutate(average_mild=mean(prop_mild)) %>% 
+  select(camp, average_visited,average_mild) %>% distinct()
+
+camp_activity_lastweek <- camp_activity_df %>% 
+  filter(week>=(max(week, na.rm=TRUE))) %>% 
+  select(camp, last_week_visited=prop_visited,last_week_mild=prop_mild)
+
+prop_visit_camp_table <- camp_activity_average %>% 
+  left_join(camp_activity_lastweek, by='camp') %>% 
+  select(camp, last_week_visited ,average_visited, last_week_mild,average_mild) %>% 
+  ungroup() %>% 
+  gt() %>% 
+  opt_row_striping(., row_striping = TRUE) %>% 
+  tab_spanner(
+    label = "Households visited (%)",
+    columns = vars(last_week_visited,average_visited)
+  ) %>% 
+  tab_spanner(
+    label = "Individuals with mild symptoms (%)",
+    columns = vars(last_week_mild,average_mild)
+  ) %>% 
+  fmt_percent(
+    columns = vars(last_week_visited,average_visited,
+                   last_week_mild,average_mild),
+    decimals = 1
+  ) %>% 
+  cols_label(
+    camp = "Camp",
+    last_week_visited = "Last week",
+    average_visited = "4-week average",
+    last_week_mild = "Last week",
+    average_mild = "4-week average") %>% 
+  cols_align(align = "center",
+   columns = gt::everything()
+      ) %>% 
+     tab_options(container.overflow.y = TRUE)
+
+
 
 # MILD-SYMPTOMS -----------------------------------------------------------
 
