@@ -1,14 +1,4 @@
 
-
-# Wrangling ---------------------------------------------------------------
-
-# host_table_data <- table_calc_comb %>% 
-#   filter(grepl('host', population_group, ignore.case = T)) %>% 
-#   mutate(location="Total") %>% 
-#   select(c(population_group,location,total_cases,total_deaths,total_cases_pm,total_deaths_pm,total_cases_7day,total_deaths_7day,   
-#            total_cases_pm_7day,total_deaths_pm_7day,case_growth,cfr)) 
-
-
 ## ---- table 
 
 host_table_data <- table_calc_comb %>% 
@@ -21,7 +11,8 @@ summaryTable_host <- table_calc_comb_subloc %>%
   ungroup() %>%
   filter(grepl('host', population_group, ignore.case=T)) %>% 
   bind_rows(host_table_data) %>% 
-  select(-c(population_group,total_deaths_pm,total_deaths_pm_7day)) %>% 
+  filter(!is.na(population)) %>% 
+  select(-c(population,population_group,total_deaths_pm,total_deaths_pm_7day)) %>% 
   gt() %>% 
   cols_label(
     location = "Upazilla",
@@ -112,7 +103,7 @@ case_shp_host <- table_calc_comb_subloc %>%
 
 #Define colour palettes based on available data
 #This will need to be updated as cases increase
-host_pal_cases_bins <-c(0, 125, 250, 500, 1000, 2000, 4000)
+host_pal_cases_bins <-c(0, 250, 500, 1000, 2000, 4000, 6000)
 host_pal_deaths_bins <-c(0, 5, 10, 25, 50)
 
 

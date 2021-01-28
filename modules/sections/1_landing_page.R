@@ -266,47 +266,25 @@ all_deaths_table <- table_calc_comb %>%
 
 epi_curve <- table_final_df %>% 
   mutate(week=isoweek(date)) %>% 
+  mutate(year=year(date)) %>% 
   #mutate(year_week=yearweek(date)) %>% 
-  group_by(population_group,week) %>% 
+  #mutate(year_week_str=as.character(year_week)) %>% 
+  group_by(population_group,year,week) %>% 
   summarise(new_cases=sum(new_cases,na.rm=TRUE)) %>% 
   ggplot(.) +
-  geom_col(aes(x = week, y = new_cases)) +
+  geom_col(aes(x = week, y = new_cases, fill=factor(year))) +
+  scale_fill_manual(values=c("#ED7D31","#4472C4")) +
+  #scale_x_yearweek(date_breaks = "8 week",) +
   # scale_x_date(date_breaks = '14 day', date_minor_breaks = '7 day',
   #              date_labels = '%d-%m') +
   theme_minimal() +
   labs(x = "Week case reported",
-       y = "Number of cases") +
+       y = "Number of cases", fill="year") +
   facet_wrap(~ population_group, scales="free_y", ncol=1)
 
 
-# TEST-POSITIVITY ---------------------------------------------------------
+# Test positivity ---------------------------------------------------------
 
-# test_positivity_gph <- test_nationality %>% 
-#   filter(name %in% c('host', 'fdmn','host_positive', 'fdmn_positive')) %>% 
-#   mutate(week=epiweek(date_format)) %>% 
-#   filter(week>=19) %>% 
-#   mutate(population_group=factor(population_group, 
-#                                  labels=c('Host', 'FDMN'))) %>% 
-#   mutate(indicator=case_when(grepl('positive', name) ~ 'Case', 
-#                              TRUE ~ 'Test')) %>% 
-#   select(-c(name)) %>% 
-#   pivot_wider(names_from=indicator) %>% 
-#   group_by(population_group) %>% 
-#   mutate(tests_roll=roll_mean((Test),7,  align="right", fill = 0)) %>% 
-#   mutate(cases_roll=roll_mean((Case),7, align="right", fill = 0)) %>% 
-#   mutate(pos_roll=cases_roll/tests_roll) %>% 
-#   ggplot(., aes(x=date_format, y=pos_roll, color=population_group)) +
-#   geom_line()  +
-#   scale_color_manual(values=c("#ED7D31","#4472C4")) +
-#   scale_x_date(date_breaks = '14 day', date_minor_breaks = '7 day',
-#                date_labels = '%d-%m') +
-#   scale_y_continuous(labels = scales::percent) +
-#   theme_minimal() +
-#   labs(caption="Data source: Lab data",
-#        x = "Date of test",
-#        y = "Test positivity (%) (7-day average)",
-#        color="") +
-#   theme_minimal()
 
 test_pos_df <- gsheet_data$ari_ili %>% 
   clean_names() %>% 
@@ -326,28 +304,3 @@ test_pos_df <- gsheet_data$ari_ili %>%
   filter(week>19) %>% 
   #mutate(week=factor(week, levels=unique(week))) %>% 
   filter(laboratory_result %in% c('positive', 'negative')) 
-
-test_positivity_gph <- test_pos_df %>% 
-  count(nationality, week, laboratory_result) %>% 
-  pivot_wider(names_from=laboratory_result, values_from=n) %>% 
-  mutate(total=negative+positive) %>% 
-  select(-negative) %>% 
-  drop_na() %>% 
-  group_by(nationality,week) %>% 
-  mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
-                       broom::tidy())) %>%
-  unnest(rate) %>% 
-  ungroup() %>% 
-  ggplot(aes(x=week, y=estimate, color=fct_rev(nationality))) +
-  geom_line() +
-  #coord_flip() +
-  geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
-                position = position_dodge(width = 0.1)) +
-  scale_color_manual(values=c("#ED7D31","#4472C4")) +
-  theme_minimal() +
-  labs(x='Week', 
-       y='% COVID-19 positive samples', 
-       color='',
-       caption='Data source:ARI/ILI linelist') +
-  scale_y_continuous(labels = scales::percent)  +
-  theme(legend.position='top')

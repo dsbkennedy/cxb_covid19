@@ -15,7 +15,7 @@ cxb_deaths <- all_cases_linelist %>%
   select(date=date_of_case_detection, population_group, new_deaths=n)
 
 #Tests
-cxb_tests <- tests_data %>%  
+cxb_tests <- tests_both %>%  
   filter(!date %in% c('NULL', 'Total')) %>% 
   mutate(date_format=excel_numeric_to_date(as.numeric(date)))  %>% 
   select(date=date_format, fdmn, host,) %>% 
@@ -73,7 +73,7 @@ table_7day <- table_final_df %>%
   # ungroup() %>% 
   #filter(date > today() -7) %>% 
   mutate(epi_week=isoweek(date)) %>% 
-  filter(epi_week==53) %>% 
+  filter(epi_week==last_week) %>% 
   group_by(population_group, population) %>% 
   summarise(total_tests_7day=sum(new_tests, na.rm=TRUE),
             total_cases_7day=sum(new_cases, na.rm=TRUE),
@@ -85,7 +85,7 @@ table_7day <- table_final_df %>%
 
 table_1day <- table_final_df %>% 
   complete(date,population_group, fill=list(new_tests=0)) %>% 
-  filter(date==today() -2) %>% 
+  filter(date>=today() -1) %>% 
   replace_na(list(new_tests=0, new_cases=0,new_deaths=0)) %>% 
   filter(!population_group=='Bangladesh') %>% 
   group_by(population_group, population) %>% 

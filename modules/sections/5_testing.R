@@ -1,7 +1,11 @@
 
 # WRANGLING ---------------------------------------------------------------
 
+
+ari_ili_2020 <- gsheet_data_2020$ari_ili
+
 ari_ili_df <- gsheet_data$ari_ili %>% 
+  bind_rows(ari_ili_2020) %>% 
   clean_names() %>% 
   clean_data() %>% 
   mutate(camp=gsub('camp_', '', camp_patients_residence)) %>% 
@@ -43,18 +47,6 @@ ari_ili_cases_7day_df <- ari_ili_df %>%
   group_by(camp) %>%
   summarise(cases_7day=sum(n, na.rm=TRUE))
 
-  # mutate(cumulative_cases=cumsum(n)) %>%
-  # mutate(case_growth=ifelse(lag(cumulative_cases,7)>10, 
-  #                           ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>%
-  # mutate(roll_cases=roll_mean((n),7,  align="right", fill = NA)) %>% 
-  # mutate(week=epiweek(date_of_case_detection)) %>% 
-  # ungroup()
-
-# ari_ili_cases_7day <- ari_ili_tests_df %>% 
-#   filter(date_of_case_detection>=today()-7) %>% 
-#   filter(laboratory_result=='positive') %>% 
-#   group_by(camp) %>% 
-#   summarise(cases_7day=sum(n, na.rm=TRUE))
 
 ari_ili_tests_growth <- ari_ili_tests_df %>% 
   select(camp, test_growth) %>% 
@@ -73,78 +65,13 @@ ari_ili_tests_result <- ari_ili_df %>%
 
 # TABLE -------------------------------------------------------------------
 
-# tests_table <- ari_ili_tests_total %>% 
-#   left_join(ari_ili_tests_7day, by='camp') %>% 
-#   left_join(ari_ili_tests_growth, by='camp') %>% 
-#   left_join(ari_ili_tests_result, by='camp') %>% 
-#   mutate(camp=trimws(camp)) %>% 
-#   mutate(camp_number=str_extract(camp, regexp)) %>% 
-#   mutate(camp_number=as.numeric(camp_number)) %>% 
-#   arrange(camp_number) %>% 
-#   select(-camp_number) %>% 
-#   select(-c(growth,negative)) %>% 
-#   mutate(camp=sub("^0+", "", camp)) %>% 
-#   gt() %>% 
-#   opt_row_striping(., row_striping = TRUE) %>% 
-#   fmt_percent(
-#     columns = 4:4,
-#     decimals = 1
-#   ) %>% 
-#   fmt_missing(
-#     columns = 2:4,
-#     missing_text = "0%"
-#   ) %>% 
-#   cols_label(
-#     camp = "Camp",
-#     tests_total = "Total tests",
-#     tests_7day = "Tests in last 7 days",
-#     #growth = "7-day growth(%)",
-#     # negative = "Negative",
-#     #not_done = "Not complete",
-#     # pending = "Pending", 
-#     positive = "Test positivity (%)",
-#     #n_a = 'Result missing'
-#   ) %>% 
-#   tab_options(
-#     container.overflow.x = TRUE,
-#     container.overflow.y = TRUE,
-#     grand_summary_row.background.color = "lightblue") 
-#   # tab_spanner(
-#   #   label = "Test results",
-#   #   columns = 5:5,
-#   # ) %>% 
-#   # tab_options(
-#   #   container.height = px(1000),
-#   #   container.overflow.y = TRUE
-#   #   #container.width = px(1000),
-#   #   #table.font.size = "small"
-#   # ) 
 
-# tests_table <- ari_ili_tests_total %>% 
-#   #left_join(ari_ili_cases_7day_df, by='camp') %>% 
-#   left_join(ari_ili_tests_7day, by='camp') %>% 
-#   left_join(ari_ili_tests_growth, by='camp') %>% 
-#   left_join(ari_ili_tests_result, by='camp') %>% 
-#   mutate(camp=trimws(camp)) %>% 
-#   mutate(camp_number=str_extract(camp, regexp)) %>% 
-#   mutate(camp_number=as.numeric(camp_number)) %>% 
-#   arrange(camp_number) %>% 
-#   select(-camp_number) %>% 
-#   select(-c(growth,negative)) %>% 
-#   mutate(camp=sub("^0+", "", camp)) %>% 
-#   mutate(positive=scales::percent(positive,accuracy=0.1)) %>% 
-#   datatable(., 
-#             extensions = 'Buttons',
-#             colnames=c('Camp', 'Total tests', 'Tests (last 7 days)', 'Test positvity'),
-#             options = list(pageLength = 20,dom = 'Bfrtip', 
-#                            columnDefs = list(list(className = 'dt-center', targets = 1:4)),
-#                            buttons = c('csv')))
-
-tests_df <- tests_data %>% 
+tests_df <- tests_both %>% 
   filter(!date=='Total') %>% 
   mutate(date_upd=excel_numeric_to_date(as.numeric(date))) %>% 
   select(-c('date','outside_cx_b')) %>% 
-  mutate(week=isoweek(date_upd)) %>% 
+  filter(date_upd>=ymd('2020-04-01')) %>% 
+  mutate(week=yearweek(date_upd)) %>% 
   select(-date_upd) %>% 
   pivot_longer(-week) %>% 
   group_by(week,name) %>% 
@@ -160,6 +87,7 @@ fdmn_tests <- tests_df %>%
   rename(WEEK=week) 
 
 tests_table <- fdmn_tests %>% 
+  mutate(WEEK=as.character(WEEK)) %>% 
   datatable(., 
             extensions = 'Buttons',
             colnames=c('Week', 'Tests', 'Cases'),
@@ -266,92 +194,6 @@ test_pos_age_sex_gph <- test_pos_age_sex %>%
 
 # TEST-POSITIVITY ---------------------------------------------------------
 
-# tests_age_group <- ari_ili_df %>%
-#   filter(!laboratory_result %in% c('n_a','not_done')) %>%
-#   filter(nationality=='fdmn') %>%
-#   count(age_group, laboratory_result) %>%
-#   filter(!is.na(age_group)) %>%
-#   pivot_wider(names_from=laboratory_result, values_from=n) %>%
-#   mutate(total=negative+positive) %>%
-#   select(-negative) %>%
-#   drop_na() %>%
-#   group_by(age_group) %>%
-#   mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
-#                        broom::tidy())) %>%
-#   unnest(rate) %>%
-#   ungroup() %>%
-#   ggplot(aes(x=age_group, y=estimate)) +
-#   geom_point() +
-#   #coord_flip() +
-#   geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
-#                 position = position_dodge(width = 0.1)) +
-#   theme_minimal() +
-#   labs(x='Age group',
-#        y='% COVID-19 + samples',
-#        caption='Data source:ARI/ILI linelist') +
-#   scale_y_continuous(labels = scales::percent)  +
-#   theme(legend.position='top')
-
-
-
-# tests_agegrp_gph <- ari_ili_df %>%
-#   filter(!laboratory_result %in% c('n_a','not_done')) %>%
-#   filter(nationality=='fdmn') %>%
-#   count(age_group, laboratory_result) %>%
-#   filter(!is.na(age_group)) %>%
-#   pivot_wider(names_from=laboratory_result, values_from=n) %>%
-#   mutate(total=negative+positive) %>%
-#   select(-negative) %>%
-#   drop_na() %>%
-#   group_by(age_group) %>%
-#   mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
-#                        broom::tidy())) %>%
-#   unnest(rate) %>%
-#   ungroup() %>% 
-#   ggplot(aes(x=age_group, y=estimate)) +
-#   geom_col() +
-#   coord_flip() +
-#   geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
-#                 position = position_dodge(width = 0.1)) +
-#   theme_minimal() +
-#   labs(x='Age group',
-#        y='% COVID-19 + samples',
-#        caption='Data source:ARI/ILI linelist') +
-#   scale_y_continuous(labels = scales::percent)  +
-#   theme(legend.position='top')
-# 
-# 
-# tests_sex_gph <- ari_ili_df %>%
-#   filter(!laboratory_result %in% c('n_a','not_done')) %>%
-#   filter(nationality=='fdmn') %>%
-#   count(sex, laboratory_result) %>%
-#   filter(!is.na(sex)) %>%
-#   mutate(sex=case_when(sex=='m' ~ 'Male', 
-#                        sex=='f' ~ 'Female')) %>% 
-#   pivot_wider(names_from=laboratory_result, values_from=n) %>%
-#   mutate(total=negative+positive) %>%
-#   select(-negative) %>%
-#   drop_na() %>%
-#   group_by(sex) %>%
-#   mutate(rate = map2(positive, total, ~ prop.test(.x, .y, conf.level=0.95) %>%
-#                        broom::tidy())) %>%
-#   unnest(rate) %>%
-#   ungroup() %>% 
-#   ggplot(aes(x=sex, y=estimate)) +
-#   geom_col() +
-#   coord_flip() +
-#   geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
-#                 position = position_dodge(width = 0.1)) +
-#   theme_minimal() +
-#   scale_fill_brewer(palette="Dark2", na.value="blue") +
-#   labs(x='Sex',
-#        y='% COVID-19 + samples',
-#        caption='Data source:ARI/ILI linelist') +
-#   scale_y_continuous(labels = scales::percent)  +
-#   theme(legend.position='top')
-# 
-# tests_agegrp_gph +  tests_sex_gph
-
 week_test_df <- ari_ili_df %>%  
   filter(!laboratory_result %in% c('n_a','not_done')) %>% 
   filter(nationality=='fdmn') %>% 
@@ -378,21 +220,6 @@ tests_gph <- ggplot(week_test_df, aes(x=year_week, y=age, group=factor(year_week
 
 # TEST-AGE GROUP ----------------------------------------------------------
 
-# population <- readxl::read_xlsx(here('data','block_population.xlsx'), sheet='Final', skip=1) %>% 
-#   clean_names %>%  
-#   clean_data() %>% 
-#   filter(grepl('total', camp)) %>% 
-#   filter(!camp=='grand_total') %>% 
-#   select(-block) %>% 
-#   mutate(across(c(infant_below_1:x16), as.numeric)) %>% 
-#   mutate(age_0_18 = rowSums(.[4:11])) %>% 
-#   mutate(age_18_59 = rowSums(.[12:13])) %>% 
-#   mutate(age_over60 = rowSums(.[14:15])) %>% 
-#   select(camp, contains('total'), contains('age')) %>% 
-#   mutate(camp=gsub('_total', '', camp)) %>% 
-#   mutate(camp=gsub('camp_', '', camp)) %>% 
-#   mutate(camp=trimws(camp)) 
-
 
 
 age_labs_decade <- c(paste(seq(0, 40, by = 10), seq(9, 49, by = 10),
@@ -407,11 +234,6 @@ tests_age_group_df <- ari_ili_df %>%
   count(age_group, .drop=FALSE) 
 
 
-# age_group_pop <- population %>%  select(-c(total_families, total_individuals)) %>% 
-#   summarise(across(contains('age'), sum)) %>% 
-#   pivot_longer(age_0_18:age_over60) %>% 
-#   mutate(age_group=labs) %>% 
-#   select(-name)
 
 tests_age_group_gph <-  
   tests_age_group_df %>% 
@@ -441,7 +263,7 @@ test_positivity_gph <- tests_df %>%
   pivot_wider(names_from=indicator, values_from=value) %>% 
   #group_by(population_group) %>% 
   filter(cases>0) %>% 
-  filter(week>19) %>% 
+ # filter(week!=('2020 W15')) %>% 
   #filter(week<max(week, na.rm=TRUE)) %>% 
   mutate(pos=map2(cases,tests, ~ prop.test(.x, .y, conf.level=0.95) %>% 
                     broom::tidy())) %>% 

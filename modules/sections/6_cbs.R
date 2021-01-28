@@ -7,22 +7,43 @@ hbc_df <- read.csv(here('data', 'home_based_care.csv')) %>%
   mutate(camp_number=str_extract(camp, "[[:digit:]]+")) %>% 
   mutate(camp_number=as.numeric(camp_number)) %>% 
   mutate(camp=reorder(camp,camp_number)) %>% 
-  filter(week>25)  
+  mutate(year=as.numeric(reporting_year)) %>% 
+  mutate(week=as.numeric(week)) %>% 
+  mutate(date=make_datetime(year=year) + weeks(week)) %>% 
+  # select(year,week,date, age_in_years) %>% 
+  #filter(date>=ymd('2019-07-01')) %>% 
+  mutate(year_wk=yearweek(date)) %>% 
+  mutate(year_wk=case_when(year!=2021 ~year_wk-1, 
+                           TRUE ~ year_wk)) %>% 
+  filter(date>=ymd('2020-06-24'))
 
 
 # HOUSEHOLDS-VISITED ------------------------------------------------------
 
 hhvisit_gph <- hbc_df %>% 
-  select(week, c1_total_hh_visited_week) %>% 
-  filter(week>25) %>% 
-  group_by(week) %>% 
+  select(date, c1_total_hh_visited_week) %>% 
+  #filter(week>25) %>% 
+  group_by(date) %>% 
   summarise(hhvisited=sum(c1_total_hh_visited_week, na.rm=TRUE)) %>% 
-  ggplot(., aes(x=week, y=hhvisited)) +
+  ggplot(., aes(x=date, y=hhvisited)) +
+  geom_line() +
+  #labs(title='Households visited') +
+  #scale_x_continuous(breaks=pretty_breaks()) +
+  labs(x='', y='Households visited') +
+  theme_minimal() 
+
+hbc_df %>% 
+  select(date, c1_total_hh_visited_week) %>% 
+  #filter(week>25) %>% 
+  group_by(date) %>% 
+  summarise(hhvisited=sum(c1_total_hh_visited_week, na.rm=TRUE)) %>% 
+  ggplot(., aes(x=date, y=hhvisited)) +
   geom_col() +
-  labs(title='Households visited') +
-  scale_x_continuous(breaks=pretty_breaks()) +
+  labs(title='Households visited', x='Week') +
+  #scale_x_continuous(breaks=pretty_breaks()) +
   #labs(x='', y='Households visited') +
   theme_minimal() 
+
 
 
 # HOUSEHOLDS-VISITED-CAMP -------------------------------------------------
@@ -135,16 +156,25 @@ prop_visit_camp_table <- camp_activity_average %>%
       ) %>% 
      tab_options(container.overflow.y = TRUE)
 
+hh_visit_lastweek <- camp_activity %>% select(camp, week, prop_visited,prop_mild) %>% 
+  filter(week>=(max(week, na.rm=TRUE))) %>% 
+  ggplot(aes(x=  forcats::fct_rev(camp), y=prop_visited, group=1)) +
+  geom_col() +
+  scale_y_continuous(labels = scales::percent) +
+  coord_flip() +
+  theme_minimal() +
+  labs(x='Camp', y='Households visited last week')
+
 
 
 # MILD-SYMPTOMS -----------------------------------------------------------
 
 symptoms_df <- hbc_df %>%
-  filter(week>25) %>% 
-  select(reporting_year, week, contains('sympt')) %>% 
-  group_by(reporting_year, week) %>% 
+  #filter(week>25) %>% 
+  select(date, contains('sympt')) %>% 
+  group_by(date) %>% 
   summarise_all(list(sum)) %>% 
-  pivot_longer(-c(reporting_year, week)) %>%
+  pivot_longer(-c(date)) %>%
   filter(!grepl('total', name)) %>%
   mutate(symp_level=case_when(grepl('red', name) ~ 'red',
                               grepl('yellow', name) ~ 'yellow')) %>%
@@ -162,21 +192,21 @@ symptoms_df <- hbc_df %>%
 
 mild_symptoms_gph <- symptoms_df %>%
   ungroup() %>%
-  group_by(severity,week, sex, age_group) %>%
+  group_by(severity,date, sex, age_group) %>%
   summarise(total_cases=sum(value,na.rm=TRUE)) %>%
-  group_by(severity,week) %>%
+  group_by(severity,date) %>%
   #mutate(prop=total_cases/sum(total_cases)) %>%
   mutate(age_group=factor(age_group, levels=c('<5', '5-59', '>=60'))) %>%
   mutate(age_group=fct_rev(age_group)) %>%
   filter(severity=='Mild') %>%
-  ggplot(aes(x=week,y=total_cases, fill=interaction(sex,age_group), label=total_cases)) +
+  ggplot(aes(x=date,y=total_cases, fill=interaction(sex,age_group), label=total_cases)) +
   geom_col(position = position_stack(), color = "black") +
-  geom_text(position = position_stack(vjust = .5)) +
+  #geom_text(position = position_stack(vjust = .5)) +
   theme_minimal() +
   labs(x='Week', y='Number of cases', fill='Sex & \n Age group') +
-  scale_fill_brewer(palette="Dark2") +
+  scale_fill_brewer(palette="Dark2") 
   #scale_y_continuous(labels = scales::percent) +
-  scale_x_continuous(breaks=pretty_breaks())
+  #scale_x_continuous(breaks=pretty_breaks())
 
 
 # MODERATE-SEVERE-TABLE ---------------------------------------------------
@@ -218,18 +248,18 @@ mild_symptoms_gph <- symptoms_df %>%
 
 modsev_symptoms_gph <- symptoms_df %>%
   ungroup() %>%
-  group_by(severity,week, sex, age_group) %>%
+  group_by(severity,date, sex, age_group) %>%
   summarise(total_cases=sum(value,na.rm=TRUE)) %>%
-  group_by(severity,week) %>%
+  group_by(severity,date) %>%
   #mutate(prop=total_cases/sum(total_cases)) %>%
   mutate(age_group=factor(age_group, levels=c('<5', '5-59', '>=60'))) %>%
   mutate(age_group=fct_rev(age_group)) %>%
   filter(!severity=='Mild') %>%
-  ggplot(aes(x=week,y=total_cases, fill=interaction(sex,age_group), label=ifelse(total_cases>0,total_cases,NA))) +
+  ggplot(aes(x=date,y=total_cases, fill=interaction(sex,age_group), label=ifelse(total_cases>0,total_cases,NA))) +
   geom_col(position = position_stack(), color = "black") +
-  geom_text(position = position_stack(vjust = .5)) +
+  #geom_text(position = position_stack(vjust = .5)) +
   theme_minimal() +
   labs(x='Week', y='Number of cases', fill='Sex & \n Age group') +
-  scale_fill_brewer(palette="Dark2") +
+  scale_fill_brewer(palette="Dark2") 
   #scale_y_continuous(labels = scales::percent) +
-  scale_x_continuous(breaks=pretty_breaks())
+ # scale_x_continuous(breaks=pretty_breaks())

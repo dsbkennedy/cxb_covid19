@@ -14,8 +14,9 @@ cxb_deaths_subloc <- all_cases_linelist %>%
 cxb_cases_deaths_subloc <- cxb_cases_subloc %>% 
   full_join(cxb_deaths_subloc, by=c('population_group', 'date', 'upazilla', 'camp_of_residence')) %>% 
   mutate(location=coalesce(as.character(camp_of_residence),upazilla)) %>% 
-  full_join(., population, by='location') %>% 
-  filter(!is.na(population_group))
+  full_join(., population, by=c('location')) %>% 
+  filter(!is.na(population_group)) 
+  #rename(population=total_individuals)
 
 rm(cxb_cases_subloc, cxb_deaths_subloc)
 
@@ -27,8 +28,8 @@ table_totals_subloc <- cxb_cases_deaths_subloc %>%
             total_deaths=sum(new_deaths, na.rm=TRUE)) %>% 
   mutate(total_cases_pm=(total_cases/population)*1*10E5,
          total_deaths_pm=(total_deaths/population)*1*10E5) %>% 
-  ungroup() %>% 
-  select(-population)
+  ungroup() 
+  #select(-population)
 
 #7-day
 table_7day_subloc <- cxb_cases_deaths_subloc %>% 

@@ -1,13 +1,21 @@
 
 # WRANGLING ---------------------------------------------------------------
 
-ewars_mort <- read.csv(here('data', 'community_mortality.csv')) %>% clean_names() %>% 
+ewars_mort_2020 <- read.csv(here('data', 'mortality_2020.csv')) %>% clean_names() %>% select(-age_in_days)
+
+ewars_mort_2021 <- read.csv(here('data', 'mortality_2021.csv')) %>% clean_names()
+
+
+ewars_mort <- ewars_mort_2020 %>% bind_rows(ewars_mort_2021) %>% 
+  #mutate(date_death=ymd(date_of_death)) %>% 
   mutate(year=as.numeric(isoyear)) %>% 
   mutate(week=as.numeric(isoweek)) %>% 
   mutate(date=make_datetime(year=year) + weeks(week)) %>% 
-  filter(date>=ymd('2019-07-01')) %>% 
+ # select(year,week,date, age_in_years) %>% 
+  #filter(date>=ymd('2019-07-01')) %>% 
   mutate(year_wk=yearweek(date)) %>% 
-  mutate(year_wk=year_wk-1) %>% 
+  mutate(year_wk=case_when(year!=2021 ~year_wk-1, 
+                           TRUE ~ year_wk)) %>% 
   arrange(year_wk)  %>% 
   filter(year_wk<max(year_wk)) %>% 
   mutate(age_group=case_when(age_in_years<5 ~ 'Under 5',
@@ -17,19 +25,33 @@ ewars_mort <- read.csv(here('data', 'community_mortality.csv')) %>% clean_names(
                              TRUE ~ 'Age missing')) %>% 
   mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 14', '15 to 59',  '60 and over', 'Age missing')))
 
+saveRDS(ewars_mort, here('data', 'ewars_deaths.Rds'))
 
 # WEEKLY-DEATHS -----------------------------------------------------------
 
+# ewars_mort_gph <- ewars_mort %>% 
+#   filter(!camp_zone=='') %>% 
+#   count(isoyear, isoweek, year_wk) %>%
+#   arrange(year_wk)  %>% 
+#   mutate(deaths_roll=roll_mean((n),4, na.rm=TRUE, align="right", fill = NA)) %>% 
+#   ggplot(., aes(x=year_wk, y=deaths_roll, color=factor(isoyear))) +
+#   geom_line() +
+#   theme_minimal() +
+#   scale_y_continuous(limits=c(0,70)) +
+#   labs(x='Week', y='Deaths (2-week average)', color='Year')
+
 ewars_mort_gph <- ewars_mort %>% 
-  filter(!camp_zone=='') %>% 
-  count(isoyear, isoweek, year_wk) %>%
+  #filter(!camp_zone=='') %>% 
+  count(year_wk) %>% 
   arrange(year_wk)  %>% 
   mutate(deaths_roll=roll_mean((n),2, na.rm=TRUE, align="right", fill = NA)) %>% 
-  ggplot(., aes(x=year_wk, y=deaths_roll, color=factor(isoyear))) +
+  ggplot(., aes(x=year_wk, y=deaths_roll)) +
+  geom_point() +
+  #geom_smooth() +
   geom_line() +
   theme_minimal() +
   scale_y_continuous(limits=c(0,70)) +
-  labs(x='Week', y='Deaths (2-week average)', color='Year')
+  labs(x='Week', y='Deaths (2-week average)')
 
 
 # WEEKLY-DEATHS-AGEGRP ----------------------------------------------------

@@ -24,7 +24,7 @@ summaryTable_fdmn <- table_calc_comb_subloc %>%
   mutate(camp_number=str_extract(camp, regexp)) %>% 
   mutate(camp_number=as.numeric(camp_number)) %>% 
   arrange(camp_number) %>% 
-  select(-c(population_group,camp,total_deaths_pm,total_deaths_pm_7day,camp_number)) %>% 
+  select(-c(population,population_group,camp,total_deaths_pm,total_deaths_pm_7day,camp_number)) %>% 
   gt() %>% 
   cols_label(
     location = "Camp",
@@ -135,7 +135,7 @@ case_shp_fdmn <- table_calc_comb_subloc %>%
 
 #case_shp_fdmn %>% filter(is.na())
 
-fdmn_pal_cases_bins <-c(1, 5, 10, 25,60)
+fdmn_pal_cases_bins <-c(1, 5, 10, 25,50,100,200)
 fdmn_pal_deaths_bins <-c(1, 2, 5)
 
 

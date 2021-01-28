@@ -3,15 +3,19 @@
 ##Import data from Google Sheets
 
 gs4_deauth()
-# #plan(multiprocess)
+# # #plan(multiprocess)
 # gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%
-#   set_names(sheet_names)
+# set_names(sheet_names)
 # 
-# saveRDS(gsheet_data, here('data', 'gsheet_data.Rds'))
+# saveRDS(gsheet_data, here('data', 'gsheet_data_2021.Rds'))
 
-gsheet_data <- readRDS(here('data', 'gsheet_data.Rds'))
-##Import FDMN data 
-fdmn_raw <- gsheet_data$fdmn %>% 
+gsheet_data <- readRDS(here('data', 'gsheet_data_2021.Rds'))
+
+###Append 2020 data
+gsheet_data_2020 <- readRDS(here('data', 'gsheet_data_2020.Rds'))
+
+
+fdmn_raw_2020 <- gsheet_data_2020$fdmn %>% 
   clean_names() %>%
   janitor::remove_empty() %>% 
   mutate(date_of_death=janitor::excel_numeric_to_date(date_of_death)) %>% 
@@ -19,17 +23,40 @@ fdmn_raw <- gsheet_data$fdmn %>%
   mutate(camp_of_residence=as.character(camp_of_residence)) %>%
   mutate(nationality='FDMN')
 
+
+##Import FDMN data 
+fdmn_raw <- gsheet_data$fdmn %>% 
+  clean_names() %>%
+  #janitor::remove_empty() %>% 
+  mutate(date_of_death=janitor::excel_numeric_to_date(date_of_death)) %>% 
+  #select(-date_of_death) %>% 
+  mutate(camp_of_residence=as.character(camp_of_residence)) %>%
+  mutate(nationality='FDMN')
+
+
+fdmn_both <- fdmn_raw_2020 %>% bind_rows(fdmn_raw)
+
 ##Import host data 
-host_raw <- gsheet_data$host %>% 
+host_raw_2020 <- gsheet_data_2020$host %>% 
   clean_names() %>% 
   janitor::remove_empty() %>% 
-  select(-c(date_of_specimen_collection,date_of_lab_result_received,date_of_death)) %>% 
+  select(-c(date_of_specimen_collection,date_of_death,date_of_lab_result_received)) %>% 
   #mutate(date_of_specimen_collection=dmy(date_of_specimen_collection)) %>% 
   mutate(nationality='Host')
 
+host_raw <- gsheet_data$host %>% 
+  clean_names() %>% 
+  janitor::remove_empty() %>% 
+  #select(-c(date_of_death)) %>% 
+  #mutate(date_of_specimen_collection=dmy(date_of_specimen_collection)) %>% 
+  mutate(nationality='Host')
+
+host_both <- host_raw_2020 %>% bind_rows(host_raw) %>% select(-date_of_specimen_collection)
+
+
 ##Bind FDMN and host data
-all_cases_raw <- fdmn_raw %>% 
-  bind_rows(host_raw)
+all_cases_raw <- fdmn_both %>% 
+  bind_rows(host_both)
 
 #Find all date columns
 all_date_cols <- grep("(date|created_at| updated_on)", names(all_cases_raw))
@@ -46,10 +73,16 @@ all_cases_linelist <- all_cases_raw %>% clean_dates( force_Date  = all_date_cols
 
 
 ## Testing data
+tests_data_2020 <- gsheet_data_2020$testing %>% 
+  clean_names() 
+
 tests_data <- gsheet_data$testing %>% 
   clean_names() 
 
-test_nationality <- tests_data %>% 
+tests_both <- tests_data_2020 %>% bind_rows(tests_data)
+
+
+test_nationality <- tests_both %>% 
   filter(!date %in% c('NULL', 'Total')) %>% 
   mutate(date_format=excel_numeric_to_date(as.numeric(date))) %>% 
   select(-date) %>% 
@@ -60,17 +93,21 @@ test_nationality <- tests_data %>%
 
 ##DRU data
 #dru_raw <- gsheet_data$dru %>% clean_names() %>%   mutate(facility_name=gsub(":([[:alpha:]])", ": \\1", facility_name)) 
-quarantine_raw <- gsheet_data$quarantine %>% clean_names()
+quarantine_raw <- gsheet_data_2020$quarantine %>% clean_names()
 
 
 ### Camp population file
 population <- read.csv(here('data', 'population.csv')) 
 
-## ---- godata --------
 
-### GoData
 
-#get access token
+  
+  
+# ## ---- godata --------
+# 
+# ### GoData
+# 
+# #get access token
 # url_request <- paste0(url,"api/oauth/token?access_token=123")
 # 
 # response <- POST(url=url_request,
@@ -83,7 +120,7 @@ population <- read.csv(here('data', 'population.csv'))
 #   content(response, as = "text") %>%
 #   fromJSON(flatten = TRUE)
 # 
-# access_token <- content$response$access_token                 ## this is your access token !!! that allows API calls
+# access_token <- content$access_token                 ## this is your access token !!! that allows API calls
 # 
 # #specify date ranges, for follow up filters
 # date_now <- format(Sys.time(), "%Y-%m-%dT23:59:59.999Z")
@@ -96,7 +133,7 @@ population <- read.csv(here('data', 'population.csv'))
 # json_cases <- content(response_cases, as = "text")
 # 
 # 
-# cases <- as_tibble(fromJSON(json_cases, flatten = TRUE)) 
+# cases <- as_tibble(fromJSON(json_cases, flatten = TRUE))
 #   #select(-c(firstName,middleName,lastName, addresses))
 
 
