@@ -31,8 +31,8 @@ summaryTable_fdmn <- table_calc_comb_subloc %>%
     total_cases = "Total",
     total_deaths = "Total",
     total_cases_pm = "Per million",
-    total_cases_7day = "Last 7 days",
-    total_deaths_7day = "Last 7 days",
+    total_cases_7day = "Last week",
+    total_deaths_7day = "Last week",
     total_cases_pm_7day   = "Per million",
     cfr = "Case Fatality Risk", 
     case_growth = "Growth rate"

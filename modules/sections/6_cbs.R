@@ -16,12 +16,13 @@ hbc_df <- read.csv(here('data', 'home_based_care.csv')) %>%
   mutate(year_wk=case_when(year!=2021 ~year_wk-1, 
                            TRUE ~ year_wk)) %>% 
   filter(date>=ymd('2020-06-24'))
-
+  
 
 # HOUSEHOLDS-VISITED ------------------------------------------------------
 
 hhvisit_gph <- hbc_df %>% 
   select(date, c1_total_hh_visited_week) %>% 
+  filter(date!=ymd('2021-05-07')) %>% 
   #filter(week>25) %>% 
   group_by(date) %>% 
   summarise(hhvisited=sum(c1_total_hh_visited_week, na.rm=TRUE)) %>% 
@@ -32,17 +33,17 @@ hhvisit_gph <- hbc_df %>%
   labs(x='', y='Households visited') +
   theme_minimal() 
 
-hbc_df %>% 
-  select(date, c1_total_hh_visited_week) %>% 
-  #filter(week>25) %>% 
-  group_by(date) %>% 
-  summarise(hhvisited=sum(c1_total_hh_visited_week, na.rm=TRUE)) %>% 
-  ggplot(., aes(x=date, y=hhvisited)) +
-  geom_col() +
-  labs(title='Households visited', x='Week') +
-  #scale_x_continuous(breaks=pretty_breaks()) +
-  #labs(x='', y='Households visited') +
-  theme_minimal() 
+# hbc_df %>% 
+#   select(date, c1_total_hh_visited_week) %>% 
+#   #filter(week>25) %>% 
+#   group_by(date) %>% 
+#   summarise(hhvisited=sum(c1_total_hh_visited_week, na.rm=TRUE)) %>% 
+#   ggplot(., aes(x=date, y=hhvisited)) +
+#   geom_col() +
+#   labs(title='Households visited', x='Week') +
+#   #scale_x_continuous(breaks=pretty_breaks()) +
+#   #labs(x='', y='Households visited') +
+#   theme_minimal() 
 
 
 

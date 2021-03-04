@@ -3,13 +3,14 @@
 ##Import data from Google Sheets
 
 gs4_deauth()
-# # #plan(multiprocess)
+# # # #plan(multiprocess)
 # gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%
 # set_names(sheet_names)
 # 
 # saveRDS(gsheet_data, here('data', 'gsheet_data_2021.Rds'))
 
 gsheet_data <- readRDS(here('data', 'gsheet_data_2021.Rds'))
+
 
 ###Append 2020 data
 gsheet_data_2020 <- readRDS(here('data', 'gsheet_data_2020.Rds'))
@@ -93,49 +94,46 @@ test_nationality <- tests_both %>%
 
 ##DRU data
 #dru_raw <- gsheet_data$dru %>% clean_names() %>%   mutate(facility_name=gsub(":([[:alpha:]])", ": \\1", facility_name)) 
-quarantine_raw <- gsheet_data_2020$quarantine %>% clean_names()
+quarantine_raw <- gsheet_data$quarantine %>% clean_names()
 
 
 ### Camp population file
 population <- read.csv(here('data', 'population.csv')) 
 
 
-
   
-  
-# ## ---- godata --------
-# 
-# ### GoData
-# 
-# #get access token
-# url_request <- paste0(url,"api/oauth/token?access_token=123")
-# 
-# response <- POST(url=url_request,
-#                  body = list(
-#                    username = username,
-#                    password = password),
-#                  encode = "json")
-# 
-# content <-
-#   content(response, as = "text") %>%
-#   fromJSON(flatten = TRUE)
-# 
-# access_token <- content$access_token                 ## this is your access token !!! that allows API calls
-# 
-# #specify date ranges, for follow up filters
-# date_now <- format(Sys.time(), "%Y-%m-%dT23:59:59.999Z")
-# date_21d_ago <- format((Sys.Date()-21), "%Y-%m-%dT23:59:59.999Z")
-# 
-# # import outbreak Cases
-# response_cases <- GET(paste0(url,"api/outbreaks/",outbreak_id,"/cases"),
-#                       add_headers(Authorization = paste("Bearer", access_token, sep = " "))
-# )
-# json_cases <- content(response_cases, as = "text")
-# 
-# 
-# cases <- as_tibble(fromJSON(json_cases, flatten = TRUE))
-#   #select(-c(firstName,middleName,lastName, addresses))
+## ---- godata --------
 
+#get access token
+url_request <- paste0(url_godata,"api/oauth/token?access_token=123")
+
+response <- POST(url=url_request,
+                 body = list(
+                   username = username,
+                   password = password),
+                 encode = "json")
+
+content <-
+  content(response, as = "text") %>%
+  fromJSON(flatten = TRUE)
+
+access_token_godata <- content$access_token                 ## this is your access token !!! that allows API calls
+
+#specify date ranges, for follow up filters
+date_now <- format(Sys.time(), "%Y-%m-%dT23:59:59.999Z")
+date_21d_ago <- format((Sys.Date()-21), "%Y-%m-%dT23:59:59.999Z")
+
+# import outbreak Cases
+response_cases <- GET(paste0(url_godata,"api/outbreaks/",outbreak_id,"/cases"),
+                      add_headers(Authorization = paste("Bearer", access_token_godata, sep = " "))
+)
+json_cases <- content(response_cases, as = "text")
+
+
+cases <- as_tibble(fromJSON(json_cases, flatten = TRUE))
+  #select(-c(firstName,middleName,lastName, addresses))
+
+rm(response_cases)
 
 #Save populations as objects for processing later on 
 host_population <-  2805491

@@ -21,42 +21,10 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=TRUE)
 
 ##Load required packages
 
-library(lubridate)
-library(here)
-library(data.table)
-library(dplyr)
-library(janitor)
-library(linelist)
-library(forcats)
-library(ggplot2)
-library(ggthemes)
-library(gt)
-library(tidyr)
-library(RcppRoll)
-library(scales)
-library(sf)
-library(patchwork)
-library(flexdashboard)
-library(plotly)
-library(ggupset)
-library(table1)
-library(ggpubr)
-library(htmltools)
-library(purrr)
-library(googlesheets4)
-library(here)
-library(tidyr)
-library(httr)
-library(jsonlite)
-library(magrittr)
-library(tibble)
-library(stringr)
-library(leaflet)
-library(tsibble)
-library(DT)
-library(tidyjson)
-library(wesanderson)
-# library(conflicted)
+(devtools::install_github("tidyverse/googlesheets4"))
+
+pacman::p_load(here, data.table, janitor, linelist,dplyr,lubridate,tidyr,purrr,forcats,stringr,ggthemes,gt,RcppRoll,scales,sf,patchwork,flexdashboard,plotly,ggupset,table1,ggpubr,googlesheets4,httr,jsonlite,leaflet,tsibble,DT,tidyjson,wesanderson)
+
 # prepare regular expression for extracting camp number from camp variable
 regexp <- "[[:digit:]]+"
 
@@ -65,7 +33,6 @@ options(scipen=10000)
 
 breaks <- c(-Inf,4,14,59,Inf)
 labs <- c('0-4','5-14', '15-59', '60 and over')
-
 
 ```
 
@@ -78,7 +45,7 @@ source("modules/4_linelist_wrangling.R", local = knitr::knit_global())
 source("modules/sections/1_landing_page.R", local = knitr::knit_global())
 source("modules/sections/2_host_community.R", local = knitr::knit_global())
 source("modules/sections/3_fdmn_rohingya.R", local = knitr::knit_global())
-#source("modules/sections/4_epidemiology.R", local = knitr::knit_global())
+source("modules/sections/4_epidemiology.R", local = knitr::knit_global())
 source("modules/sections/5_testing.R", local = knitr::knit_global())
 source("modules/sections/6_cbs.R", local = knitr::knit_global())
 source("modules/sections/7_ewars_deaths.R", local = knitr::knit_global())
@@ -86,7 +53,6 @@ source("modules/sections/8_ccm.R", local = knitr::knit_global())
 source("modules/sections/9_quarantine.R", local = knitr::knit_global())
 
 ```
-
 
 
 Landing page
@@ -100,7 +66,6 @@ Row {data-height=75}
 
 ```{r host_placeholder}
 host_placeholder
-
 ```
 
 
@@ -108,21 +73,18 @@ host_placeholder
 
 ```{r host_tests}
 host_tests_vb
-
 ```
 
 ### **Cases**: Total - Last week - Last 24 hours
 
 ```{r host_cases}
 host_cases_vb
-
 ```
 
 ### **Deaths**: Total - Last week - Last 24 hours
 
 ```{r host_deaths}
 host_deaths_vb
-
 ```
 
 ### Admissions to health facility: Last 24 hours
@@ -137,25 +99,19 @@ Row {data-height=75}
 ### 
 
 ```{r fdmn_placeholder}
-
 fdmn_placeholder
-
 ```
-
 
 
 ### **Tests**: Total - Last week - Last 24 hours
 
 ```{r fdmn_tests}
-
 fdmn_tests_vb
-
 ```
 
 ### **Cases**: Total - Last week - Last 24 hours
 
 ```{r fdmn_cases}
-
 fdmn_cases_vb
 ```
 
@@ -172,32 +128,25 @@ fdmn_admit_vb
 ```
 
 
-
 Row {data-height=150}
 -------------------------------------
 
 ### Tests
 
 ```{r tests_table}
-
 all_tests_table
-
 ```
 
 ### Cases
 
 ```{r cases_table}
-
 all_cases_table
-
 ```
 
 ### Deaths
 
 ```{r deaths_table}
-
 all_deaths_table
-
 ```
 
 
@@ -208,21 +157,15 @@ Row {data-height=250}
 
 
 ```{r epicurve_bgd_host_fdmn}
-
 ggplotly(epi_curve)
-
 ```
 
 
 ### Patients admitted by severity with 3-day rolling average
 
 ```{r patients_admitted}
-
 ggplotly(severity_gph)
-#ggplotly(test_positivity_gph)
-
 ```
-
 
 
 Row {data-height=75}
@@ -251,29 +194,23 @@ Row {data-height=75}
 ```{r, echo=FALSE,fig.cap="This dashboard was developed by WHO Cox’s Bazar in collaboration with the [UK Public Health Rapid Support Team](https://www.lshtm.ac.uk/research/centres-projects-groups/uk-phrst){target='_blank'}", fig.align='center'} 
 
 knitr::include_graphics(here('data', 'logo_comb.png'))
-
 ##Time in Bangladesh
-#s <- now("UTC-6")
+s <- now("UTC-6")
 
-s <- now()
+#s <- now()
 ```
-
-
 
 
 
 
 ### Contact details
 
-If you have any questions contact kennedyd@who.int
+If you have any questions contact david.kennedy@lshtm.ac.uk
 
 
 
 
 Data updated at - "`r s`"
-
-
-
 
 
 Host community  {data-orientation=columns}
@@ -286,37 +223,24 @@ Row
 
 
 ```{r host_cases_deaths_table}
-
 summaryTable_host
 ```   
 
 ### Tests and cases over time {data-height=500}
 
 ```{r host_tests_cases_gph}
-
-
 ggplotly(testing_host_gph)
-
-
 ```
-
-
 
 Column 
 -------------------------------------
 
-
 ### Map
 
-
 ```{r host_map}
-
 case_host_map
-
 ```
 
-
- 
  
 Rohingya refugee/FDMN {data-orientation=columns}
 =====================================  
@@ -327,21 +251,14 @@ Row
 ### Table {data-height=500}
     
 ```{r fdmn_table}
-
 summaryTable_fdmn
 ```
-
 
 ### Tests and cases over time {data-height=500}
 
 ```{r fdmn_tests_cases}
-
-
-
 ggplotly(testing_fdmn_gph)
 ```
-
-
 
 Column 
 -------------------------------------
@@ -349,13 +266,10 @@ Column
 ### Map
 
 ```{r fdmn_map}
-
 case_fdmn_map
-
 ```
 
 
-<!----
 
 Epidemiology {data-orientation=columns}
 =====================================  
@@ -386,10 +300,7 @@ Column  {data-width=400}
 ### Epi curve of COVID-19 cases by gender
 
 ```{r godata_epicurve}
-
-
 ggplotly(godata_epi_curve)
-
 ```
 
 
@@ -397,9 +308,7 @@ ggplotly(godata_epi_curve)
 
 
 ```{r godata_cases_deaths_agegrp}
-
 ggplotly(case_death_age_gph)
- 
 ```
 
 
@@ -410,21 +319,16 @@ Column {data-width=500}
 ### Detailed information on cases
 
 ```{r}
-
 godata_table
-
 ```
 
 ### Symptoms at presentation
  
 ```{r symptom_gph}
-
-
 symptom_gph
 ```
  
 
---->
 
 Testing {data-orientation=row}
 =====================================  
@@ -435,20 +339,14 @@ Row {data-height=700}
 ### Tests and cases by week
 
 ```{r test_camp_table}
-
 tests_table
-
 ```
 
 ### Median age of samples tested by week
 
 ```{r test_pos_agegrp_gph}
-
-
 ggplotly(tests_gph)
 ```
-
-
 
 
 Row {data-height=300} {.tabset}
@@ -457,34 +355,20 @@ Row {data-height=300} {.tabset}
 ### Test positivity by week
 
 ```{r test_pos_week}
-
 ggplotly(test_positivity_gph)
-
-
 ```
-
-
 
 ### Test positivity by demographic
 
 ```{r test_pos_table}
-
 ggplotly(test_pos_age_sex_gph)
-
-
 ```
-
-
 
 ### Number of tests per 10,000 people by age group
 
 ```{r test_per10000_gph}
-
  ggplotly(tests_age_group_gph)
-
 ```
-
-
 
 
 EWARS - Overall {data-navmenu="All-cause mortality"}  
@@ -512,10 +396,7 @@ Row
 
 
 ```{r ewars_mort_gph}
-
-
 ggplotly(ewars_mort_gph)
-
 ```
 
 
@@ -525,22 +406,14 @@ Col
 ### Deaths by age group
 
 ```{r ewars_deaths_agegrp}
-
-
 ggplotly(death_age_gph)
-#death_age_gph
-
 ```
-
-
-
 
 
 ### Deaths by probable cause of death
 
 ```{r ewars_cod}
 ggplotly(cause_death_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.4))
-#cause_death_gph
 ```
 
 
@@ -608,7 +481,6 @@ Row
 
 ```{r cbs_hhvisited_gph}
 
-
 p <- ggplotly(hhvisit_gph + ylab(" ") + xlab(" "))
 
 x <- list(
@@ -622,17 +494,16 @@ p %>% layout(xaxis = x, yaxis = y)
 
 ```
 
-### Households visited and % residents with mild symptoms by camp {data-height=500}
+### Households visited in the last week {data-height=500}
 
 
 ```{r cbs_prop_visit_camp_table}
-prop_visit_camp_table
+ggplotly(hh_visit_lastweek)
 ```
 
 
 Row  {data-height=500}
 -------------------------------------
-
 
 ### Individuals reporting mild symptoms
 
@@ -644,7 +515,6 @@ ggplotly(mild_symptoms_gph) %>% layout(legend = list(orientation = "h", x = 0.4,
 ### Individuals reporting moderate/severe symptoms
 
 ```{r cbs_modsev_symptoms}
-#modsev_symptoms_tbl
 ggplotly(modsev_symptoms_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
 ```
 
@@ -701,6 +571,8 @@ ggplotly(total_beds_gph)
 
 --->
 
+
+
 Quarantine  {data-orientation=rows}
 =====================================  
 <br>
@@ -756,4 +628,5 @@ Row
 quarantine_table
 
 ```
+
 

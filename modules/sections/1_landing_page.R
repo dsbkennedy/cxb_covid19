@@ -143,7 +143,7 @@ all_tests_table <- table_calc_comb %>%
   cols_label(
     total_tests = "Total",
     total_tests_pm = "Per million",
-    total_tests_7day = "Last 7 days", 
+    total_tests_7day = "Last week", 
     total_tests_pm_7day   = "Per million",
     test_pos = "% positive" ,
     test_pos_7day = "% positive" 
@@ -186,7 +186,7 @@ all_cases_table <- table_calc_comb %>%
   cols_label(
     total_cases = "Total",
     total_cases_pm = "Per million",
-    total_cases_7day = "Last 7 days",
+    total_cases_7day = "Last week",
     total_cases_pm_7day   = "Per million",
     case_growth = "Growth rate"
   ) %>% 
@@ -229,7 +229,7 @@ all_deaths_table <- table_calc_comb %>%
   cols_label(
     total_deaths = "Total",
     total_deaths_pm = "Per million", 
-    total_deaths_7day = "Last 7 days",
+    total_deaths_7day = "Last week",
     total_deaths_pm_7day  = "Per million", 
     cfr = "Case Fatality Risk"
   ) %>% 
@@ -291,7 +291,8 @@ test_pos_df <- gsheet_data$ari_ili %>%
   clean_data() %>% 
   mutate(camp=gsub('camp_', '', camp_patients_residence)) %>% 
   filter(nationality %in% c('fdmn', 'host')) %>% 
-  filter(sample_type!=c('follow_up', 'humanitarian_worker')) %>% 
+  filter(sample_type %in% c('ari_ili', 'suspected_covid_19')) %>% 
+ # filter(sample_type!=c('follow_up', 'humanitarian_worker')) %>% 
   filter(laboratory_result %in% c('positive', 'negative')) %>% 
   mutate(camp_number=str_extract(camp, regexp)) %>% 
   mutate(camp_number=as.numeric(camp_number)) %>% 

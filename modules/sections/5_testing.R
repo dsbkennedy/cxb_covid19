@@ -133,7 +133,8 @@ tests_sex_tbl <- ari_ili_df %>%
   filter(!is.na(sex)) %>%
   mutate(sex=case_when(sex=='m' ~ 'Male', 
                        sex=='f' ~ 'Female')) %>% 
-  pivot_wider(names_from=laboratory_result, values_from=n) %>%
+  filter(!is.na(sex)) %>% 
+  pivot_wider(names_from=laboratory_result, values_from=n) %>% 
   mutate(total=negative+positive) %>%
   select(-negative) %>%
   drop_na() %>%

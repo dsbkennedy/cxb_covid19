@@ -2,15 +2,15 @@
 # Data import -------------------------------------------------------------
 
 fac_list <- read.csv(here('data', 'fac_list.csv')) %>% 
-  filter(!uid %in% c(87,495,151,294))
+  filter(!uid %in% c(23,87,495,151,294,543))
 
 
 
 
 new_data <- GET(paste0(url,new_form_id,"/submissions/?format=json"),
-                add_headers(Authorization = paste("token", access_token, sep = " "))
+                add_headers(Authorization = paste("token", access_token_ccm, sep = " "))
 ) %>% 
-  content(., as="parsed") %>%
+  content(., as="parsed") %>% 
   spread_all() %>%
   clean_data() %>%
   as_tibble() %>%
@@ -46,7 +46,7 @@ fac_data <- new_data %>%
          preg=case_when(grepl('2', health_fac_info_special_needs) ~ 'X'),
          sam=case_when(grepl('3', health_fac_info_special_needs) ~ 'X')) %>% 
   mutate(total_beds=as.numeric(health_fac_info_sari_beds) + as.numeric(health_fac_info_non_sari_beds)) %>% 
-  select(uid,total_beds,health_fac_info_sari_beds, mild_mod:sam,
+  select(uid,total_beds,health_fac_info_sari_beds,standby_beds=health_fac_info_standby_beds, mild_mod:sam,
          health_fac_info_contact_number_referral)
 
 
@@ -68,7 +68,7 @@ num_vars <- c('total_mild_mod','total_severe','total_critical','total_current_ad
 table_df <- daily_data %>% select(uid, date_report, daily_vars) %>% 
   full_join(fac_data,.,by='uid') %>% 
   mutate(total_admissions=as.numeric(activity_info_active_patients_beds_mild_moderate) + as.numeric(activity_info_active_patients_beds_severe) + as.numeric(activity_info_active_patients_beds_critical)) %>% 
-  select(uid,health_fac_info_contact_number_referral,mild_mod,severe,critical,paed,preg,sam,total_beds,date_report,
+  select(uid,health_fac_info_contact_number_referral,mild_mod,severe,critical,paed,preg,sam,total_beds,standby_beds,date_report,
          total_mild_mod=activity_info_active_patients_beds_mild_moderate, 
          total_severe=activity_info_active_patients_beds_severe, 
          total_critical=activity_info_active_patients_beds_critical,
@@ -87,7 +87,7 @@ table_df <- daily_data %>% select(uid, date_report, daily_vars) %>%
                   host_admissions=0, fdmn_admissions=0, total_admissions_24h=0, total_discharges_24h=0, total_referrals_24h=0, total_deaths_24h=0)) %>% 
   mutate(uid=as.numeric(uid)) %>% 
   full_join(fac_list,., by='uid') %>% 
-  select(name, uid,total_mild_mod, total_severe, total_critical,total_current_admit, total_beds,
+  select(name, uid,total_mild_mod, total_severe, total_critical,total_current_admit, total_beds,standby_beds,
          total_admissions_24h,	total_discharges_24h,	total_referrals_24h,total_deaths_24h,date_report, 
          fdmn_admissions, host_admissions,
          referral_contact=health_fac_info_contact_number_referral, mild_mod:sam) %>% 
@@ -180,7 +180,7 @@ facility_summary <- table_df %>%
   ) %>% 
   tab_spanner(
     label = "Beds",
-    columns = vars(total_current_admit,	total_beds,	occupancy)
+    columns = vars(total_current_admit,	total_beds,	occupancy,standby_beds)
   ) %>% 
   tab_spanner(
     label = "Activity in last 24 hours",
@@ -191,7 +191,7 @@ facility_summary <- table_df %>%
     decimals = 0
   ) %>% 
   fmt_missing(
-    columns = 1:19,
+    columns = 1:20,
     missing_text = ""
   ) %>% 
   cols_label(
@@ -205,6 +205,7 @@ facility_summary <- table_df %>%
     sam = "SAM",
     preg = "Pregnant/PP",
     total_beds = "Functional",
+    standby_beds="Standby",
     total_current_admit = "Occupied", 
     total_mild_mod = "Mild/Moderate",
     total_severe = "Severe",
