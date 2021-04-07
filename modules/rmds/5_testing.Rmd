@@ -1,0 +1,37 @@
+
+Row {data-height=700}
+-------------------------------------
+
+### Tests and cases by week
+
+```{r test_camp_table}
+tests_table
+```
+
+### Median age of samples tested by week
+
+```{r test_pos_agegrp_gph}
+ggplotly(tests_gph)
+```
+
+
+Row {data-height=300} {.tabset}
+-------------------------------------
+
+### Test positivity by week
+
+```{r test_pos_week}
+ggplotly(test_positivity_gph)
+```
+
+### Test positivity by demographic
+
+```{r test_pos_table}
+ggplotly(test_pos_age_sex_gph)
+```
+
+### Number of tests per 10,000 people by age group
+
+```{r test_per10000_gph}
+ ggplotly(tests_age_group_gph)
+```

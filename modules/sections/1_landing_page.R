@@ -188,7 +188,7 @@ all_cases_table <- table_calc_comb %>%
     total_cases_pm = "Per million",
     total_cases_7day = "Last week",
     total_cases_pm_7day   = "Per million",
-    case_growth = "Growth rate"
+    case_growth = "Change in last 7 days (%)"
   ) %>% 
   tab_style(
     style = list(
@@ -281,6 +281,18 @@ epi_curve <- table_final_df %>%
   labs(x = "Week case reported",
        y = "Number of cases", fill="year") +
   facet_wrap(~ population_group, scales="free_y", ncol=1)
+
+epi_curve <- table_final_df %>% 
+  group_by(population_group) %>% 
+  complete(date, fill=list(new_cases=0)) %>% 
+  mutate(cases_roll=zoo::rollmean(new_cases,3,align='right', fill=0)) %>% 
+  #count(population_group,date) %>% 
+  ggplot() +
+  geom_line(aes(x=date, y=cases_roll)) +
+  theme_minimal() +
+  labs(x = "Date case reported",
+       y = "Cases (3-day average)") +
+  facet_wrap(~population_group, scales='free_y', ncol=1)
 
 
 # Test positivity ---------------------------------------------------------

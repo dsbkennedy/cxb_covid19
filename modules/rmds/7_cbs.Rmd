@@ -1,0 +1,65 @@
+
+Inputs {.sidebar}
+-------------------------------------
+
+<br>
+<br>
+
+
+Community Health Workers/Volunteers (CHWs) are an outreach workforce consisting of approximately 1400 women and men, primarily Rohingya, who live near or inside the camps. CHWs are each assigned fixed, unique geographic areas with approximately 160 households, which are visited once every two weeks since mid 2018.
+
+<br>
+
+The CHWs use a KoBo Toolbox-based tool, the Community Health Workers Reporting Tool (CHW-RT), to collect data on household indicators.  
+
+
+<br>
+
+Row 
+-------------------------------------
+   
+<br>
+<br>
+
+
+### Households visited
+
+```{r cbs_hhvisited_gph}
+
+p <- ggplotly(hhvisit_gph + ylab(" ") + xlab(" "))
+
+x <- list(
+  title = "Week"
+)
+y <- list(
+  title = "Households visited"
+)
+p %>% layout(xaxis = x, yaxis = y)
+
+
+```
+
+### Households visited in the last week {data-height=500}
+
+
+```{r cbs_prop_visit_camp_table}
+ggplotly(hh_visit_lastweek)
+```
+
+
+Row  {data-height=500}
+-------------------------------------
+
+### Individuals reporting mild symptoms
+
+
+```{r cbs_mildsymptoms_gph}
+ggplotly(mild_symptoms_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+```
+
+### Individuals reporting moderate/severe symptoms
+
+```{r cbs_modsev_symptoms}
+ggplotly(modsev_symptoms_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+```
+

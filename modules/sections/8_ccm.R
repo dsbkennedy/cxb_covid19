@@ -1,17 +1,13 @@
-#conflict_prefer("filter", "dplyr")
 # Data import -------------------------------------------------------------
 
 fac_list <- read.csv(here('data', 'fac_list.csv')) %>% 
   filter(!uid %in% c(23,87,495,151,294,543))
 
-
-
-
 new_data <- GET(paste0(url,new_form_id,"/submissions/?format=json"),
                 add_headers(Authorization = paste("token", access_token_ccm, sep = " "))
 ) %>% 
   content(., as="parsed") %>% 
-  spread_all() %>%
+  spread_all() %>% 
   clean_data() %>%
   as_tibble() %>%
   select(-json) %>%
@@ -55,12 +51,15 @@ daily_data <- new_data %>% filter(activity_type_select==1) %>%
   remove_empty() 
 
 
-daily_vars <- c('activity_info_active_patients_beds_mild_moderate', 'activity_info_active_patients_beds_severe', 'activity_info_active_patients_beds_critical',
-                'activity_info_last_24h_new_pat_admit_y_new_pat_host_admit_sum', 'activity_info_last_24h_new_pat_admit_y_new_pat_fdmn_admit_sum','activity_info_last_24h_new_pat_admit_total',
-                'activity_info_last_24h_new_pat_discharged_y_new_pat_discharged_sum', 'activity_info_last_24h_new_pat_refer_y_new_pat_refer_sum','activity_info_last_24h_new_pat_died_y_new_pat_died_sum')  
+daily_vars <- c('activity_info_active_patients_beds_mild_moderate', 'activity_info_active_patients_beds_severe', 
+                'activity_info_active_patients_beds_critical','activity_info_last_24h_new_pat_admit_y_new_pat_host_admit_sum', 
+                'activity_info_last_24h_new_pat_admit_y_new_pat_fdmn_admit_sum','activity_info_last_24h_new_pat_admit_total',
+                'activity_info_last_24h_new_pat_discharged_y_new_pat_discharged_sum', 
+                'activity_info_last_24h_new_pat_refer_y_new_pat_refer_sum','activity_info_last_24h_new_pat_died_y_new_pat_died_sum')  
 
-num_vars <- c('total_mild_mod','total_severe','total_critical','total_current_admit','total_beds',
-              'total_admissions_24h','total_discharges_24h','total_referrals_24h','total_deaths_24h')
+num_vars <- c('total_mild_mod','total_severe','total_critical','total_current_admit','total_beds','standby_beds',
+              'total_admissions_24h','fdmn_admissions', 'host_admissions', 
+              'total_discharges_24h','total_referrals_24h','total_deaths_24h')
 
 
 # Building table ----------------------------------------------------------
@@ -105,46 +104,11 @@ cumulative_admissions_df <- table_df %>% select(date_report, fdmn_admissions, ho
   arrange(date_report) %>% 
   pivot_wider(names_from=name, values_from=c('total', 'cumulative'))
 
-#write.csv(x, here('data', 'cumulative_admit.csv'))
-
 # Facility summary --------------------------------------------------------
 
-
-# #Highest case numbers
-# plot_spark1 <- function(data){
-#   data %>%
-#     #mutate(admit24h=as.numeric(activity_info_last_24h_new_pat_admit_total)) %>%
-#     ggplot(aes(x = date, y = occupancy)) +
-#     geom_line(size = 15) +
-#     theme_void() +
-#     theme(legend.position = "none")
-# }
-# 
-# sparknamedata1 <- table_df %>%
-#   group_by(name)
-#   #filter(!is.na(date_report)) %>%
-#   #slice_max(date_report, n=10)
-# 
-# sparknamedata1$name <- as.character(sparknamedata1$name)
-# sparknamedata1$name <- fct_inorder(sparknamedata1$name)
-# spark_plots1 <- table_df %>%
-#   as.data.frame() %>%
-#   #filter(!is.na(date_report)) %>%
-#   #filter(name %in% unique(sparknamedata1$name)) %>%
-#   select(name, date=date_report, occupancy) %>%
-#   mutate(name=factor(name, levels=unique(sparknamedata1$name))) %>%
-#   mutate(camp_number=str_extract(name, "[[:digit:]]+")) %>%
-#   mutate(camp_number=as.numeric(camp_number)) %>%
-#   arrange(camp_number,date) %>%
-#   #arrange(name, date) %>%
-#   select(-camp_number) %>%
-#   nest(occupancy = c(date, occupancy)) %>%
-#   mutate(plot = map(occupancy, plot_spark1))
-# 
-
-
 facility_summary <- table_df %>% 
-  select(-c('fdmn_admissions', 'host_admissions')) %>% 
+  filter(!is.na(name)) %>% 
+  #select(-c('fdmn_admissions', 'host_admissions')) %>% 
   group_by(name) %>% 
   filter(date_report==last(date_report) | is.na(date_report)) %>%
   #summarise_all(last) %>% 
@@ -256,8 +220,6 @@ facility_summary <- table_df %>%
     columns = gt::everything()
   ) 
 
-
-
 tonumeric <- c('activity_info_last_24h_new_pat_admit_y_new_pat_admit_fdmn_m',
                'activity_info_last_24h_new_pat_admit_y_new_pat_admit_fdmn_f',
                'activity_info_last_24h_new_pat_admit_y_new_pat_fdmn_admit_sum',
@@ -339,9 +301,6 @@ adm_dis_gph <-  all_adm_dis %>%
 
 rm(historic_adm_dis, new_admissions, all_adm_dis)
 
-# require(openxlsx)
-# list_of_datasets <- list("all_data" = all_admissions, "cumulative_data" = cumulative_admissions)
-# write.xlsx(list_of_datasets, file = here('data', 'admissions_data.xlsx'))
 
 ### Admissions in last 24 hours by nationality
 
@@ -375,59 +334,6 @@ nationality_gph <- nationality_df %>%
   theme_minimal() +
   labs(x='Report date', y='Count', color='Nationality', 
        title='')
-
-# nat_breakdown_table <- nationality_df %>% 
-#   arrange(name, date_report) %>% 
-#   complete(nesting(date_report,name), fill=list(total=0)) %>% 
-#   group_by(name) %>% 
-#   mutate(cumulative=cumsum(total)) %>% 
-#   #filter(cumulative>0) %>% 
-#   filter(!is.na(date_report))
-# 
-# write.csv(nat_breakdown_table, here('data', 'nat_breakdown.csv'))
-# x <- nat_breakdown_table %>% 
-#   select(-total) %>% 
-#   ungroup() %>% 
-#   distinct() %>% 
-#   pivot_wider(., names_from=name, values_from=cumulative, values_fn = length)
-# 
-# x <- nat_breakdown_table %>% 
-#   #select(-total) %>% 
-#   group_by(date_report) %>% 
-#   mutate(prop=cumulative/sum(cumulative)) %>% 
-#   ungroup() %>% 
-#   complete(nesting(date_report,name), fill=list(cumulative=0))
-# 
-# x %>% 
-#   complete(name, date_report, fill = list(cumulative = 0)) %>% 
-#   
-# 
-# write.csv(x, here('data', 'nat_breakdown.csv'))
-# 
-# x %>% 
-#   select(-prop) %>% 
-#   ungroup() %>% 
-#   distinct() %>% 
-#   #mutate(cumulative=as.character(cumulative)) %>% 
-#   #mutate(row = row_number()) %>%
-#   pivot_wider(id_cols=date_report, names_from=name, values_from=cumulative)
-# 
-# x %>% 
-#   ggplot(., aes(x=date_report, y=cumulative, color=name)) +
-#   geom_line()
-# 
-# x %>% 
-#   pivot_longer(-c('date_report', 'name'))
-# 
-# 
-# nationality_df %>% 
-#   arrange(date_report) %>%  
-#   group_by(name) %>% 
-#   mutate(cumulative=cumsum(total)) %>% 
-#   ggplot(., aes(x=date_report, y=cumulative, color=name)) +
-#   geom_line()
-#   
-
 
 
 ### Admissions in last 24 hours by gender
@@ -524,10 +430,10 @@ admissions_trend_df <- severity_df %>%
   summarise(total_admitted=sum(total, na.rm=TRUE)) %>% 
   mutate(roll_admitted=zoo::rollmean(total_admitted,3,align='right', fill=NA))
 
-severity_gph <- 
-  ggplot(data=severity_df, aes(x=date_report, y=total)) +
+severity_gph <- severity_df %>% 
+  ggplot(aes(x=date_report, y=total)) +
   geom_col(aes(fill=name)) +
-  geom_line(data=admissions_trend_df, aes(x=date_report, y=roll_admitted)) +
+  geom_line(data=subset(admissions_trend_df, date_report<today()), aes(x=date_report, y=roll_admitted)) +
   labs(x='Report date', y='Total patients currently admitted', fill='Severity', 
        title='') +
   theme_minimal() +
@@ -577,22 +483,6 @@ occupancy_df <- table_df %>%
 
 write.csv(occupancy_df, here('data', 'occupancy_data.csv'))
 
-# occupancy_df %>% 
-#   ggplot(., aes(x=date_report, y=occupancy)) +
-#   geom_line() +
-#   theme_minimal() +
-#   labs(x='Date', y='Occupancy', title='CXB: Health Facility Occupancy') +
-#   scale_y_continuous(labels=scales::percent) 
-  
-
-  #summarise(total_beds=dplyr::first(total_beds))
-  #filter(!is.na(total_beds)) %>%
-  # ungroup() %>%
-  # summarise(total_beds=sum(total_beds))
-  # mutate(dataset='current') %>%
-  # bind_rows(historic_occupancy)
-  # filter(!is.na(date_report)) %>%
-  # mutate(occupancy=total_current_admit/total_beds)
 
 first_date <- min(table_df$date_report,na.rm=TRUE)
 last_date <- today()-1

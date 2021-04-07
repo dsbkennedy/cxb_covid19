@@ -22,7 +22,7 @@ godata_wide <- cases %>%
 
 ##Get GoData ID from FDMN sheet 
 
-godata_case_id <- fdmn_raw %>% 
+godata_case_id <- fdmn_both %>% 
   clean_names() %>% 
   filter(!is.na(go_data_case_id)) %>%  
   pull(go_data_case_id)
@@ -32,7 +32,8 @@ godata_case_id <- fdmn_raw %>%
 
 godata_clean <- godata_wide %>% 
   #Ethnicity
-  mutate(population_group=coalesce(questionnaire_answers_nationality_value,questionnaire_answers_nationality_2_value,questionnaire_answers_cif_nationality_value)) %>% 
+  mutate(population_group=coalesce(questionnaire_answers_nationality_value,
+                                   questionnaire_answers_nationality_2_value,questionnaire_answers_cif_nationality_value)) %>% 
   mutate(lab_result=coalesce(questionnaire_answers_lab_result_value,questionnaire_answers_result_2_value)) %>% 
   mutate(fdmn_positive=case_when(visual_id %in% godata_case_id ~ 1,
                                  (population_group=='FDMN' & lab_result=='Positive') ~ 1)) %>% 
@@ -51,7 +52,6 @@ godata_clean <- godata_wide %>%
   # filter(lab_result=='Positive') %>% 
   #Dates
   mutate(date_of_reporting = guess_dates(date_of_reporting),
-         #date_of_data_entry = guess_dates(createdat),
          date_of_onset = guess_dates(date_of_onset),
          date_of_outcome = guess_dates(date_of_outcome),
          date_of_last_contact = guess_dates(date_of_last_contact),
@@ -59,7 +59,6 @@ godata_clean <- godata_wide %>%
   #Age
   mutate(age_years = case_when(
     is.na(age_years) && !is.na(age_months) ~  as.integer(age_months / 12),
-    #is.na(age_years) && is.na(age_months) ~  NA_integer_,
     TRUE ~ as.integer(age_years))) %>%
   #Age group
   #mutate(age_group=cut(age_years,breaks = c(seq(0, 50, by = 10), Inf), labels = age_labs, right = FALSE)) %>%

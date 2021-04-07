@@ -1,0 +1,74 @@
+Inputs {.sidebar}
+-------------------------------------
+
+<br>
+<br>
+
+<br> 
+
+Data from 2019 are only included from week 30. Before this week, there was low coverage of the data collection tool.  
+
+
+<br>
+
+
+Row 
+-------------------------------------
+
+
+### Number of reported deaths per week
+
+
+```{r ewars_mort_gph}
+ggplotly(ewars_mort_gph)
+```
+
+
+Col 
+-------------------------------------
+
+### Deaths by age group
+
+```{r ewars_deaths_agegrp}
+ggplotly(death_age_gph)
+```
+
+
+### Deaths by probable cause of death
+
+```{r ewars_cod}
+ggplotly(cause_death_gph) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.4))
+```
+
+
+
+EWARS - Camp-level {data-navmenu="All-cause mortality"}  
+=====================================  
+
+Inputs {.sidebar}
+-------------------------------------
+
+<br>
+<br>
+
+<br> 
+
+Data from 2019 are only included from week 30. Before this week, there was low coverage of the data collection tool. 
+
+<br>
+
+At the camp-level, spikes are likely due to an increase in partners reporting to the tool not an increase in the number of people dying.   
+
+
+
+Column 
+-------------------------------------
+
+
+### Number of reported deaths per week by camp
+
+
+
+```{r ewars_deaths_camp}
+ggplotly(ewars_mort_camp_gph)
+```

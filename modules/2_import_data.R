@@ -3,17 +3,23 @@
 ##Import data from Google Sheets
 
 gs4_deauth()
-# # # #plan(multiprocess)
+# # #plan(multiprocess)
+
+# gsheet_data_2020 <- map(sheet_names, ~read_sheet(gdrive_link_2020, sheet=.)) %>%
+#   set_names(sheet_names)
+# 
+# saveRDS(gsheet_data_2020, here('data', 'gsheet_data_2020.Rds'))
+
+###Append 2020 data
+gsheet_data_2020 <- readRDS(here('data', 'gsheet_data_2020.Rds'))
+
 # gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%
-# set_names(sheet_names)
+#  set_names(sheet_names)
 # 
 # saveRDS(gsheet_data, here('data', 'gsheet_data_2021.Rds'))
 
 gsheet_data <- readRDS(here('data', 'gsheet_data_2021.Rds'))
 
-
-###Append 2020 data
-gsheet_data_2020 <- readRDS(here('data', 'gsheet_data_2020.Rds'))
 
 
 fdmn_raw_2020 <- gsheet_data_2020$fdmn %>% 
@@ -48,11 +54,14 @@ host_raw_2020 <- gsheet_data_2020$host %>%
 host_raw <- gsheet_data$host %>% 
   clean_names() %>% 
   janitor::remove_empty() %>% 
+  mutate(age_in_years=as.numeric(age_in_years[[1]])) %>% 
   #select(-c(date_of_death)) %>% 
   #mutate(date_of_specimen_collection=dmy(date_of_specimen_collection)) %>% 
   mutate(nationality='Host')
 
-host_both <- host_raw_2020 %>% bind_rows(host_raw) %>% select(-date_of_specimen_collection)
+host_both <- host_raw_2020 %>% 
+  bind_rows(host_raw) %>% 
+  select(-date_of_specimen_collection)
 
 
 ##Bind FDMN and host data

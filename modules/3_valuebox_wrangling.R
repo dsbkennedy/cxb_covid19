@@ -96,18 +96,34 @@ table_1day <- table_final_df %>%
 
 #Growth rate
 
+# growth_rate <- table_final_df %>% 
+#   group_by(population_group) %>% 
+#   mutate(new_cases=coalesce(new_cases,0)) %>% 
+#   mutate(cumulative_cases=cumsum(new_cases)) %>%
+#   mutate(change=ifelse(lag(cumulative_cases,7)>10,
+#                        ((cumulative_cases-lag(cumulative_cases,7))/cumulative_cases),NA))
+# 
+#   mutate(case_growth=ifelse(lag(cumulative_cases,7)>10, 
+#                             ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA))
+#   summarise(case_growth=last(case_growth))
+
 growth_rate <- table_final_df %>% 
   group_by(population_group) %>% 
   mutate(new_cases=coalesce(new_cases,0)) %>% 
   mutate(cumulative_cases=cumsum(new_cases)) %>%
-  mutate(case_growth=ifelse(lag(cumulative_cases,7)>10, 
-                            ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>%
+  mutate(cases7roll=RcppRoll::roll_sum(new_cases,7, fill=NA, align="right")) %>% 
+  mutate(case_growth=ifelse(lag(cases7roll,7)>=10 & cases7roll>=10,
+                            (cases7roll/lag(cases7roll,7))-1,NA)) %>% 
+  mutate(case_growth=coalesce(case_growth,0)) %>% 
+  mutate(case_growth_mean=RcppRoll::roll_mean(case_growth,7, fill=NA, align="right"))
+
+growth_rate_latest <- growth_rate %>% 
   summarise(case_growth=last(case_growth))
 
 #Final calculations
 table_calc_comb <- table_totals %>% 
   left_join(table_7day, by='population_group') %>% 
-  left_join(growth_rate, by='population_group') %>% 
+  left_join(growth_rate_latest, by='population_group') %>% 
   mutate(test_pos=total_cases/total_tests, 
          test_pos_7day=total_cases_7day/total_tests_7day,
          cfr=total_deaths/total_cases)

@@ -1,5 +1,6 @@
 
 # WRANGLING ---------------------------------------------------------------
+today_date <- ymd(today())
 
 hbc_df <- read.csv(here('data', 'home_based_care.csv')) %>% 
   clean_names() %>% 
@@ -15,14 +16,15 @@ hbc_df <- read.csv(here('data', 'home_based_care.csv')) %>%
   mutate(year_wk=yearweek(date)) %>% 
   mutate(year_wk=case_when(year!=2021 ~year_wk-1, 
                            TRUE ~ year_wk)) %>% 
-  filter(date>=ymd('2020-06-24'))
+  filter(date>=ymd('2020-06-24')) %>% 
+  filter(year_wk<yearweek(today_date))
   
 
 # HOUSEHOLDS-VISITED ------------------------------------------------------
 
+
 hhvisit_gph <- hbc_df %>% 
   select(date, c1_total_hh_visited_week) %>% 
-  filter(date!=ymd('2021-05-07')) %>% 
   #filter(week>25) %>% 
   group_by(date) %>% 
   summarise(hhvisited=sum(c1_total_hh_visited_week, na.rm=TRUE)) %>% 
@@ -196,15 +198,17 @@ mild_symptoms_gph <- symptoms_df %>%
   group_by(severity,date, sex, age_group) %>%
   summarise(total_cases=sum(value,na.rm=TRUE)) %>%
   group_by(severity,date) %>%
+  filter(date<=today()) %>% 
   #mutate(prop=total_cases/sum(total_cases)) %>%
   mutate(age_group=factor(age_group, levels=c('<5', '5-59', '>=60'))) %>%
   mutate(age_group=fct_rev(age_group)) %>%
   filter(severity=='Mild') %>%
-  ggplot(aes(x=date,y=total_cases, fill=interaction(sex,age_group), label=total_cases)) +
-  geom_col(position = position_stack(), color = "black") +
+  ggplot(aes(x=date,y=total_cases, color=interaction(sex,age_group), label=total_cases)) +
+  geom_line() +
+  #geom_col(position = position_stack(), color = "black") +
   #geom_text(position = position_stack(vjust = .5)) +
   theme_minimal() +
-  labs(x='Week', y='Number of cases', fill='Sex & \n Age group') +
+  labs(x='Week', y='Number of cases', color='Sex & \n Age group') +
   scale_fill_brewer(palette="Dark2") 
   #scale_y_continuous(labels = scales::percent) +
   #scale_x_continuous(breaks=pretty_breaks())
@@ -212,43 +216,10 @@ mild_symptoms_gph <- symptoms_df %>%
 
 # MODERATE-SEVERE-TABLE ---------------------------------------------------
 
-# modsev_symptoms_tbl <- symptoms_df %>% 
-#   group_by(week, severity, age_grp, sex) %>% 
-#   summarise(total=sum(value,na.rm=TRUE)) %>% 
-#   pivot_wider(names_from=c(age_grp,sex), values_from=total) %>% 
-#   arrange(desc(week)) %>% 
-#   ungroup() %>% 
-#   filter(!severity=='Mild') %>% 
-#   select(-severity) %>% 
-#   clean_names() %>% 
-#   select(week, contains('less_than_5'), contains('5_to_59'), contains('60_over')) %>% 
-#   rowwise %>% 
-#   mutate(total = sum(c_across(!week))) %>% 
-#   gt(rowname_col = c("week")) %>% 
-#   opt_row_striping(., row_striping = TRUE) %>% 
-#   tab_stubhead('Week') %>% 
-#   tab_spanner(
-#     label = "Under 5",
-#     columns = vars(less_than_5_male,less_than_5_female)) %>% 
-#   tab_spanner(
-#     label = "5 to 59",
-#     columns = vars(x5_to_59_male,x5_to_59_female)) %>% 
-#   tab_spanner(
-#     label = "60 and over",
-#     columns = vars(x60_over_male,x60_over_female)) %>% 
-#   cols_label(
-#     week = "Week",
-#     less_than_5_male = "Male",
-#     less_than_5_female = "Female",
-#     x5_to_59_male = "Male",
-#     x5_to_59_female = "Female",
-#     x60_over_male = "Male",
-#     x60_over_female = "Female", 
-#     total="Total")  
-
 
 modsev_symptoms_gph <- symptoms_df %>%
   ungroup() %>%
+  filter(date<=today()) %>% 
   group_by(severity,date, sex, age_group) %>%
   summarise(total_cases=sum(value,na.rm=TRUE)) %>%
   group_by(severity,date) %>%
@@ -257,7 +228,8 @@ modsev_symptoms_gph <- symptoms_df %>%
   mutate(age_group=fct_rev(age_group)) %>%
   filter(!severity=='Mild') %>%
   ggplot(aes(x=date,y=total_cases, fill=interaction(sex,age_group), label=ifelse(total_cases>0,total_cases,NA))) +
-  geom_col(position = position_stack(), color = "black") +
+  geom_col(size=2.5) +
+  #geom_col(position = position_stack(), color = "black") +
   #geom_text(position = position_stack(vjust = .5)) +
   theme_minimal() +
   labs(x='Week', y='Number of cases', fill='Sex & \n Age group') +

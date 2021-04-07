@@ -1,0 +1,24 @@
+Row 
+-------------------------------------
+   
+### Table {data-height=500}
+    
+```{r fdmn_table}
+summaryTable_fdmn
+```
+
+### Tests and cases over time {data-height=500}
+
+```{r fdmn_tests_cases}
+ggplotly(testing_fdmn_gph)
+```
+
+Column 
+-------------------------------------
+
+### Map
+
+```{r fdmn_map}
+case_fdmn_map
+```
+

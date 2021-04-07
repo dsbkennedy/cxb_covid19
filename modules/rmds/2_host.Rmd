@@ -1,0 +1,24 @@
+Row 
+-------------------------------------
+   
+### Table {data-height=500}
+
+
+```{r host_cases_deaths_table}
+summaryTable_host
+```   
+
+### Tests and cases over time {data-height=500}
+
+```{r host_tests_cases_gph}
+ggplotly(testing_host_gph)
+```
+
+Column 
+-------------------------------------
+
+### Map
+
+```{r host_map}
+case_host_map
+```

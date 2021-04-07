@@ -19,11 +19,12 @@ ewars_mort <- ewars_mort_2020 %>% bind_rows(ewars_mort_2021) %>%
   arrange(year_wk)  %>% 
   filter(year_wk<max(year_wk)) %>% 
   mutate(age_group=case_when(age_in_years<5 ~ 'Under 5',
-                             age_in_years>=5 & age_in_years<15 ~ '5 to 14',
-                             age_in_years>=15 & age_in_years<60 ~ '15 to 59',
+                             age_in_years>=5 & age_in_years<60 ~ '5 to 59',
+                             # age_in_years>=5 & age_in_years<15 ~ '5 to 14',
+                             # age_in_years>=15 & age_in_years<60 ~ '15 to 59',
                              age_in_years>=60 ~'60 and over', 
                              TRUE ~ 'Age missing')) %>% 
-  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 14', '15 to 59',  '60 and over', 'Age missing')))
+  mutate(age_group=factor(age_group, levels=c('Under 5', '5 to 59',  '60 and over', 'Age missing')))
 
 saveRDS(ewars_mort, here('data', 'ewars_deaths.Rds'))
 
@@ -42,16 +43,19 @@ saveRDS(ewars_mort, here('data', 'ewars_deaths.Rds'))
 
 ewars_mort_gph <- ewars_mort %>% 
   #filter(!camp_zone=='') %>% 
-  count(year_wk) %>% 
-  arrange(year_wk)  %>% 
+  count(year, week) %>% 
+  filter(!year==2018) %>% 
+  filter(!(year==2019 & (week<25))) %>% 
+  arrange(year, week) %>% 
+  group_by(year) %>% 
   mutate(deaths_roll=roll_mean((n),2, na.rm=TRUE, align="right", fill = NA)) %>% 
-  ggplot(., aes(x=year_wk, y=deaths_roll)) +
+  ggplot(., aes(x=week, y=deaths_roll, color=factor(year))) +
   geom_point() +
   #geom_smooth() +
   geom_line() +
   theme_minimal() +
-  scale_y_continuous(limits=c(0,70)) +
-  labs(x='Week', y='Deaths (2-week average)')
+  scale_y_continuous(limits=c(0,75)) +
+  labs(x='Week', y='Deaths (2-week average)', color='Year')
 
 
 # WEEKLY-DEATHS-AGEGRP ----------------------------------------------------

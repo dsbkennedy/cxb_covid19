@@ -1,0 +1,18 @@
+<br>
+
+```{r facility_summary}
+facility_summary
+```
+
+Demographics {data-navmenu="Clinical Case Management"}  
+=====================================
+
+Row {data-height=800}
+-------------------------------------
+
+### Activity in last 24 hours by gender
+
+```{r gender_gph}
+ggplotly(gender_gph)
+```
+

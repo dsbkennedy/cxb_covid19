@@ -50,15 +50,24 @@ table_7day_subloc <- cxb_cases_deaths_subloc %>%
 #Growth rate
 ##Growth rate needs values larger than 10 so FDMN communities don't reach this criteria
 growth_rate_subloc <- cxb_cases_deaths_subloc %>% 
+  group_by(population_group,location,date) %>% 
+  summarise(total_cases=sum(new_cases,na.rm=TRUE)) %>% 
+  arrange(population_group,location,date) %>% 
   group_by(population_group,location) %>% 
   filter(!is.na(date)) %>% 
   complete(date = seq.Date(min(date), max(date,na.rm=TRUE), by="day")) %>% 
-  mutate(new_cases=coalesce(new_cases,0)) %>% 
+  mutate(total_cases=coalesce(total_cases,0)) %>% 
   #group_by(location) %>% 
-  mutate(cumulative_cases=cumsum(new_cases)) %>% 
-  mutate(case_growth=ifelse(lag(cumulative_cases,7)>10, 
-                            ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>%
-  summarise(case_growth=last(case_growth)) 
+  mutate(cumulative_cases=cumsum(total_cases)) %>% 
+  mutate(cases7roll=RcppRoll::roll_sum(total_cases,7, fill=NA, align="right")) %>% 
+  mutate(case_growth=ifelse(lag(cases7roll,7)>=5 & cases7roll>=5,
+                            (cases7roll/lag(cases7roll,7))-1,NA)) %>% 
+  mutate(case_growth=coalesce(case_growth,0)) %>% 
+  mutate(case_growth_mean=RcppRoll::roll_mean(case_growth,7, fill=NA, align="right")) %>% 
+  summarise(case_growth=last(case_growth))
+  # mutate(case_growth=ifelse(lag(cumulative_cases,7)>10, 
+  #                           ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA)) %>% 
+  # summarise(case_growth=last(case_growth)) 
 
 #Final calculations
 table_calc_comb_subloc <- table_totals_subloc %>% 

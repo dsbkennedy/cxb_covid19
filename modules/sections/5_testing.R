@@ -211,17 +211,15 @@ week_test_df <- ari_ili_df %>%
 tests_gph <- ggplot(week_test_df, aes(x=year_week, y=age, group=factor(year_week))) + 
   #geom_jitter(colour="lightblue", alpha=0.5, width=0.1) +
   #geom_point(stat="summary", fun.y="mean") + 
-  geom_boxplot(alpha = 0.80) +
+  geom_boxplot(alpha = 0.80, outlier.shape = NA) +
   #geom_errorbar(stat="summary", fun.data="mean_se", fun.args = list(mult = 1.96), width=0) +
   labs(x="Week", y="Age (median with interquartile range)") +
   theme_bw() +
   theme(axis.text.x=element_text(angle=45, hjust=1)) +
-  scale_y_continuous(breaks=seq(0,100,10))
+ scale_y_continuous(breaks=seq(0,80,10))
 
 
 # TEST-AGE GROUP ----------------------------------------------------------
-
-
 
 age_labs_decade <- c(paste(seq(0, 40, by = 10), seq(9, 49, by = 10),
                            sep = "-"), paste(50, "+", sep = ""))
@@ -249,6 +247,8 @@ tests_age_group_gph <-
   scale_fill_brewer(palette="Dark2", na.value="blue") +
   labs(x='Age groups', y='Tests per 10,000 people', fill='Age groups')
 
+week_filter <- max(tests_df$week)-12
+
 ###TEST POSITIVTY GRAPH
 test_positivity_gph <- tests_df %>% 
   #filter(grepl('fdmn|host', name)) %>% 
@@ -264,6 +264,7 @@ test_positivity_gph <- tests_df %>%
   pivot_wider(names_from=indicator, values_from=value) %>% 
   #group_by(population_group) %>% 
   filter(cases>0) %>% 
+  filter(week>=week_filter) %>%
  # filter(week!=('2020 W15')) %>% 
   #filter(week<max(week, na.rm=TRUE)) %>% 
   mutate(pos=map2(cases,tests, ~ prop.test(.x, .y, conf.level=0.95) %>% 

@@ -11,7 +11,9 @@ quarantine_table <- quarantine_raw %>%
          contains("individuals") ,
          number_of_rooms_shelters_currently_functional,number_of_rooms_shelters_currently_filled, timestamp) %>% 
   mutate(across(quar_vars, as.numeric)) %>% 
-  mutate(prop_occupancy=number_of_rooms_shelters_currently_filled/number_of_rooms_shelters_currently_functional) %>% 
+  group_by(supporting_agency) %>% 
+  summarise_all(list(last)) %>% 
+mutate(prop_occupancy=number_of_rooms_shelters_currently_filled/number_of_rooms_shelters_currently_functional) %>% 
   gt() %>% 
   opt_row_striping(., row_striping = TRUE) %>% 
   tab_spanner(

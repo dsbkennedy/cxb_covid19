@@ -65,7 +65,6 @@ summaryTable_host <- table_calc_comb_subloc %>%
     container.overflow.y = TRUE,
     grand_summary_row.background.color = "lightblue")
 
-summaryTable_host
 
 ## ---- graph 
 
