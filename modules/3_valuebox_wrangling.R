@@ -112,13 +112,13 @@ growth_rate <- table_final_df %>%
   mutate(new_cases=coalesce(new_cases,0)) %>% 
   mutate(cumulative_cases=cumsum(new_cases)) %>%
   mutate(cases7roll=RcppRoll::roll_sum(new_cases,7, fill=NA, align="right")) %>% 
-  mutate(case_growth=ifelse(lag(cases7roll,7)>=10 & cases7roll>=10,
+  mutate(case_growth=ifelse(lag(cases7roll,7)>5 & cases7roll>5,
                             (cases7roll/lag(cases7roll,7))-1,NA)) %>% 
   mutate(case_growth=coalesce(case_growth,0)) %>% 
   mutate(case_growth_mean=RcppRoll::roll_mean(case_growth,7, fill=NA, align="right"))
 
 growth_rate_latest <- growth_rate %>% 
-  summarise(case_growth=last(case_growth))
+  summarise(case_growth=last(case_growth_mean))
 
 #Final calculations
 table_calc_comb <- table_totals %>% 

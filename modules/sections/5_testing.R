@@ -15,7 +15,7 @@ ari_ili_df <- gsheet_data$ari_ili %>%
   mutate(camp_number=str_extract(camp, regexp)) %>% 
   mutate(camp_number=as.numeric(camp_number)) %>% 
   mutate(camp=reorder(camp,camp_number)) %>% 
-  mutate(age=as.numeric(age)) %>% 
+  mutate(age=as.numeric(as.character(age))) %>% 
   mutate(age_group=cut(age,breaks = breaks, labels = labs, right = FALSE)) 
 
 
@@ -219,6 +219,10 @@ tests_gph <- ggplot(week_test_df, aes(x=year_week, y=age, group=factor(year_week
  scale_y_continuous(breaks=seq(0,80,10))
 
 
+
+
+
+
 # TEST-AGE GROUP ----------------------------------------------------------
 
 age_labs_decade <- c(paste(seq(0, 40, by = 10), seq(9, 49, by = 10),
@@ -282,3 +286,45 @@ test_positivity_gph <- tests_df %>%
        y='% COVID-19 positive samples', 
        color='',
        caption='Data source:IEDCR FIELD LAB')
+
+
+
+
+
+
+
+ari_ili_testpos_df <- 
+  ari_ili_df_testpos <- gsheet_data$ari_ili %>% 
+  bind_rows(ari_ili_2020) %>% 
+  clean_names() %>% 
+  clean_data() %>% 
+  filter(sample_type %in% c('ari_ili','suspected_covid_19')) %>% 
+  filter(nationality %in% c('fdmn', 'host')) %>% 
+  filter(laboratory_result %in% c('positive', 'negative')) %>% 
+  mutate(age=as.numeric(as.character(age))) %>% 
+  filter(!is.na(age)) %>% 
+  mutate(age_group=cut(age,breaks = c(seq(0, 50, by = 10), Inf), labels = age_labs, right = FALSE)) %>% 
+  count(date_of_case_detection,nationality,age_group,laboratory_result) %>% 
+  complete(date_of_case_detection,nationality,age_group,laboratory_result, fill = list(n = 0)) %>% 
+  pivot_wider(names_from='laboratory_result', values_from='n') %>% 
+  mutate(tests=negative+positive) %>% 
+  group_by(nationality,age_group) %>% 
+  mutate(tests_roll=zoo::rollmean(tests,7,align='right', fill=NA)) %>% 
+  mutate(positive_roll=zoo::rollmean(positive,7,align='right', fill=NA)) %>% 
+  mutate(positivity=positive_roll/tests_roll) 
+
+
+
+ari_ili_testpos_gph <-  ari_ili_testpos_df %>% 
+  filter(date_of_case_detection>today()-90) %>% 
+  ggplot(aes(x=date_of_case_detection, y=positivity, colour=nationality)) +
+  geom_line() +
+  theme_tufte() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 5L)) +
+  scale_color_manual(values=c("#4472C4", "#ED7D31")) +
+  theme(legend.position = 'top') +
+  labs(x = "",
+       y = "Test positivity (7-day average)") +
+  facet_wrap(~ age_group, ncol=2)
+
+

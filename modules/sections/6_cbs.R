@@ -17,7 +17,7 @@ hbc_df <- read.csv(here('data', 'home_based_care.csv')) %>%
   mutate(year_wk=case_when(year!=2021 ~year_wk-1, 
                            TRUE ~ year_wk)) %>% 
   filter(date>=ymd('2020-06-24')) %>% 
-  filter(year_wk<yearweek(today_date))
+  filter(year_wk<yearweek(today_date)-1)
   
 
 # HOUSEHOLDS-VISITED ------------------------------------------------------

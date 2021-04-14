@@ -108,28 +108,17 @@ cumulative_admissions_df <- table_df %>% select(date_report, fdmn_admissions, ho
 
 facility_summary <- table_df %>% 
   filter(!is.na(name)) %>% 
-  #select(-c('fdmn_admissions', 'host_admissions')) %>% 
   group_by(name) %>% 
   filter(date_report==last(date_report) | is.na(date_report)) %>%
-  #summarise_all(last) %>% 
   slice(1) %>% 
   ungroup() %>% 
   select(-uid) %>% 
-  #mutate(ggplot = NA,.after=occupancy) %>%
-  mutate(camp_number=str_extract(name, "[[:digit:]]+")) %>% 
-  mutate(camp_number=as.numeric(camp_number)) %>% 
+  mutate(camp_number=str_extract(name, "[[:digit:]]+"),
+         camp_number=as.numeric(camp_number)) %>% 
   arrange(camp_number) %>% 
-  #arrange(name, date) %>% 
   select(-camp_number) %>% 
-  #arrange(name) %>% 
   gt() %>% 
   opt_row_striping(., row_striping = TRUE) %>% 
-  # text_transform(
-  #   locations = cells_body(vars(ggplot)),
-  #   fn = function(x){
-  #     map(spark_plots1$plot, ggplot_image, height = px(15), aspect_ratio = 4)
-  #   }
-  # ) %>%
   tab_spanner(
     label = "Currently accepting?",
     columns = vars(mild_mod,severe,critical)
@@ -148,14 +137,15 @@ facility_summary <- table_df %>%
   ) %>% 
   tab_spanner(
     label = "Activity in last 24 hours",
-    columns = vars(total_admissions_24h,	total_discharges_24h,	total_referrals_24h,	total_deaths_24h)
+    columns = vars(total_admissions_24h,fdmn_admissions,host_admissions,
+                   total_discharges_24h,	total_referrals_24h,	total_deaths_24h)
   ) %>% 
   fmt_percent(
     columns = vars(occupancy),
     decimals = 0
   ) %>% 
   fmt_missing(
-    columns = 1:20,
+    everything(),
     missing_text = ""
   ) %>% 
   cols_label(
@@ -175,13 +165,16 @@ facility_summary <- table_df %>%
     total_severe = "Severe",
     total_critical = "Critical",
     occupancy = "Occupancy (%)", 
-    total_admissions_24h = "Admissions", 
+    total_admissions_24h = "Admissions (Total)", 
+    fdmn_admissions = "Admissions (FDMN)",
+    host_admissions = "Admissions (Host)",
     total_discharges_24h = "Discharges",
     total_referrals_24h = "Referrals",
-    total_deaths_24h = "Deaths",
-    #ggplot="Trend"
-  ) %>%
-  summary_rows(fns = list(Total = ~ sum(., na.rm=TRUE)), columns = vars(total_mild_mod,total_severe,total_critical,total_current_admit,total_beds,                                                        total_admissions_24h,total_discharges_24h,total_referrals_24h,total_deaths_24h ),
+    total_deaths_24h = "Deaths") %>% 
+  summary_rows(fns = list(Total = ~ sum(., na.rm=TRUE)), columns = vars(total_mild_mod,total_severe,total_critical,
+                                                                        total_current_admit,total_beds,standby_beds,
+                                                                        total_admissions_24h,fdmn_admissions,host_admissions,
+                                                                        total_discharges_24h,total_referrals_24h,total_deaths_24h ),
                formatter = fmt_number,
                decimals = 0,
                use_seps = TRUE) %>%
@@ -521,10 +514,11 @@ total_beds_gph <-  fac_data2 %>%
 ###FDMN Admissions in last 24 hours 
 
 fdmn_admit_24h <- table_df %>%  
-  group_by(date_report) %>% 
+  filter(date_report>=today()-1) %>% 
+  #group_by(date_report) %>% 
   mutate(fdmn_admissions=as.numeric(fdmn_admissions)) %>% 
   summarise(fdmn_admit_24h=sum(fdmn_admissions,na.rm=TRUE)) %>% 
-  filter(date_report==max(date_report, na.rm=TRUE)) %>% 
+  #filter(date_report==max(date_report, na.rm=TRUE)) %>% 
   pull(fdmn_admit_24h)
 
 fdmn_admit_vb <- valueBox(
@@ -536,10 +530,11 @@ fdmn_admit_vb <- valueBox(
 ###Host Admissions in last 24 hours 
 
 host_admit_24h <- table_df %>%  
-  group_by(date_report) %>% 
+  filter(date_report>=today()-1) %>% 
+  #group_by(date_report) %>% 
   mutate(host_admissions=as.numeric(host_admissions)) %>% 
   summarise(host_admit_24h=sum(host_admissions,na.rm=TRUE)) %>% 
-  filter(date_report==max(date_report, na.rm=TRUE)) %>% 
+  #filter(date_report==max(date_report, na.rm=TRUE)) %>% 
   pull(host_admit_24h)
 
 host_admit_vb <- valueBox(

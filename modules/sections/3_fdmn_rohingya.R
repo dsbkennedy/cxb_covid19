@@ -135,7 +135,7 @@ case_shp_fdmn <- table_calc_comb_subloc %>%
 
 #case_shp_fdmn %>% filter(is.na())
 
-fdmn_pal_cases_bins <-c(1, 5, 10, 25,50,100,200)
+fdmn_pal_cases_bins <-c(1, 5, 10, 25,50,100)
 fdmn_pal_deaths_bins <-c(1, 2, 5)
 
 

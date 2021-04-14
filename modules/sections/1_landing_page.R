@@ -264,23 +264,23 @@ all_deaths_table <- table_calc_comb %>%
 
 # EPICURVE ----------------------------------------------------------------
 
-epi_curve <- table_final_df %>% 
-  mutate(week=isoweek(date)) %>% 
-  mutate(year=year(date)) %>% 
-  #mutate(year_week=yearweek(date)) %>% 
-  #mutate(year_week_str=as.character(year_week)) %>% 
-  group_by(population_group,year,week) %>% 
-  summarise(new_cases=sum(new_cases,na.rm=TRUE)) %>% 
-  ggplot(.) +
-  geom_col(aes(x = week, y = new_cases, fill=factor(year))) +
-  scale_fill_manual(values=c("#ED7D31","#4472C4")) +
-  #scale_x_yearweek(date_breaks = "8 week",) +
-  # scale_x_date(date_breaks = '14 day', date_minor_breaks = '7 day',
-  #              date_labels = '%d-%m') +
-  theme_minimal() +
-  labs(x = "Week case reported",
-       y = "Number of cases", fill="year") +
-  facet_wrap(~ population_group, scales="free_y", ncol=1)
+# epi_curve <- table_final_df %>% 
+#   mutate(week=isoweek(date)) %>% 
+#   mutate(year=year(date)) %>% 
+#   #mutate(year_week=yearweek(date)) %>% 
+#   #mutate(year_week_str=as.character(year_week)) %>% 
+#   group_by(population_group,year,week) %>% 
+#   summarise(new_cases=sum(new_cases,na.rm=TRUE)) %>% 
+#   ggplot(.) +
+#   geom_col(aes(x = week, y = new_cases, fill=factor(year))) +
+#   scale_fill_manual(values=c("#ED7D31","#4472C4")) +
+#   #scale_x_yearweek(date_breaks = "8 week",) +
+#   # scale_x_date(date_breaks = '14 day', date_minor_breaks = '7 day',
+#   #              date_labels = '%d-%m') +
+#   theme_minimal() +
+#   labs(x = "Week case reported",
+#        y = "Number of cases", fill="year") +
+#   facet_wrap(~ population_group, scales="free_y", ncol=1)
 
 epi_curve <- table_final_df %>% 
   group_by(population_group) %>% 

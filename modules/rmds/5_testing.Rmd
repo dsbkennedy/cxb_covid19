@@ -8,10 +8,11 @@ Row {data-height=700}
 tests_table
 ```
 
-### Median age of samples tested by week
+### Test positivity by age group
 
 ```{r test_pos_agegrp_gph}
-ggplotly(tests_gph)
+#ggplotly(tests_gph)
+ggplotly(ari_ili_testpos_gph)
 ```
 
 
