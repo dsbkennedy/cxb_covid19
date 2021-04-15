@@ -143,7 +143,7 @@ all_tests_table <- table_calc_comb %>%
   cols_label(
     total_tests = "Total",
     total_tests_pm = "Per million",
-    total_tests_7day = "Last week", 
+    total_tests_7day = "Last 7 days", 
     total_tests_pm_7day   = "Per million",
     test_pos = "% positive" ,
     test_pos_7day = "% positive" 
@@ -186,7 +186,7 @@ all_cases_table <- table_calc_comb %>%
   cols_label(
     total_cases = "Total",
     total_cases_pm = "Per million",
-    total_cases_7day = "Last week",
+    total_cases_7day = "Last 7 days",
     total_cases_pm_7day   = "Per million",
     case_growth = "Change in last 7 days (%)"
   ) %>% 
@@ -229,7 +229,7 @@ all_deaths_table <- table_calc_comb %>%
   cols_label(
     total_deaths = "Total",
     total_deaths_pm = "Per million", 
-    total_deaths_7day = "Last week",
+    total_deaths_7day = "Last 7 days",
     total_deaths_pm_7day  = "Per million", 
     cfr = "Case Fatality Risk"
   ) %>% 
@@ -285,13 +285,13 @@ all_deaths_table <- table_calc_comb %>%
 epi_curve <- table_final_df %>% 
   group_by(population_group) %>% 
   complete(date, fill=list(new_cases=0)) %>% 
-  mutate(cases_roll=zoo::rollmean(new_cases,3,align='right', fill=0)) %>% 
+  mutate(cases_roll=zoo::rollmean(new_cases,7,align='right', fill=0)) %>% 
   #count(population_group,date) %>% 
   ggplot() +
   geom_line(aes(x=date, y=cases_roll)) +
   theme_minimal() +
   labs(x = "Date case reported",
-       y = "Cases (3-day average)") +
+       y = "Cases (7-day average)") +
   facet_wrap(~population_group, scales='free_y', ncol=1)
 
 

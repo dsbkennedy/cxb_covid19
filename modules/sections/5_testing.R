@@ -254,7 +254,7 @@ tests_age_group_gph <-
 week_filter <- max(tests_df$week)-12
 
 ###TEST POSITIVTY GRAPH
-test_positivity_gph <- tests_df %>% 
+test_positivity_df <- tests_df %>% 
   #filter(grepl('fdmn|host', name)) %>% 
   # mutate(name=case_when(name=='fdmn' ~ 'TESTS', 
   #                       TRUE ~ 'CASES')) %>% 
@@ -269,19 +269,32 @@ test_positivity_gph <- tests_df %>%
   #group_by(population_group) %>% 
   filter(cases>0) %>% 
   filter(week>=week_filter) %>%
- # filter(week!=('2020 W15')) %>% 
+  # filter(week!=('2020 W15')) %>% 
   #filter(week<max(week, na.rm=TRUE)) %>% 
   mutate(pos=map2(cases,tests, ~ prop.test(.x, .y, conf.level=0.95) %>% 
                     broom::tidy())) %>% 
-  unnest(pos) %>% 
+  unnest(pos) 
+
+
+test_positivity_df_last <- test_positivity_df %>% 
+  group_by(population_group) %>% 
+  filter(week==max(week))
+
+test_positivity_gph <- test_positivity_df %>% 
   ggplot(aes(x=week, y=estimate, color=population_group)) +
   geom_line() +
   #geom_col(position='dodge') + 
   geom_errorbar(aes(ymin=conf.low, ymax=conf.high), width=.2,
                 position = position_dodge(width = 0.6)) +
   scale_color_manual(values=c("#4472C4", "#ED7D31")) +
-  scale_y_continuous(labels = scales::percent)  +
+  scale_y_continuous(labels = scales::percent, 
+                   #  sec.axis = dup_axis(
+                    #   breaks = test_positivity_df_last$estimate,
+                     #  labels = test_positivity_df_last$population_group,
+                     #  name = NULL
+                     )  +
   theme_minimal() +
+  theme(legend.position = 'none') +
   labs(x='Week', 
        y='% COVID-19 positive samples', 
        color='',
@@ -289,9 +302,7 @@ test_positivity_gph <- tests_df %>%
 
 
 
-
-
-
+# Age group test positivity -----------------------------------------------
 
 ari_ili_testpos_df <- 
   ari_ili_df_testpos <- gsheet_data$ari_ili %>% 
@@ -313,6 +324,9 @@ ari_ili_testpos_df <-
   mutate(positive_roll=zoo::rollmean(positive,7,align='right', fill=NA)) %>% 
   mutate(positivity=positive_roll/tests_roll) 
 
+ari_ili_testpos_df_last <- ari_ili_testpos_df %>% 
+  group_by(age_group) %>% 
+   filter(date_of_case_detection==max(date_of_case_detection))
 
 
 ari_ili_testpos_gph <-  ari_ili_testpos_df %>% 
@@ -320,11 +334,16 @@ ari_ili_testpos_gph <-  ari_ili_testpos_df %>%
   ggplot(aes(x=date_of_case_detection, y=positivity, colour=nationality)) +
   geom_line() +
   theme_tufte() +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 5L)) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 5L),
+                     #sec.axis = dup_axis(
+                      # breaks = ari_ili_testpos_df_last$positivity,
+                       #labels = ari_ili_testpos_df_last$nationality,
+                       #name = NULL
+                     ) +
   scale_color_manual(values=c("#4472C4", "#ED7D31")) +
   theme(legend.position = 'top') +
   labs(x = "",
        y = "Test positivity (7-day average)") +
-  facet_wrap(~ age_group, ncol=2)
+ facet_wrap(~ age_group, ncol=2)
 
 

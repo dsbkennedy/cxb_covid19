@@ -21,7 +21,7 @@ Column  {data-width=400}
 -------------------------------------
 
 
-### Epi curve of COVID-19 cases by gender
+### Total confirmed cases of COVID-19 cases by gender
 
 ```{r godata_epicurve}
 ggplotly(godata_epi_curve)

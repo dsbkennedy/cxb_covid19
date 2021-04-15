@@ -1,6 +1,8 @@
 # Data import -------------------------------------------------------------
+date_cutoff <- today()-7
 
 fac_list <- read.csv(here('data', 'fac_list.csv')) %>% 
+  select(-upazila) %>% 
   filter(!uid %in% c(23,87,495,151,294,543))
 
 new_data <- GET(paste0(url,new_form_id,"/submissions/?format=json"),
@@ -116,7 +118,7 @@ facility_summary <- table_df %>%
   mutate(camp_number=str_extract(name, "[[:digit:]]+"),
          camp_number=as.numeric(camp_number)) %>% 
   arrange(camp_number) %>% 
-  select(-camp_number) %>% 
+  select(-c(camp_number, total_admissions_24h)) %>% 
   gt() %>% 
   opt_row_striping(., row_striping = TRUE) %>% 
   tab_spanner(
@@ -137,7 +139,7 @@ facility_summary <- table_df %>%
   ) %>% 
   tab_spanner(
     label = "Activity in last 24 hours",
-    columns = vars(total_admissions_24h,fdmn_admissions,host_admissions,
+    columns = vars(fdmn_admissions,host_admissions,
                    total_discharges_24h,	total_referrals_24h,	total_deaths_24h)
   ) %>% 
   fmt_percent(
@@ -165,7 +167,6 @@ facility_summary <- table_df %>%
     total_severe = "Severe",
     total_critical = "Critical",
     occupancy = "Occupancy (%)", 
-    total_admissions_24h = "Admissions (Total)", 
     fdmn_admissions = "Admissions (FDMN)",
     host_admissions = "Admissions (Host)",
     total_discharges_24h = "Discharges",
@@ -173,7 +174,7 @@ facility_summary <- table_df %>%
     total_deaths_24h = "Deaths") %>% 
   summary_rows(fns = list(Total = ~ sum(., na.rm=TRUE)), columns = vars(total_mild_mod,total_severe,total_critical,
                                                                         total_current_admit,total_beds,standby_beds,
-                                                                        total_admissions_24h,fdmn_admissions,host_admissions,
+                                                                        fdmn_admissions,host_admissions,
                                                                         total_discharges_24h,total_referrals_24h,total_deaths_24h ),
                formatter = fmt_number,
                decimals = 0,
@@ -208,6 +209,10 @@ facility_summary <- table_df %>%
       )
     )
   ) %>% 
+  tab_style(style = list(cell_fill(color = 'red'), 
+                         cell_text(weight = 'bold')), 
+            locations = cells_body(columns=vars(date_report), 
+                                   rows = date_report <= date_cutoff)) %>% 
   cols_align(
     align = "center",
     columns = gt::everything()
@@ -421,7 +426,7 @@ severity_df <- table_df %>%
 admissions_trend_df <- severity_df %>% 
   group_by(date_report) %>% 
   summarise(total_admitted=sum(total, na.rm=TRUE)) %>% 
-  mutate(roll_admitted=zoo::rollmean(total_admitted,3,align='right', fill=NA))
+  mutate(roll_admitted=zoo::rollmean(total_admitted,7,align='right', fill=NA))
 
 severity_gph <- severity_df %>% 
   ggplot(aes(x=date_report, y=total)) +

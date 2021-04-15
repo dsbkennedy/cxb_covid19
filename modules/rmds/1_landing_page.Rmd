@@ -8,19 +8,19 @@ host_placeholder
 ```
 
 
-### **Tests**: Total - Last week - Last 24 hours
+### **Tests**: Total - Last 7 days - Last 24 hours
 
 ```{r host_tests}
 host_tests_vb
 ```
 
-### **Cases**: Total - Last week - Last 24 hours
+### **Cases**: Total - Last 7 days - Last 24 hours
 
 ```{r host_cases}
 host_cases_vb
 ```
 
-### **Deaths**: Total - Last week - Last 24 hours
+### **Deaths**: Total - Last 7 days - Last 24 hours
 
 ```{r host_deaths}
 host_deaths_vb
@@ -42,19 +42,19 @@ fdmn_placeholder
 ```
 
 
-### **Tests**: Total - Last week - Last 24 hours
+### **Tests**: Total - Last 7 days - Last 24 hours
 
 ```{r fdmn_tests}
 fdmn_tests_vb
 ```
 
-### **Cases**: Total - Last week - Last 24 hours
+### **Cases**: Total - Last 7 days - Last 24 hours
 
 ```{r fdmn_cases}
 fdmn_cases_vb
 ```
 
-### **Deaths**: Total - Last week - Last 24 hours
+### **Deaths**: Total - Last 7 days - Last 24 hours
 
 ```{r fdmn_deaths}
 fdmn_deaths_vb
@@ -92,7 +92,7 @@ all_deaths_table
 Row {data-height=250}
 -------------------------------------
 
-### Cases (3-day rolling average)  (Scales are different for each graph)
+### Cases (7-day rolling average)  (Scales are different for each graph)
 
 
 ```{r epicurve_bgd_host_fdmn}
@@ -100,7 +100,7 @@ ggplotly(epi_curve)
 ```
 
 
-### Patients admitted by severity with 3-day rolling average
+### Patients admitted by severity with 7-day rolling average
 
 ```{r patients_admitted}
 ggplotly(severity_gph)

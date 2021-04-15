@@ -61,8 +61,8 @@ godata_clean <- godata_wide %>%
     is.na(age_years) && !is.na(age_months) ~  as.integer(age_months / 12),
     TRUE ~ as.integer(age_years))) %>%
   #Age group
-  #mutate(age_group=cut(age_years,breaks = c(seq(0, 50, by = 10), Inf), labels = age_labs, right = FALSE)) %>%
-  mutate(age_group=cut(age_years,breaks=breaks, labels=labs, right=FALSE)) %>% 
+  mutate(age_group=cut(age_years,breaks = c(seq(0, 50, by = 10), Inf), labels = age_labs, right = FALSE)) %>%
+  #mutate(age_group=cut(age_years,breaks=breaks, labels=labs, right=FALSE)) %>% 
   mutate(age_group=fct_explicit_na(age_group, na_level = "(outcome missing)")) %>% 
   #Classification
   filter(classification != "lng_reference_data_category_case_classification_not_a_case_discarded") %>%
@@ -210,17 +210,36 @@ godata_clean <- godata_wide %>%
 #saveRDS(godata_clean, here('data', 'godata.rds'))
 # EPICURVE-GENDER -------------------------------------------------------------------
 
-godata_epi_curve <- godata_clean %>% 
-  mutate(week=isoweek(date_symptom_onset_final)) %>% 
-  count(week, sex) %>% 
+godata_epi_data <- godata_clean %>% 
+  count(date_symptom_onset_final, sex) %>% 
+  group_by(sex) %>% 
+  mutate(cumulative=cumsum(n)) 
+
+godata_epi_data_final <- godata_epi_data %>% 
+  filter(date_symptom_onset_final == max(date_symptom_onset_final))
+
+godata_epi_curve <- godata_epi_data %>% 
   ggplot(.) +
-  geom_col(aes(x = week, y = n, fill=sex)) +
-  # scale_x_date(date_breaks = '14 day', date_minor_breaks = '3 day',
-  #              date_labels = '%d-%m') +
+  geom_line(aes(x = date_symptom_onset_final, y = cumulative, colour=sex)) +
+  scale_x_date(date_breaks = '3 months', date_minor_breaks = '1 month',
+               date_labels = '%d-%m-%y') +
   theme_minimal() +
+  scale_y_continuous(
+    #limits = c(0, 560),
+    expand = c(0,0),
+    #sec.axis = dup_axis(
+     # breaks = godata_epi_data_final$cumulative,
+      #labels = godata_epi_data_final$sex,
+      #name = NULL
+    #)
+  ) +
+  theme(legend.position='none') +
   scale_fill_brewer(palette="Dark2", na.value="blue") +
-  labs(x = "Week of symptom onset",
-       y = "Number of cases", fill='')
+  labs(x = "Date of symptom onset",
+       y = "Total cases (n)", colour='')
+
+
+
 
 
 # EPICURVE-AGE ------------------------------------------------------------

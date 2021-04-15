@@ -73,15 +73,23 @@ table_7day <- table_final_df %>%
   # ungroup() %>% 
   #filter(date > today() -7) %>% 
   mutate(epi_week=isoweek(date)) %>% 
-  filter(epi_week==last_week) %>% 
-  group_by(population_group, population) %>% 
-  summarise(total_tests_7day=sum(new_tests, na.rm=TRUE),
-            total_cases_7day=sum(new_cases, na.rm=TRUE),
-            total_deaths_7day=sum(new_deaths, na.rm=TRUE)) %>% 
+  mutate(new_tests=coalesce(new_tests,0),
+         new_cases=coalesce(new_cases,0),
+         new_deaths=coalesce(new_deaths,0)) %>% 
+  group_by(population_group) %>% 
+  #mutate(cumulative_cases=cumsum(new_cases)) %>%
+  mutate(total_tests_7day=RcppRoll::roll_sum(new_tests,7, fill=NA, align="right")) %>% 
+  mutate(total_cases_7day=RcppRoll::roll_sum(new_cases,7, fill=NA, align="right")) %>% 
+  mutate(total_deaths_7day=RcppRoll::roll_sum(new_deaths,7, fill=NA, align="right")) %>% 
+  filter(date==max(date,na.rm=TRUE)) %>% 
+  #group_by(population_group, population) %>% 
+  # summarise(total_tests_7day=last(tests7roll),
+  #           total_cases_7day=last(cases7roll),
+  #           total_deaths_7day=last(deaths7roll)) %>% 
   mutate(total_tests_pm_7day=(total_tests_7day/population)*1*10E5,
          total_cases_pm_7day=(total_cases_7day/population)*1*10E5,
-         total_deaths_pm_7day=(total_deaths_7day/population)*1*10E5)%>% 
-  select(-population)
+         total_deaths_pm_7day=(total_deaths_7day/population)*1*10E5)
+  #select(-population)
 
 table_1day <- table_final_df %>% 
   complete(date,population_group, fill=list(new_tests=0)) %>% 
@@ -115,7 +123,8 @@ growth_rate <- table_final_df %>%
   mutate(case_growth=ifelse(lag(cases7roll,7)>5 & cases7roll>5,
                             (cases7roll/lag(cases7roll,7))-1,NA)) %>% 
   mutate(case_growth=coalesce(case_growth,0)) %>% 
-  mutate(case_growth_mean=RcppRoll::roll_mean(case_growth,7, fill=NA, align="right"))
+  mutate(case_growth_mean=RcppRoll::roll_mean(case_growth,7, fill=NA, align="right")) %>% 
+  select(-new_cases)
 
 growth_rate_latest <- growth_rate %>% 
   summarise(case_growth=last(case_growth_mean))
@@ -126,6 +135,7 @@ table_calc_comb <- table_totals %>%
   left_join(growth_rate_latest, by='population_group') %>% 
   mutate(test_pos=total_cases/total_tests, 
          test_pos_7day=total_cases_7day/total_tests_7day,
-         cfr=total_deaths/total_cases)
+         cfr=total_deaths/total_cases) %>% 
+  select(-new_cases)
 
 rm(table_totals,table_7day,growth_rate)
