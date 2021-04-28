@@ -25,7 +25,6 @@ pacman::p_load(here, data.table, janitor, linelist,dplyr,lubridate,tidyr,purrr,f
                jsonlite,leaflet,tsibble,DT,tidyjson,wesanderson)
 ```
 
-
 ```{r, include=FALSE}
 source("modules/1_login.R", local = knitr::knit_global())
 source("modules/2_import_data.R", local = knitr::knit_global())

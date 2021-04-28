@@ -284,7 +284,7 @@ all_deaths_table <- table_calc_comb %>%
 
 epi_curve <- table_final_df %>% 
   group_by(population_group) %>% 
-  complete(date, fill=list(new_cases=0)) %>% 
+  complete(date,population_group, fill=list(new_cases=0)) %>% 
   mutate(cases_roll=zoo::rollmean(new_cases,7,align='right', fill=0)) %>% 
   #count(population_group,date) %>% 
   ggplot() +

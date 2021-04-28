@@ -28,9 +28,7 @@ cxb_tests <- tests_both %>%
 
 cxb_table_data <- cxb_tests %>% 
   full_join(cxb_cases, by=c('population_group', 'date')) %>% 
-  full_join(cxb_deaths, by=c('population_group', 'date')) %>% 
-  mutate(population=case_when(population_group=='Rohingya refugee/FDMN' ~ fdmn_population, 
-                              TRUE ~ host_population)) 
+  full_join(cxb_deaths, by=c('population_group', 'date')) 
 rm(cxb_cases, cxb_deaths,cxb_tests)
 
 #Bangladesh data from Our World In Data
@@ -51,7 +49,12 @@ last_date <- today()
 #Combine Bangaladesh and CXB data
 table_final_df <- bgd_data %>% 
   bind_rows(cxb_table_data) %>% 
-  arrange(date, population_group) %>% 
+  complete(date,population_group, fill=list(new_tests=0, new_cases=0, new_deaths=0)) %>% 
+mutate(population=case_when(population_group=='Rohingya refugee/FDMN' ~ fdmn_population,
+                            population_group=='Host community' ~ host_population,
+                            TRUE ~ population)) %>% 
+  arrange(population_group,date) %>% 
+  #complete(population_group,date, fill=list(new_tests=0, new_cases=0, new_deaths=0)) %>% 
   ungroup()
 
 rm(bgd_data, cxb_table_data)
@@ -92,8 +95,8 @@ table_7day <- table_final_df %>%
   #select(-population)
 
 table_1day <- table_final_df %>% 
-  complete(date,population_group, fill=list(new_tests=0)) %>% 
-  filter(date>=today() -1) %>% 
+  #complete(date,population_group, fill=list(new_tests=0)) %>% 
+  filter(date>=today() -1) %>%  
   replace_na(list(new_tests=0, new_cases=0,new_deaths=0)) %>% 
   filter(!population_group=='Bangladesh') %>% 
   group_by(population_group, population) %>% 
@@ -131,6 +134,7 @@ growth_rate_latest <- growth_rate %>%
 
 #Final calculations
 table_calc_comb <- table_totals %>% 
+  #left_join(table_1day, by='population_group') %>% 
   left_join(table_7day, by='population_group') %>% 
   left_join(growth_rate_latest, by='population_group') %>% 
   mutate(test_pos=total_cases/total_tests, 

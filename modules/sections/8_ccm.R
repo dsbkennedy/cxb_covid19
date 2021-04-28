@@ -2,27 +2,28 @@
 date_cutoff <- today()-7
 
 fac_list <- read.csv(here('data', 'fac_list.csv')) %>% 
-  select(-upazila) %>% 
+  #select(-upazila) %>% 
   filter(!uid %in% c(23,87,495,151,294,543))
 
 new_data <- GET(paste0(url,new_form_id,"/submissions/?format=json"),
                 add_headers(Authorization = paste("token", access_token_ccm, sep = " "))
-) %>% 
-  content(., as="parsed") %>% 
-  spread_all() %>% 
+) %>%
+  content(., as="parsed") %>%
+  spread_all() %>%
   clean_data() %>%
   as_tibble() %>%
   select(-json) %>%
   select(!contains('version')) %>%
   mutate(date_time_submission=ymd_hms(submission_time)) %>%
-  filter(date(date_time_submission)>ymd('2020-10-12')) %>% 
-  mutate(date_report=ymd(activity_info_date_report)) %>% 
-  rename(uid=health_fac_select) %>% 
-  mutate(health_fac_info_contact_number_focal=paste0('0',health_fac_info_contact_number_focal)) %>% 
+  filter(date(date_time_submission)>ymd('2020-10-12')) %>%
+  mutate(date_report=ymd(activity_info_date_report)) %>%
+  rename(uid=health_fac_select) %>%
+  mutate(health_fac_info_contact_number_focal=paste0('0',health_fac_info_contact_number_focal)) %>%
   mutate(health_fac_info_contact_number_referral=paste0('0',health_fac_info_contact_number_referral))
 
 saveRDS(new_data, here('data', 'ccm_data.Rds'))
 
+#new_data <- readRDS(here('data', 'ccm_data.Rds'))
 
 # Data wrangling  ---------------------------------------------------------
 
@@ -88,7 +89,7 @@ table_df <- daily_data %>% select(uid, date_report, daily_vars) %>%
                   host_admissions=0, fdmn_admissions=0, total_admissions_24h=0, total_discharges_24h=0, total_referrals_24h=0, total_deaths_24h=0)) %>% 
   mutate(uid=as.numeric(uid)) %>% 
   full_join(fac_list,., by='uid') %>% 
-  select(name, uid,total_mild_mod, total_severe, total_critical,total_current_admit, total_beds,standby_beds,
+  select(name,upazila, uid,total_mild_mod, total_severe, total_critical,total_current_admit, total_beds,standby_beds,
          total_admissions_24h,	total_discharges_24h,	total_referrals_24h,total_deaths_24h,date_report, 
          fdmn_admissions, host_admissions,
          referral_contact=health_fac_info_contact_number_referral, mild_mod:sam) %>% 
@@ -117,7 +118,7 @@ facility_summary <- table_df %>%
   select(-uid) %>% 
   mutate(camp_number=str_extract(name, "[[:digit:]]+"),
          camp_number=as.numeric(camp_number)) %>% 
-  arrange(camp_number) %>% 
+  arrange(desc(upazila),camp_number) %>% 
   select(-c(camp_number, total_admissions_24h)) %>% 
   gt() %>% 
   opt_row_striping(., row_striping = TRUE) %>% 
@@ -152,6 +153,7 @@ facility_summary <- table_df %>%
   ) %>% 
   cols_label(
     name = "Facility name",
+    upazila = "Upazila",
     referral_contact = "24/7 Referral hotline",
     date_report = "Reporting date",
     mild_mod = "Mild/Moderate",

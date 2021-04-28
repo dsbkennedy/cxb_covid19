@@ -16,19 +16,19 @@ hbc_df <- read.csv(here('data', 'home_based_care.csv')) %>%
   mutate(year_wk=yearweek(date)) %>% 
   mutate(year_wk=case_when(year!=2021 ~year_wk-1, 
                            TRUE ~ year_wk)) %>% 
-  filter(date>=ymd('2020-06-24')) %>% 
-  filter(year_wk<yearweek(today_date)-1)
+ filter(date>=ymd('2020-06-24')) %>% 
+filter(year_wk<yearweek(today_date)-1)
   
 
 # HOUSEHOLDS-VISITED ------------------------------------------------------
 
 
 hhvisit_gph <- hbc_df %>% 
-  select(date, c1_total_hh_visited_week) %>% 
+  select(year,week,year_wk,date, c1_total_hh_visited_week) %>% 
   #filter(week>25) %>% 
-  group_by(date) %>% 
+  group_by(year,week,year_wk,date) %>% 
   summarise(hhvisited=sum(c1_total_hh_visited_week, na.rm=TRUE)) %>% 
-  ggplot(., aes(x=date, y=hhvisited)) +
+  ggplot(., aes(x=year_wk, y=hhvisited)) +
   geom_line() +
   #labs(title='Households visited') +
   #scale_x_continuous(breaks=pretty_breaks()) +
