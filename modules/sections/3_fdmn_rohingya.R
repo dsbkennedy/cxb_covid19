@@ -113,8 +113,8 @@ testing_fdmn_gph <-  test_nationality %>%
 
 # FDMN MAP ----------------------------------------------------------------
 
-shp_file_fdmn <- read_sf(list.files(here('data','shapefiles'), 
-                                    pattern='1.shp$', 
+shp_file_fdmn <- read_sf(list.files(here('data','shapefiles', 'fdmn'), 
+                                    pattern='.shp$', 
                                     full.names = T)) %>% 
   clean_names() %>% 
   mutate(merge_col = case_when(code=='KRC' ~ 'Kutupalong RC',
@@ -138,10 +138,8 @@ case_shp_fdmn <- table_calc_comb_subloc %>%
 fdmn_pal_cases_bins <-c(1, 5, 10, 25,50,100)
 fdmn_pal_deaths_bins <-c(1, 2, 5)
 
-
 fdmn_pal_cases <- colorBin( "YlOrRd", bins=fdmn_pal_cases_bins, na.color = "grey", pretty=FALSE)
 fdmn_pal_deaths <- colorBin( "PuRd", bins=fdmn_pal_deaths_bins, na.color = "grey", pretty=FALSE)
-
 
 fdmn_popup <- paste(
   "<strong>Camp: </strong>"
@@ -151,7 +149,6 @@ fdmn_popup <- paste(
   , "<br><strong>Deaths: </strong>"
   , case_shp_fdmn$total_deaths
 )
-
 
 case_fdmn_map <- 
 leaflet(case_shp_fdmn) %>% 

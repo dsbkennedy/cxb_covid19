@@ -38,13 +38,10 @@ bgd_data <- fread('https://covid.ourworldindata.org/data/owid-covid-data.csv') %
   select(date=date_format, new_tests,new_cases,new_deaths,population) %>% 
   mutate(population_group='Bangladesh')
 
-
 #Get first date from Bangladesh data
 first_date <- min(bgd_data$date)
 #Last date is today
 last_date <- today()
-
-
 
 #Combine Bangaladesh and CXB data
 table_final_df <- bgd_data %>% 
@@ -54,13 +51,12 @@ mutate(population=case_when(population_group=='Rohingya refugee/FDMN' ~ fdmn_pop
                             population_group=='Host community' ~ host_population,
                             TRUE ~ population)) %>% 
   arrange(population_group,date) %>% 
-  #complete(population_group,date, fill=list(new_tests=0, new_cases=0, new_deaths=0)) %>% 
   ungroup()
 
 rm(bgd_data, cxb_table_data)
+
 #Totals
 table_totals <- table_final_df %>% 
-  # ungroup() %>% 
   group_by(population_group, population) %>% 
   summarise(total_tests=sum(new_tests, na.rm=TRUE),
             total_cases=sum(new_cases, na.rm=TRUE),
@@ -71,31 +67,25 @@ table_totals <- table_final_df %>%
   select(-population)
 
 last_week <- isoweek(today())-1
+
 #last epi week
 table_7day <- table_final_df %>% 
-  # ungroup() %>% 
-  #filter(date > today() -7) %>% 
   mutate(epi_week=isoweek(date)) %>% 
   mutate(new_tests=coalesce(new_tests,0),
          new_cases=coalesce(new_cases,0),
          new_deaths=coalesce(new_deaths,0)) %>% 
   group_by(population_group) %>% 
   #mutate(cumulative_cases=cumsum(new_cases)) %>%
-  mutate(total_tests_7day=RcppRoll::roll_sum(new_tests,7, fill=NA, align="right")) %>% 
-  mutate(total_cases_7day=RcppRoll::roll_sum(new_cases,7, fill=NA, align="right")) %>% 
-  mutate(total_deaths_7day=RcppRoll::roll_sum(new_deaths,7, fill=NA, align="right")) %>% 
+  mutate(total_tests_7day=RcppRoll::roll_sum(new_tests,7, fill=NA, align="right"),
+         total_cases_7day=RcppRoll::roll_sum(new_cases,7, fill=NA, align="right"),
+         total_deaths_7day=RcppRoll::roll_sum(new_deaths,7, fill=NA, align="right")) %>% 
   filter(date==max(date,na.rm=TRUE)) %>% 
-  #group_by(population_group, population) %>% 
-  # summarise(total_tests_7day=last(tests7roll),
-  #           total_cases_7day=last(cases7roll),
-  #           total_deaths_7day=last(deaths7roll)) %>% 
   mutate(total_tests_pm_7day=(total_tests_7day/population)*1*10E5,
          total_cases_pm_7day=(total_cases_7day/population)*1*10E5,
          total_deaths_pm_7day=(total_deaths_7day/population)*1*10E5)
   #select(-population)
 
 table_1day <- table_final_df %>% 
-  #complete(date,population_group, fill=list(new_tests=0)) %>% 
   filter(date>=today() -1) %>%  
   replace_na(list(new_tests=0, new_cases=0,new_deaths=0)) %>% 
   filter(!population_group=='Bangladesh') %>% 
@@ -106,27 +96,15 @@ table_1day <- table_final_df %>%
   select(population_group, total_tests_1day, total_cases_1day, total_deaths_1day)
 
 #Growth rate
-
-# growth_rate <- table_final_df %>% 
-#   group_by(population_group) %>% 
-#   mutate(new_cases=coalesce(new_cases,0)) %>% 
-#   mutate(cumulative_cases=cumsum(new_cases)) %>%
-#   mutate(change=ifelse(lag(cumulative_cases,7)>10,
-#                        ((cumulative_cases-lag(cumulative_cases,7))/cumulative_cases),NA))
-# 
-#   mutate(case_growth=ifelse(lag(cumulative_cases,7)>10, 
-#                             ((cumulative_cases/lag(cumulative_cases,7))^(1/7))-1,NA))
-#   summarise(case_growth=last(case_growth))
-
 growth_rate <- table_final_df %>% 
   group_by(population_group) %>% 
-  mutate(new_cases=coalesce(new_cases,0)) %>% 
-  mutate(cumulative_cases=cumsum(new_cases)) %>%
-  mutate(cases7roll=RcppRoll::roll_sum(new_cases,7, fill=NA, align="right")) %>% 
-  mutate(case_growth=ifelse(lag(cases7roll,7)>5 & cases7roll>5,
-                            (cases7roll/lag(cases7roll,7))-1,NA)) %>% 
-  mutate(case_growth=coalesce(case_growth,0)) %>% 
-  mutate(case_growth_mean=RcppRoll::roll_mean(case_growth,7, fill=NA, align="right")) %>% 
+  mutate(new_cases=coalesce(new_cases,0),
+         cumulative_cases=cumsum(new_cases),
+         cases7roll=RcppRoll::roll_sum(new_cases,7, fill=NA, align="right"),
+         case_growth=ifelse(lag(cases7roll,7)>5 & cases7roll>5,
+                            (cases7roll/lag(cases7roll,7))-1,NA),
+         case_growth=coalesce(case_growth,0),
+         case_growth_mean=RcppRoll::roll_mean(case_growth,7, fill=NA, align="right")) %>% 
   select(-new_cases)
 
 growth_rate_latest <- growth_rate %>% 
@@ -134,7 +112,6 @@ growth_rate_latest <- growth_rate %>%
 
 #Final calculations
 table_calc_comb <- table_totals %>% 
-  #left_join(table_1day, by='population_group') %>% 
   left_join(table_7day, by='population_group') %>% 
   left_join(growth_rate_latest, by='population_group') %>% 
   mutate(test_pos=total_cases/total_tests, 
@@ -143,3 +120,78 @@ table_calc_comb <- table_totals %>%
   select(-new_cases)
 
 rm(table_totals,table_7day,growth_rate)
+
+
+#Cases
+cxb_cases_subloc <- all_cases_linelist %>% 
+  group_by(population_group,date_of_case_detection,upazilla, camp_of_residence) %>% 
+  summarise(n = n(),.groups = 'drop') %>% 
+  select(date=date_of_case_detection, population_group,upazilla, camp_of_residence, new_cases=n)
+
+#Deaths
+cxb_deaths_subloc <- all_cases_linelist %>% 
+  filter(x30_day_outcome=='Death') %>% 
+  group_by(population_group,date_of_death,upazilla, camp_of_residence) %>% 
+  summarise(n = n(),.groups = 'drop') %>% 
+  select(date=date_of_death, population_group,upazilla, camp_of_residence, new_deaths=n)
+
+cxb_cases_deaths_subloc <- cxb_cases_subloc %>% 
+  full_join(cxb_deaths_subloc, by=c('population_group', 'date', 'upazilla', 'camp_of_residence')) %>% 
+  mutate(location=coalesce(as.character(camp_of_residence),upazilla),
+         location=ifelse(population_group=='Host community',upazilla,location)) %>% 
+  full_join(., population, by=c('location')) %>% 
+  filter(!is.na(population_group)) 
+
+rm(cxb_cases_subloc, cxb_deaths_subloc)
+
+#Totals
+table_totals_subloc <- cxb_cases_deaths_subloc %>% 
+  ungroup() %>% 
+  group_by(population_group, population, location) %>% 
+  summarise(total_cases=sum(new_cases, na.rm=TRUE),
+            total_deaths=sum(new_deaths, na.rm=TRUE)) %>% 
+  mutate(total_cases_pm=(total_cases/population)*1*10E5,
+         total_deaths_pm=(total_deaths/population)*1*10E5) %>% 
+  ungroup() 
+#select(-population)
+
+#7-day
+table_7day_subloc <- cxb_cases_deaths_subloc %>% 
+  ungroup() %>% 
+  #filter(date > today() -7) %>% 
+  mutate(epi_week=isoweek(date)) %>% 
+  filter(epi_week==last_week) %>% 
+  group_by(population_group, population, location) %>% 
+  summarise(total_cases_7day=sum(new_cases, na.rm=TRUE),
+            total_deaths_7day=sum(new_deaths, na.rm=TRUE)) %>% 
+  mutate(total_cases_pm_7day=(total_cases_7day/population)*1*10E5,
+         total_deaths_pm_7day=(total_deaths_7day/population)*1*10E5)%>% 
+  ungroup() %>% 
+  select(-population)
+
+
+#Growth rate
+##Growth rate needs values larger than 10 so FDMN communities don't reach this criteria
+growth_rate_subloc <- cxb_cases_deaths_subloc %>% 
+  group_by(population_group,location,date) %>% 
+  summarise(total_cases=sum(new_cases,na.rm=TRUE)) %>% 
+  arrange(population_group,location,date) %>% 
+  group_by(population_group,location) %>% 
+  filter(!is.na(date)) %>% 
+  complete(date = seq.Date(min(date), max(date,na.rm=TRUE), by="day")) %>% 
+  mutate(total_cases=coalesce(total_cases,0),
+         cumulative_cases=cumsum(total_cases),
+         cases7roll=RcppRoll::roll_sum(total_cases,7, fill=NA, align="right"),
+         case_growth=ifelse(lag(cases7roll,7)>=5 & cases7roll>=5,
+                            (cases7roll/lag(cases7roll,7))-1,NA),
+         case_growth=coalesce(case_growth,0),
+         case_growth_mean=RcppRoll::roll_mean(case_growth,7, fill=NA, align="right")) %>% 
+  summarise(case_growth=last(case_growth))
+
+#Final calculations
+table_calc_comb_subloc <- table_totals_subloc %>% 
+  left_join(table_7day_subloc, by=c('population_group','location')) %>% 
+  left_join(growth_rate_subloc, by=c('population_group','location')) %>% 
+  mutate( cfr=total_deaths/total_cases)
+
+rm(table_totals_subloc, table_7day_subloc,growth_rate_subloc)

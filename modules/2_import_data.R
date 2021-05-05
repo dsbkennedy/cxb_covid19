@@ -2,7 +2,7 @@
 
 ##Import data from Google Sheets
 
-gs4_deauth()
+#gs4_deauth()
 # # #plan(multiprocess)
 
 # gsheet_data_2020 <- map(sheet_names, ~read_sheet(gdrive_link_2020, sheet=.)) %>%
@@ -11,14 +11,14 @@ gs4_deauth()
 # saveRDS(gsheet_data_2020, here('data', 'gsheet_data_2020.Rds'))
 
 ###Append 2020 data
-gsheet_data_2020 <- readRDS(here('data', 'gsheet_data_2020.Rds'))
+gsheet_data_2020 <- readRDS(here('data','gdrive', 'gsheet_data_2020.Rds'))
 
-# gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%
-#  set_names(sheet_names)
-# 
-# saveRDS(gsheet_data, here('data', 'gsheet_data_2021.Rds'))
+gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%
+ set_names(sheet_names)
 
-gsheet_data <- readRDS(here('data', 'gsheet_data_2021.Rds'))
+saveRDS(gsheet_data, here('data','gdrive', 'gsheet_data_2021.Rds'))
+
+gsheet_data <- readRDS(here('data','gdrive', 'gsheet_data_2021.Rds'))
 
 fdmn_raw_2020 <- gsheet_data_2020$fdmn %>% 
   clean_names() %>%
@@ -27,7 +27,6 @@ fdmn_raw_2020 <- gsheet_data_2020$fdmn %>%
   #select(-date_of_death) %>% 
   mutate(camp_of_residence=as.character(camp_of_residence)) %>%
   mutate(nationality='FDMN')
-
 
 ##Import FDMN data 
 fdmn_raw <- gsheet_data$fdmn %>% 
@@ -38,9 +37,9 @@ fdmn_raw <- gsheet_data$fdmn %>%
   mutate(camp_of_residence=as.character(camp_of_residence)) %>%
   mutate(nationality='FDMN')
 
-
 fdmn_both <- fdmn_raw_2020 %>% bind_rows(fdmn_raw)
-
+rm(fdmn_raw,fdmn_raw_2020)
+ 
 ##Import host data 
 host_raw_2020 <- gsheet_data_2020$host %>% 
   clean_names() %>% 
@@ -61,6 +60,7 @@ host_both <- host_raw_2020 %>%
   bind_rows(host_raw)
   #select(-date_of_specimen_collection)
 
+rm(host_raw_2020, host_raw)
 
 ##Bind FDMN and host data
 all_cases_raw <- fdmn_both %>% 
@@ -89,6 +89,7 @@ tests_data <- gsheet_data$testing %>%
 
 tests_both <- tests_data_2020 %>% bind_rows(tests_data)
 
+rm(tests_data, tests_data_2020)
 
 test_nationality <- tests_both %>% 
   filter(!date %in% c('NULL', 'Total')) %>% 
@@ -100,15 +101,11 @@ test_nationality <- tests_both %>%
 
 
 ##DRU data
-#dru_raw <- gsheet_data$dru %>% clean_names() %>%   mutate(facility_name=gsub(":([[:alpha:]])", ": \\1", facility_name)) 
 quarantine_raw <- gsheet_data$quarantine %>% clean_names()
 
-
 ### Camp population file
-population <- read.csv(here('data', 'population.csv')) 
+population <- read.csv(here('data','reference', 'population.csv')) 
 
-
-  
 ## ---- godata --------
 
 #get access token
@@ -147,7 +144,7 @@ host_population <-  2805491
 fdmn_population <-  859205 
 
 # population by age and sex
-age_group_sex_pop <- read.csv(here('data','age_sex_population.csv')) %>% 
+age_group_sex_pop <- read.csv(here('data','reference', 'age_sex_population.csv')) %>% 
   select(-X) %>% 
   mutate(age_group=case_when(age_group=='0_10' ~ '0-9',
                              age_group=='10_19' ~ '10-19',

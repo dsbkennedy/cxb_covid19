@@ -90,8 +90,7 @@ testing_host_gph <-  test_nationality %>%
 
 ## ---- map 
 
-shp_file_host <- read_sf(here('data', 'shapefiles', 'cxb_shp.shp'))
-
+shp_file_host <- read_sf(here('data', 'shapefiles', 'host', 'cxb_shp.shp'))
 
 case_shp_host <- table_calc_comb_subloc %>% 
   filter(population_group=='Host community') %>% 
@@ -103,12 +102,10 @@ case_shp_host <- table_calc_comb_subloc %>%
 #Define colour palettes based on available data
 #This will need to be updated as cases increase
 host_pal_cases_bins <-c(0, 250, 500, 1000, 2000, 4000, 6000)
-host_pal_deaths_bins <-c(0, 5, 10, 25, 50)
-
+host_pal_deaths_bins <-c(0, 5, 10, 25, 50,100,250)
 
 host_pal_cases <- colorBin( "YlOrRd", bins=host_pal_cases_bins, na.color = "grey", pretty=FALSE)
 host_pal_deaths <- colorBin( "PuRd", bins=host_pal_deaths_bins, na.color = "grey", pretty=FALSE)
-
 
 host_popup <- paste(
   "<strong>Upazila: </strong>"

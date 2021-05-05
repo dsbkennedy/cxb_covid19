@@ -18,7 +18,6 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=TRUE)
 ```
 
 ```{r setup_import, include=FALSE}
-
 ##Load required packages
 pacman::p_load(here, data.table, janitor, linelist,dplyr,lubridate,tidyr,purrr,forcats,stringr,ggthemes,gt,
                RcppRoll,scales,sf,patchwork,flexdashboard,plotly,ggupset,table1,ggpubr,googlesheets4,httr,
@@ -28,8 +27,7 @@ pacman::p_load(here, data.table, janitor, linelist,dplyr,lubridate,tidyr,purrr,f
 ```{r, include=FALSE}
 source("modules/1_login.R", local = knitr::knit_global())
 source("modules/2_import_data.R", local = knitr::knit_global())
-source("modules/3_valuebox_wrangling.R", local = knitr::knit_global())
-source("modules/4_linelist_wrangling.R", local = knitr::knit_global())
+source("modules/3_data_wrangling.R", local = knitr::knit_global())
 source("modules/sections/1_landing_page.R", local = knitr::knit_global())
 source("modules/sections/2_host_community.R", local = knitr::knit_global())
 source("modules/sections/3_fdmn_rohingya.R", local = knitr::knit_global())

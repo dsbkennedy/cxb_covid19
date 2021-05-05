@@ -1,7 +1,7 @@
 # Data import -------------------------------------------------------------
 date_cutoff <- today()-7
 
-fac_list <- read.csv(here('data', 'fac_list.csv')) %>% 
+fac_list <- read.csv(here('data', 'reference', 'fac_list.csv')) %>% 
   filter(!uid %in% c(23,87,495,151,294,543))
 
 new_data <- GET(paste0(url,new_form_id,"/submissions/?format=json"),
@@ -240,7 +240,7 @@ demo_df <- new_data %>%
   mutate(across(tonumeric, as.numeric)) 
 
 
-historic_data_long <- readRDS(here('data', 'historic_data_long.rds' )) %>% ungroup()
+historic_data_long <- readRDS(here('data','weekly', 'input', 'historic_data_long.rds' )) %>% ungroup()
 
 historic_admissions <- historic_data_long %>% 
   filter(name=='admissions') %>% 
@@ -403,7 +403,7 @@ cumulative_indicator_df <- gender_df %>%
 #write.csv(cumulative_indicator_df, here('data', 'cumulative_indicators.csv'))
 ### Admissions by severity
 
-historic_severity <- readRDS(here('data', 'severity_data.rds'))
+historic_severity <- readRDS(here('data','weekly', 'input', 'severity_data.rds'))
   
 severity_df <- table_df %>% 
   select(uid, date_report, total_mild_mod, total_severe, total_critical) %>% 
@@ -419,10 +419,6 @@ severity_df <- table_df %>%
   filter(!is.na(date_report)) %>% 
   group_by(date_report) %>% 
   mutate(total_admitted=sum(total, na.rm=TRUE)) 
-  #ungroup() %>% 
-  #arrange(date_report) %>% 
-  #mutate(roll_admitted=zoo::rollmean(total_admitted,3,align='right', fill=NA)) %>% 
-  #ungroup()
 
 admissions_trend_df <- severity_df %>% 
   group_by(date_report) %>% 
@@ -440,26 +436,15 @@ severity_gph <- severity_df %>%
 
 
 ###Occupancy
-historic_occupancy <- readRDS(here('data', 'historic_occupancy.rds')) %>% 
+historic_occupancy <- readRDS(here('data','weekly', 'input', 'historic_occupancy.rds')) %>% 
   rename(name=fac_name) %>% 
   #select(-c('occupancy')) %>% 
   filter(date_report<ymd('2020-10-13')) %>% 
   group_by(date_report,name) %>% 
   summarise(total_beds=sum(total_beds,na.rm=TRUE),
             total_current_admit=sum(total_current_admit,na.rm=TRUE))
-  #mutate(dataset='old tool')
 
 occupancy_df <- table_df %>%
-  # select(date_report,uid, total_beds, total_current_admit) %>%
-  # filter(!is.na(date_report)) %>%
-  # group_by(uid) %>%
-  # complete(date_report=seq.Date(min(date_report), max(date_report,na.rm=TRUE), by='day')) %>%
-  # fill(total_beds)
-  # filter(total_beds>0)
-  # #group_by(uid)
-  # group_by(date_report) %>%
-  # summarise(total_beds=sum(total_beds,na.rm=TRUE),
-  #           total_current_admit=sum(total_current_admit,na.rm=TRUE))
   select(date_report,name, total_beds,total_current_admit) %>%
   complete(date_report, name) %>% 
   group_by(name) %>% 
@@ -480,13 +465,12 @@ occupancy_df <- table_df %>%
   filter(!is.na(name)) %>% 
   mutate(occupancy=total_current_admit/total_beds)
 
-write.csv(occupancy_df, here('data', 'occupancy_data.csv'))
-
+write.csv(occupancy_df, here('data','weekly','output', 'occupancy_data.csv'))
 
 first_date <- min(table_df$date_report,na.rm=TRUE)
 last_date <- today()-1
-
-fac_data2 <- new_data %>% 
+  
+total_beds_gph <-  new_data %>% 
   dplyr::filter(activity_type_select==2) %>% 
   mutate(total_beds=as.numeric(health_fac_info_sari_beds) + 
            as.numeric(health_fac_info_non_sari_beds)) %>% 
@@ -502,10 +486,7 @@ fac_data2 <- new_data %>%
   group_by(date_report) %>% 
   summarise(total_beds=sum(total_beds,na.rm=TRUE)) %>% 
   mutate(dataset='new tool') %>% 
-  bind_rows(historic_occupancy)
-  
-total_beds_gph <-  fac_data2 %>% 
-  #filter(total_beds>0) %>% 
+  bind_rows(historic_occupancy) %>%  
   ggplot(., aes(x=date_report, y=total_beds, color=dataset)) +
   #geom_line() +
   geom_col(position='dodge') +
