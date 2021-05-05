@@ -27,7 +27,7 @@ ari_ili_tests_df <- ari_ili_df %>%
   mutate(test_growth=ifelse(lag(cumulative_tests,7)>10, 
                             ((cumulative_tests/lag(cumulative_tests,7))^(1/7))-1,NA)) %>%
   mutate(roll_test=roll_mean((n),7,  align="right", fill = NA)) %>% 
-  mutate(week=epiweek(date_of_case_detection)) %>% 
+  mutate(week=isoweek(date_of_case_detection)) %>% 
   ungroup()
 
 ari_ili_tests_total <- ari_ili_tests_df %>% 
@@ -319,19 +319,21 @@ ari_ili_testpos_df <-
   complete(date_of_case_detection,nationality,age_group,laboratory_result, fill = list(n = 0)) %>% 
   pivot_wider(names_from='laboratory_result', values_from='n') %>% 
   mutate(tests=negative+positive) %>% 
-  group_by(nationality,age_group) %>% 
-  mutate(tests_roll=zoo::rollmean(tests,7,align='right', fill=NA)) %>% 
-  mutate(positive_roll=zoo::rollmean(positive,7,align='right', fill=NA)) %>% 
-  mutate(positivity=positive_roll/tests_roll) 
+  filter(date_of_case_detection>today()-90) %>% 
+  mutate(week=yearweek(date_of_case_detection)) %>% 
+  group_by(nationality,age_group,week) %>% 
+  summarise(total_tests=sum(tests,na.rm=TRUE),
+            total_cases=sum(positive,na.rm=TRUE)) %>% 
+  mutate(positivity=total_cases/total_tests) 
 
-ari_ili_testpos_df_last <- ari_ili_testpos_df %>% 
-  group_by(age_group) %>% 
-   filter(date_of_case_detection==max(date_of_case_detection))
+
+# ari_ili_testpos_df_last <- ari_ili_testpos_df %>% 
+#   group_by(age_group) %>% 
+#    filter(date_of_case_detection==max(date_of_case_detection))
 
 
 ari_ili_testpos_gph <-  ari_ili_testpos_df %>% 
-  filter(date_of_case_detection>today()-90) %>% 
-  ggplot(aes(x=date_of_case_detection, y=positivity, colour=nationality)) +
+  ggplot(aes(x=week, y=positivity, colour=nationality)) +
   geom_line() +
   theme_tufte() +
   scale_y_continuous(labels = scales::percent_format(accuracy = 5L),

@@ -2,12 +2,11 @@
 date_cutoff <- today()-7
 
 fac_list <- read.csv(here('data', 'fac_list.csv')) %>% 
-  #select(-upazila) %>% 
   filter(!uid %in% c(23,87,495,151,294,543))
 
 new_data <- GET(paste0(url,new_form_id,"/submissions/?format=json"),
                 add_headers(Authorization = paste("token", access_token_ccm, sep = " "))
-) %>%
+) %>% 
   content(., as="parsed") %>%
   spread_all() %>%
   clean_data() %>%
@@ -23,7 +22,7 @@ new_data <- GET(paste0(url,new_form_id,"/submissions/?format=json"),
 
 saveRDS(new_data, here('data', 'ccm_data.Rds'))
 
-#new_data <- readRDS(here('data', 'ccm_data.Rds'))
+new_data <- readRDS(here('data', 'ccm_data.Rds'))
 
 # Data wrangling  ---------------------------------------------------------
 
