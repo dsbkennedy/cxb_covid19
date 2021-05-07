@@ -30,10 +30,19 @@ source_fn <- function(x) {
 list_setup <- list.files(here('modules'), full.names=T, pattern=".R")
 list_sections <- list.files(here('modules', 'sections'), full.names=T)
 
-plan(multicore)
 purrr::map(list_setup,source_fn)
 
-furrr::future_map(list_sections,source_fn)
+source("modules/sections/1_landing_page.R", local = knitr::knit_global())
+source("modules/sections/2_host_community.R", local = knitr::knit_global())
+source("modules/sections/3_fdmn_rohingya.R", local = knitr::knit_global())
+source("modules/sections/4_epidemiology.R", local = knitr::knit_global())
+source("modules/sections/5_testing.R", local = knitr::knit_global())
+source("modules/sections/6_cbs.R", local = knitr::knit_global())
+source("modules/sections/7_ewars_deaths.R", local = knitr::knit_global())
+source("modules/sections/8_ccm.R", local = knitr::knit_global())
+source("modules/sections/9_quarantine.R", local = knitr::knit_global())
+#plan(multiprocess)
+#furrr::future_map(list_sections,source_fn)
 ```
 
 Landing page
