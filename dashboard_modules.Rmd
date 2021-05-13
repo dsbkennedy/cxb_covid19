@@ -19,7 +19,7 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=TRUE)
 
 ```{r setup_import, include=FALSE}
 ##Load required packages
-pacman::p_load(here, data.table, janitor, linelist,dplyr,lubridate,tidyr,purrr,furrr,forcats,stringr,ggthemes,gt,   RcppRoll,scales,sf,patchwork,flexdashboard,plotly,ggupset,table1,ggpubr,googlesheets4,httr,jsonlite,leaflet,tsibble,DT,tidyjson,wesanderson)
+pacman::p_load(here, data.table, janitor, linelist,dplyr,lubridate,tidyr,purrr,forcats,stringr,ggthemes,gt,   RcppRoll,scales,sf,patchwork,flexdashboard,plotly,ggupset,table1,ggpubr,googlesheets4,httr,jsonlite,leaflet,tsibble,DT,tidyjson,wesanderson)
 ```
 
 ```{r, include=FALSE}
@@ -31,18 +31,7 @@ list_setup <- list.files(here('modules'), full.names=T, pattern=".R")
 list_sections <- list.files(here('modules', 'sections'), full.names=T)
 
 purrr::map(list_setup,source_fn)
-
-source("modules/sections/1_landing_page.R", local = knitr::knit_global())
-source("modules/sections/2_host_community.R", local = knitr::knit_global())
-source("modules/sections/3_fdmn_rohingya.R", local = knitr::knit_global())
-source("modules/sections/4_epidemiology.R", local = knitr::knit_global())
-source("modules/sections/5_testing.R", local = knitr::knit_global())
-source("modules/sections/6_cbs.R", local = knitr::knit_global())
-source("modules/sections/7_ewars_deaths.R", local = knitr::knit_global())
-source("modules/sections/8_ccm.R", local = knitr::knit_global())
-source("modules/sections/9_quarantine.R", local = knitr::knit_global())
-#plan(multiprocess)
-#furrr::future_map(list_sections,source_fn)
+purrr::map(list_sections,source_fn)
 ```
 
 Landing page
