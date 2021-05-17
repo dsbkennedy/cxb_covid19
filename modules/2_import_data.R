@@ -13,10 +13,10 @@
 ###Append 2020 data
 gsheet_data_2020 <- readRDS(here('data','gdrive', 'gsheet_data_2020.Rds'))
 
-gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%
- set_names(sheet_names)
-
-saveRDS(gsheet_data, here('data','gdrive', 'gsheet_data_2021.Rds'))
+# gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%
+#  set_names(sheet_names)
+# 
+# saveRDS(gsheet_data, here('data','gdrive', 'gsheet_data_2021.Rds'))
 
 gsheet_data <- readRDS(here('data','gdrive', 'gsheet_data_2021.Rds'))
 
@@ -34,6 +34,7 @@ fdmn_raw <- gsheet_data$fdmn %>%
   #janitor::remove_empty() %>% 
   mutate(date_of_death=janitor::excel_numeric_to_date(date_of_death)) %>% 
   #select(-date_of_death) %>% 
+  mutate(age_in_years=as.numeric(age_in_years)) %>% 
   mutate(camp_of_residence=as.character(camp_of_residence)) %>%
   mutate(nationality='FDMN')
 
