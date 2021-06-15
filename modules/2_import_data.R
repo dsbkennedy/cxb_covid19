@@ -13,10 +13,10 @@
 ###Append 2020 data
 gsheet_data_2020 <- readRDS(here('data','gdrive', 'gsheet_data_2020.Rds'))
 
-# gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%
-#  set_names(sheet_names)
-# 
-# saveRDS(gsheet_data, here('data','gdrive', 'gsheet_data_2021.Rds'))
+gsheet_data <- map(sheet_names, ~read_sheet(gdrive_link, sheet=.)) %>%
+ set_names(sheet_names)
+
+saveRDS(gsheet_data, here('data','gdrive', 'gsheet_data_2021.Rds'))
 
 gsheet_data <- readRDS(here('data','gdrive', 'gsheet_data_2021.Rds'))
 
@@ -123,10 +123,6 @@ content <-
   fromJSON(flatten = TRUE)
 
 access_token_godata <- content$access_token                 ## this is your access token !!! that allows API calls
-
-#specify date ranges, for follow up filters
-date_now <- format(Sys.time(), "%Y-%m-%dT23:59:59.999Z")
-date_21d_ago <- format((Sys.Date()-21), "%Y-%m-%dT23:59:59.999Z")
 
 # import outbreak Cases
 response_cases <- GET(paste0(url_godata,"api/outbreaks/",outbreak_id,"/cases"),

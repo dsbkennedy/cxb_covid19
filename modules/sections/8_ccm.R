@@ -44,7 +44,9 @@ fac_data <- new_data %>%
          preg=case_when(grepl('2', health_fac_info_special_needs) ~ 'X'),
          sam=case_when(grepl('3', health_fac_info_special_needs) ~ 'X')) %>% 
   mutate(total_beds=as.numeric(health_fac_info_sari_beds) + as.numeric(health_fac_info_non_sari_beds)) %>% 
-  select(uid,total_beds,health_fac_info_sari_beds,standby_beds=health_fac_info_standby_beds, mild_mod:sam,
+  select(uid,total_beds,health_fac_info_sari_beds,standby_beds=health_fac_info_standby_beds, 
+         mild_mod:sam,
+         #moderate=activity_info_active_patients_beds_moderate,mild=activity_info_active_patients_beds_mild,
          health_fac_info_contact_number_referral)
 
 
@@ -54,12 +56,13 @@ daily_data <- new_data %>% filter(activity_type_select==1) %>%
 
 
 daily_vars <- c('activity_info_active_patients_beds_mild_moderate', 'activity_info_active_patients_beds_severe', 
-                'activity_info_active_patients_beds_critical','activity_info_last_24h_new_pat_admit_y_new_pat_host_admit_sum', 
+                'activity_info_active_patients_beds_critical','activity_info_last_24h_new_pat_admit_y_new_pat_host_admit_sum',
+                'activity_info_active_patients_beds_mild', 'activity_info_active_patients_beds_moderate',
                 'activity_info_last_24h_new_pat_admit_y_new_pat_fdmn_admit_sum','activity_info_last_24h_new_pat_admit_total',
                 'activity_info_last_24h_new_pat_discharged_y_new_pat_discharged_sum', 
                 'activity_info_last_24h_new_pat_refer_y_new_pat_refer_sum','activity_info_last_24h_new_pat_died_y_new_pat_died_sum')  
 
-num_vars <- c('total_mild_mod','total_severe','total_critical','total_current_admit','total_beds','standby_beds',
+num_vars <- c('total_mild_mod', 'total_mild', 'total_mod', 'total_severe','total_critical','total_current_admit','total_beds','standby_beds',
               'total_admissions_24h','fdmn_admissions', 'host_admissions', 
               'total_discharges_24h','total_referrals_24h','total_deaths_24h')
 
@@ -70,6 +73,8 @@ table_df <- daily_data %>% select(uid, date_report, daily_vars) %>%
   full_join(fac_data,.,by='uid') %>% 
   mutate(total_admissions=as.numeric(activity_info_active_patients_beds_mild_moderate) + as.numeric(activity_info_active_patients_beds_severe) + as.numeric(activity_info_active_patients_beds_critical)) %>% 
   select(uid,health_fac_info_contact_number_referral,mild_mod,severe,critical,paed,preg,sam,total_beds,standby_beds,date_report,
+         total_mild=activity_info_active_patients_beds_mild,
+         total_mod=activity_info_active_patients_beds_moderate,
          total_mild_mod=activity_info_active_patients_beds_mild_moderate, 
          total_severe=activity_info_active_patients_beds_severe, 
          total_critical=activity_info_active_patients_beds_critical,
@@ -78,17 +83,17 @@ table_df <- daily_data %>% select(uid, date_report, daily_vars) %>%
          total_discharges_24h=activity_info_last_24h_new_pat_discharged_y_new_pat_discharged_sum,
          total_referrals_24h=activity_info_last_24h_new_pat_refer_y_new_pat_refer_sum,
          total_deaths_24h=activity_info_last_24h_new_pat_died_y_new_pat_died_sum) %>% 
-  mutate(total_current_admit=as.numeric(total_mild_mod) + as.numeric(total_severe) + as.numeric(total_critical),.after = total_critical) %>% 
+  replace_na(list(total_mild_mod= 0, total_severe = 0, total_critical=0, total_current_admit=0,total_mild=0, total_mod=0,
+                  host_admissions=0, fdmn_admissions=0, total_admissions_24h=0, total_discharges_24h=0, total_referrals_24h=0, total_deaths_24h=0)) %>% 
+  mutate(total_current_admit=as.numeric(total_mild_mod) + as.numeric(total_mild) + as.numeric(total_mod) + as.numeric(total_severe) + as.numeric(total_critical),.after = total_critical) %>% 
   mutate(total_admissions_24h=as.numeric(host_admissions) + as.numeric(fdmn_admissions), .after=fdmn_admissions) %>% 
   group_by(uid) %>% 
   #filter(date_report==max(date_report)) %>% 
   distinct() %>% 
   ungroup() %>% 
-  replace_na(list(total_mild_mod= 0, total_severe = 0, total_critical=0, total_current_admit=0,
-                  host_admissions=0, fdmn_admissions=0, total_admissions_24h=0, total_discharges_24h=0, total_referrals_24h=0, total_deaths_24h=0)) %>% 
   mutate(uid=as.numeric(uid)) %>% 
   full_join(fac_list,., by='uid') %>% 
-  select(name,upazila, uid,total_mild_mod, total_severe, total_critical,total_current_admit, total_beds,standby_beds,
+  select(name,upazila, uid,total_mild_mod,total_mild,total_mod, total_severe, total_critical,total_current_admit, total_beds,standby_beds,
          total_admissions_24h,	total_discharges_24h,	total_referrals_24h,total_deaths_24h,date_report, 
          fdmn_admissions, host_admissions,
          referral_contact=health_fac_info_contact_number_referral, mild_mod:sam) %>% 
@@ -96,7 +101,8 @@ table_df <- daily_data %>% select(uid, date_report, daily_vars) %>%
   #mutate(total_deaths_24h=NA) %>% 
   mutate(across(num_vars, as.numeric)) 
 
-cumulative_admissions_df <- table_df %>% select(date_report, fdmn_admissions, host_admissions) %>% 
+cumulative_admissions_df <- table_df %>% 
+  select(date_report, fdmn_admissions, host_admissions) %>% 
   pivot_longer(-date_report) %>% 
   mutate(value=as.numeric(value)) %>% 
   group_by(name, date_report) %>% 
@@ -131,7 +137,7 @@ facility_summary <- table_df %>%
   ) %>% 
   tab_spanner(
     label = "Patient status",
-    columns = vars(total_mild_mod,	total_severe,	total_critical)
+    columns = vars(total_mild_mod,total_mild, total_mod,	total_severe,	total_critical)
   ) %>% 
   tab_spanner(
     label = "Beds",
@@ -165,6 +171,8 @@ facility_summary <- table_df %>%
     standby_beds="Standby",
     total_current_admit = "Occupied", 
     total_mild_mod = "Mild/Moderate",
+    total_mild = "Mild", 
+    total_mod = "Moderate",
     total_severe = "Severe",
     total_critical = "Critical",
     occupancy = "Occupancy (%)", 
@@ -173,7 +181,7 @@ facility_summary <- table_df %>%
     total_discharges_24h = "Discharges",
     total_referrals_24h = "Referrals",
     total_deaths_24h = "Deaths") %>% 
-  summary_rows(fns = list(Total = ~ sum(., na.rm=TRUE)), columns = vars(total_mild_mod,total_severe,total_critical,
+  summary_rows(fns = list(Total = ~ sum(., na.rm=TRUE)), columns = vars(total_mild_mod,total_mild,total_mod,total_severe,total_critical,
                                                                         total_current_admit,total_beds,standby_beds,
                                                                         fdmn_admissions,host_admissions,
                                                                         total_discharges_24h,total_referrals_24h,total_deaths_24h ),
@@ -406,16 +414,18 @@ cumulative_indicator_df <- gender_df %>%
 historic_severity <- readRDS(here('data','weekly', 'input', 'severity_data.rds'))
   
 severity_df <- table_df %>% 
-  select(uid, date_report, total_mild_mod, total_severe, total_critical) %>% 
+  select(uid, date_report, total_mild_mod,total_mild,total_mod, total_severe, total_critical) %>% 
   filter(!is.na(date_report)) %>% 
   pivot_longer(-c('uid', 'date_report')) %>% 
   group_by(date_report, name) %>% 
   summarise(total=sum(value,na.rm=TRUE)) %>% 
   mutate(name=case_when(grepl('critical', name) ~ 'Critical',
                         grepl('severe', name) ~ 'Severe',
-                        TRUE ~ 'Mild/Moderate')) %>% 
+                        name=='total_mild' ~ 'Mild',
+                        name=='total_mod' ~ 'Moderate',
+                        name=='total_mild_mod' ~ 'Mild/Moderate')) %>% 
   bind_rows(historic_severity) %>% 
-  mutate(name=factor(name, levels=c('Mild/Moderate', 'Severe', 'Critical'))) %>% 
+  mutate(name=factor(name, levels=c('Mild/Moderate', 'Mild', 'Moderate', 'Severe', 'Critical'))) %>% 
   filter(!is.na(date_report)) %>% 
   group_by(date_report) %>% 
   mutate(total_admitted=sum(total, na.rm=TRUE)) 
@@ -432,7 +442,8 @@ severity_gph <- severity_df %>%
   labs(x='Report date', y='Total patients currently admitted', fill='Severity', 
        title='') +
   theme_minimal() +
-  scale_fill_manual(values = wes_palette("GrandBudapest1", n = 3))
+  scale_colour_brewer(palette = "Set1")
+  #scale_fill_manual(values = wes_palette("GrandBudapest1", n = 5))
 
 
 ###Occupancy
