@@ -19,7 +19,10 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=TRUE)
 
 ```{r setup_import, include=FALSE}
 ##Load required packages
-pacman::p_load(here, data.table, janitor, linelist,dplyr,lubridate,tidyr,purrr,forcats,stringr,ggthemes,gt,   RcppRoll,scales,sf,patchwork,flexdashboard,plotly,ggupset,table1,ggpubr,googlesheets4,httr,jsonlite,leaflet,tsibble,DT,tidyjson,wesanderson)
+pacman::p_load(here, data.table, janitor,
+               linelist,dplyr,lubridate,tidyr,purrr,forcats,stringr,ggthemes,gt,  
+               RcppRoll,scales,sf,patchwork,flexdashboard,plotly,ggupset,table1,
+               ggpubr,googlesheets4,httr,jsonlite,leaflet,tsibble,DT,tidyjson,wesanderson)
 ```
 
 ```{r, include=FALSE}
@@ -79,7 +82,7 @@ Community-based surveillance
 Facility table {data-navmenu="Clinical Case Management"}  
 =====================================  
 
-```{r child=here::here("modules","rmds","8_ccm.Rmd")}
+```{r child=here::here("modules","rmds","8_ccm_sami.Rmd")}
 ```
 
 Quarantine  {data-orientation=rows}
