@@ -12,7 +12,13 @@ output:
 editor_options: 
   chunk_output_type: console
 ---
-
+knit: (function(inputFile, encoding) { 
+      out_dir <- 'test';
+      rmarkdown::render(inputFile,
+                        encoding=encoding, 
+                        output_file=file.path(dirname(inputFile), out_dir, 'analysis.html')) })
+                        
+                        
 ```{r global, include=FALSE}
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=TRUE)
 ```
@@ -22,17 +28,15 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, error=TRUE)
 pacman::p_load(here, data.table, janitor,
                linelist,dplyr,lubridate,tidyr,purrr,forcats,stringr,ggthemes,gt,  
                RcppRoll,scales,sf,patchwork,flexdashboard,plotly,ggupset,table1,
-               ggpubr,googlesheets4,httr,jsonlite,leaflet,tsibble,DT,tidyjson,wesanderson)
+               ggpubr,googlesheets4,httr,jsonlite,leaflet,tsibble,DT,tidyjson,wesanderson,zoo)
 ```
 
 ```{r, include=FALSE}
 source_fn <- function(x) {
   source(x, local = knitr::knit_global())
 }
-
 list_setup <- list.files(here('modules'), full.names=T, pattern=".R")
 list_sections <- list.files(here('modules', 'sections'), full.names=T)
-
 purrr::map(list_setup,source_fn)
 purrr::map(list_sections,source_fn)
 ```
