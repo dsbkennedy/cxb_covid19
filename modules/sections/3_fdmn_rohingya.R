@@ -135,8 +135,8 @@ case_shp_fdmn <- table_calc_comb_subloc %>%
 
 #case_shp_fdmn %>% filter(is.na())
 
-fdmn_pal_cases_bins <-c(1, 5, 10, 25,50,100)
-fdmn_pal_deaths_bins <-c(1, 2, 5)
+fdmn_pal_cases_bins <-c(1, 10, 25,50,100,250)
+fdmn_pal_deaths_bins <-c(1, 2, 5, 10)
 
 fdmn_pal_cases <- colorBin( "YlOrRd", bins=fdmn_pal_cases_bins, na.color = "grey", pretty=FALSE)
 fdmn_pal_deaths <- colorBin( "PuRd", bins=fdmn_pal_deaths_bins, na.color = "grey", pretty=FALSE)
