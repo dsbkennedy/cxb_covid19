@@ -188,7 +188,7 @@ test_pos_age_sex_gph <- test_pos_age_sex %>%
        y='% COVID-19 + samples',
       # title = 'Test positivity by age group and sex',
        caption='Data source:IEDCR Field Lab') +
-  scale_y_continuous(labels = scales::percent, limits=c(0,0.06))  +
+  scale_y_continuous(labels = scales::percent, limits=c(0,0.10))  +
   expand_limits(x = 0, y = 0)
   #coord_flip()
 

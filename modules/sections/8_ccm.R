@@ -4,23 +4,23 @@ date_cutoff <- today()-7
 fac_list <- read.csv(here('data', 'reference', 'fac_list.csv')) %>% 
   filter(!uid %in% c(23,87,495,151,294,543))
 
-new_data <- GET(paste0(url,new_form_id,"/submissions/?format=json"),
-                add_headers(Authorization = paste("token", access_token_ccm, sep = " "))
-) %>% 
-  content(., as="parsed") %>%
-  spread_all() %>%
-  clean_data() %>%
-  as_tibble() %>%
-  select(-json) %>%
-  select(!contains('version')) %>%
-  mutate(date_time_submission=ymd_hms(submission_time)) %>%
-  filter(date(date_time_submission)>ymd('2020-10-12')) %>%
-  mutate(date_report=ymd(activity_info_date_report)) %>%
-  rename(uid=health_fac_select) %>%
-  mutate(health_fac_info_contact_number_focal=paste0('0',health_fac_info_contact_number_focal)) %>%
-  mutate(health_fac_info_contact_number_referral=paste0('0',health_fac_info_contact_number_referral))
-
-saveRDS(new_data, here('data', 'ccm_data.Rds'))
+# new_data <- GET(paste0(url,new_form_id,"/submissions/?format=json"),
+#                 add_headers(Authorization = paste("token", access_token_ccm, sep = " "))
+# ) %>% 
+#   content(., as="parsed") %>%
+#   spread_all() %>%
+#   clean_data() %>%
+#   as_tibble() %>%
+#   select(-json) %>%
+#   select(!contains('version')) %>%
+#   mutate(date_time_submission=ymd_hms(submission_time)) %>%
+#   filter(date(date_time_submission)>ymd('2020-10-12')) %>%
+#   mutate(date_report=ymd(activity_info_date_report)) %>%
+#   rename(uid=health_fac_select) %>%
+#   mutate(health_fac_info_contact_number_focal=paste0('0',health_fac_info_contact_number_focal)) %>%
+#   mutate(health_fac_info_contact_number_referral=paste0('0',health_fac_info_contact_number_referral))
+# 
+# saveRDS(new_data, here('data', 'ccm_data.Rds'))
 
 new_data <- readRDS(here('data', 'ccm_data.Rds'))
 
